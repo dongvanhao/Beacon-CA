@@ -26,6 +26,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Beacon.Domain\Beacon.Domain.csproj" />
     <ProjectReference Include="..\Beacon.Shared\Beacon.Shared.csproj" />
   </ItemGroup>
