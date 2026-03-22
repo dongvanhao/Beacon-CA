@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    
+    <Folder Include="Common\Behaviors\" />
+    <Folder Include="Common\Dtos\" />
+    <Folder Include="Common\Interfaces\IService\" />
+    <Folder Include="Common\Mappings\" />
+    <Folder Include="DependencyInjection\" />
+    <Folder Include="Features\Checkins\" />
+    <Folder Include="Features\Group\" />
+    <Folder Include="Features\Identity\Dtos\" />
+    <Folder Include="Features\Identity\Services\" />
+    <Folder Include="Features\Identity\Validators\" />
+    <Folder Include="Features\Messaging\" />
+    <Folder Include="Features\Notification\" />
+    <Folder Include="Features\Safety\" />
+    
+    
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Beacon.Domain\Beacon.Domain.csproj" />
+    <ProjectReference Include="..\Beacon.Shared\Beacon.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

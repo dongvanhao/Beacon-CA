@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+
+  <ItemGroup>
+    
+    <Folder Include="Common\" />
+    <Folder Include="Constants\" />
+    <Folder Include="Entities\Checkins\" />
+    <Folder Include="Entities\Group\" />
+    <Folder Include="Entities\Identity\" />
+    <Folder Include="Entities\Messaging\" />
+    <Folder Include="Entities\Notification\" />
+    <Folder Include="Entities\Safety\" />
+    <Folder Include="Enums\Checkins\" />
+    <Folder Include="Enums\Group\" />
+    <Folder Include="Enums\Identity\" />
+    <Folder Include="Enums\Messaging\" />
+    <Folder Include="Enums\Notification\" />
+    <Folder Include="Enums\Safety\" />
+    <Folder Include="IRepository\" />
+    
+    
+    <Folder Include="ValueObjects\" />
+  </ItemGroup>
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Beacon.Shared\Beacon.Shared.csproj" />
+  </ItemGroup>
+
+  
+
+</Project>
