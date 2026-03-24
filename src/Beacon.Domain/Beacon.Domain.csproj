@@ -24,9 +24,6 @@
     <Folder Include="Enums\Notification\" />
     <Folder Include="Enums\Safety\" />
     <Folder Include="IRepository\" />
-    
-    
-    <Folder Include="ValueObjects\" />
   </ItemGroup>
 
 

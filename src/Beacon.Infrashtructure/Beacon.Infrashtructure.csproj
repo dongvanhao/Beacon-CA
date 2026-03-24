@@ -11,13 +11,6 @@
   <ItemGroup>
     
     <Folder Include="Dependencyinjection\" />
-
-    <Folder Include="Persistence\Configuration\Checkins\" />
-    <Folder Include="Persistence\Configuration\Group\" />
-    <Folder Include="Persistence\Configuration\Identity\" />
-    <Folder Include="Persistence\Configuration\Messaging\" />
-    <Folder Include="Persistence\Configuration\Notification\" />
-    <Folder Include="Persistence\Configuration\Safety\" />
     <Folder Include="Repositories\Checkins\" />
     <Folder Include="Repositories\Group\" />
     <Folder Include="Repositories\Identity\" />
