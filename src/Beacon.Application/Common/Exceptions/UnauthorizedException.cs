@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Beacon.Application.Common.Exceptions
 {
-    public class UnauthorizedException : Exception
+    public class UnauthorizedException : Exception // Chưa đăng nhập hoặc token hết hạn
     {
         public UnauthorizedException(string message) : base(message)
         {

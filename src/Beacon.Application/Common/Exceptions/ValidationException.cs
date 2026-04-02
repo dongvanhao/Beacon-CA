@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Beacon.Application.Common.Exceptions
 {
-    public class ValidationException : Exception
+    public class ValidationException : Exception // dữ liệu đầu vào không hợp lệ
     {
         public List<string> Errors { get; }
         public ValidationException(List<string> errors) : base ("One or more validation failures have occurred.")

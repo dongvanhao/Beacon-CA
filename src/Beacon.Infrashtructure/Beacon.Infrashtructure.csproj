@@ -11,12 +11,16 @@
   <ItemGroup>
     
     <Folder Include="Dependencyinjection\" />
-    <Folder Include="Repositories\Checkins\" />
-    <Folder Include="Repositories\Group\" />
-    <Folder Include="Repositories\Identity\" />
-    <Folder Include="Repositories\Messaging\" />
-    <Folder Include="Repositories\Notification\" />
-    <Folder Include="Repositories\Safety\" />
+    
+    <Folder Include="Presistence\Configuration\Group\" />
+    
+    <Folder Include="Presistence\Configuration\Messaging\" />
+    <Folder Include="Repository\Checkins\" />
+    <Folder Include="Repository\Group\" />
+    <Folder Include="Repository\Identity\" />
+    <Folder Include="Repository\Messaging\" />
+    <Folder Include="Repository\Notification\" />
+    <Folder Include="Repository\Safety\" />
   </ItemGroup>
 
  

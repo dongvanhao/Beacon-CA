@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Beacon.Application.Common.Exceptions
 {
-    public class NotFoundException : Exception
+    public class NotFoundException : Exception // Tài nguyên không tồn tại
     {
         public NotFoundException(string message) : base(message)
         {

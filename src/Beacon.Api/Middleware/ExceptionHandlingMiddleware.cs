@@ -1,6 +1,5 @@
 ﻿using Beacon.Application.Common.Exceptions;
 using Beacon.Shared.Common.Responses;
-using System.ComponentModel.DataAnnotations;
 using System.Net;
 using System.Text.Json;
 using ValidationException = Beacon.Application.Common.Exceptions.ValidationException;
@@ -19,7 +18,13 @@ namespace Beacon.Api.Middleware
             _next = next;
             _logger = logger;
         }
-
+        #region Hàm InvokeAsync
+        /*
+         * Cho Request chạy tiếp bằng _next(context) trong try-catch để bắt mọi exception chưa được xử lý.
+         * Nếu toàn bộ đoạn phía sau không lỗi -> Middleware không làm gì thêm
+         * Nếu có lỗi ở bất kỳ đâu bên dưới -> nhảy vào catch
+         */
+        #endregion
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -32,39 +37,63 @@ namespace Beacon.Api.Middleware
                 await HandleExceptionAsync(context, ex);
             }
         }
-        private static async Task HandleExceptionAsync(HttpContext context, Exception exception)
+        #region Hàm HandleExceptionAsync
+        /* Dựa vào kiểu exception để xác định status code và message trả về.
+        * Tạo ApiResponse chuẩn cho từng loại lỗi.
+        * Trả về JSON response cho client.
+        * Nhiệm vụ:
+            - set content type
+            - set status code
+            - tạo object response
+            - serialize sang JSON
+            - ghi ra response body
+        */
+        #endregion
+        private static async Task HandleExceptionAsync(HttpContext context, Exception exception) // Đây là hàm chuyên xử lý lỗi sau khi đã bắt được 
         {
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = exception switch
+
+            var statusCode = exception switch
             {
-                ValidationException => (int)HttpStatusCode.BadRequest,
-                NotFoundException => (int)HttpStatusCode.NotFound,
-                ConflictException => (int)HttpStatusCode.Conflict,
-                UnauthorizedAccessException => (int)HttpStatusCode.Unauthorized,
-                ForbiddenException => (int)HttpStatusCode.Forbidden,
-                _ => (int)HttpStatusCode.InternalServerError
+                ValidationException => StatusCodes.Status400BadRequest,
+                NotFoundException => StatusCodes.Status404NotFound,
+                ConflictException => StatusCodes.Status409Conflict,
+                UnauthorizedException => StatusCodes.Status401Unauthorized,
+                ForbiddenException => StatusCodes.Status403Forbidden,
+                _ => StatusCodes.Status500InternalServerError
             };
-            ApiResponse<object> response;
 
-            if (exception is ValidationException vex)
+            context.Response.StatusCode = statusCode;
+
+            ApiResponse<object> response = exception switch
             {
-                response = ApiResponse<object>.FailureResponse(
-                    message: exception.Message,
+                ValidationException vex => ApiResponse<object>.FailureResponse(
+                    message: vex.Message,
                     code: "VALIDATION_ERROR",
-                    errors: vex.Errors
-                );
-            }
-            else
-            {
-                response = ApiResponse<object>.FailureResponse(
+                    errors: vex.Errors),
+
+                NotFoundException => ApiResponse<object>.FailureResponse(
                     message: exception.Message,
-                    code: exception.GetType().Name
-                );
-            }
+                    code: "NOT_FOUND"),
 
-            var json = JsonSerializer.Serialize(response);
-            await context.Response.WriteAsync(json);
+                ConflictException => ApiResponse<object>.FailureResponse(
+                    message: exception.Message,
+                    code: "CONFLICT"),
 
+                UnauthorizedException => ApiResponse<object>.FailureResponse(
+                    message: exception.Message,
+                    code: "UNAUTHORIZED"),
+
+                ForbiddenException => ApiResponse<object>.FailureResponse(
+                    message: exception.Message,
+                    code: "FORBIDDEN"),
+
+                _ => ApiResponse<object>.FailureResponse(
+                    message: "Internal server error.",
+                    code: "INTERNAL_SERVER_ERROR")
+            };
+
+            await context.Response.WriteAsJsonAsync(response);
         }
     }
 }
