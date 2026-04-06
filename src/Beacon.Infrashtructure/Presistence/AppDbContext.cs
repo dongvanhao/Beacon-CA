@@ -1,38 +1,25 @@
-﻿using Beacon.Domain.Entities.Checkins;
-using Beacon.Domain.Entities.Identity;
-using Beacon.Domain.Entities.Notification;
-using Beacon.Domain.Entities.Safety;
-using Beacon.Domain.Entities.Setting;
-using Beacon.Domain.Entities.Storage;
+﻿using Beacon.Domain.Entities.Identity;
+using Beacon.Domain.Entities.User;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Beacon.Infrashtructure.Presistence
 {
     public class AppDbContext : DbContext
     {
+        // 🔥 Identity DbSets
+        public DbSet<Admin> Admins => Set<Admin>();
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<Permission> Permissions => Set<Permission>();
+        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+        public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
+        public DbSet<RefreshTokenAdmin> RefreshTokenAdmins => Set<RefreshTokenAdmin>();
+
+        // User module DbSets
         public DbSet<User> Users => Set<User>();
-        public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
-        public DbSet<UserDevice> UserDevices => Set<UserDevice>();
-
-        public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
-        public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
-        public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
-
-        public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
-        public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
-
-        public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
-
-        public DbSet<Checkin> Checkins => Set<Checkin>();
-        public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
-
-        public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
-        public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+        public DbSet<UserSetting> UserSettings => Set<UserSetting>();
+        public DbSet<UserRefreshToken> RefreshTokens => Set<UserRefreshToken>();
+        public DbSet<Media> Media => Set<Media>();
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
@@ -41,13 +28,55 @@ namespace Beacon.Infrashtructure.Presistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // 🔥 Default schema (rất nên có khi project lớn)
+            modelBuilder.HasDefaultSchema("identity");
+
+            // 🔥 Apply tất cả config từ assembly
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
-            modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
-            modelBuilder.Entity<EmergencyContact>().HasQueryFilter(x => !x.IsDeleted);
-            modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
+            // 🔥 Global convention (optional nhưng xịn)
+            // modelBuilder.UseSnakeCaseNamingConvention();
 
             base.OnModelCreating(modelBuilder);
         }
+
+        // 🔥 Audit tự động (CreatedAt / UpdatedAt)
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            ApplyAuditing();
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        public override int SaveChanges()
+        {
+            ApplyAuditing();
+            return base.SaveChanges();
+        }
+
+        private void ApplyAuditing()
+        {
+            var entries = ChangeTracker.Entries()
+                .Where(e => e.Entity is IAuditableEntity &&
+                           (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+            foreach (var entry in entries)
+            {
+                var entity = (IAuditableEntity)entry.Entity;
+
+                if (entry.State == EntityState.Added)
+                {
+                    entity.CreatedAt = DateTime.UtcNow;
+                }
+
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+    }
+
+    // 🔥 Interface để đánh dấu entity cần audit
+    public interface IAuditableEntity
+    {
+        DateTime CreatedAt { get; set; }
+        DateTime UpdatedAt { get; set; }
     }
 }

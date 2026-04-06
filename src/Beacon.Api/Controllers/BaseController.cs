@@ -1,6 +1,6 @@
-﻿using Beacon.Shared.Common.Responses;
+﻿using Beacon.Api.Common;
+using Beacon.Shared.Common.Responses;
 using Beacon.Shared.Results;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Beacon.Api.Controllers
@@ -16,7 +16,9 @@ namespace Beacon.Api.Controllers
                 return Ok(ApiResponse<object>.SuccessResponse(null, successMessage));
             }
 
-            return BadRequest(ApiResponse<object>.FailureResponse(result.Error.Message));
+            var statusCode = ErrorHttpStatusMapper.Map(result.Error.Code);
+            return StatusCode(statusCode,
+                ApiResponse<object>.FailureResponse(result.Error.Message, result.Error.Code));
         }
 
         protected IActionResult HandleResult<T>(Result<T> result, string successMessage = "Success")
@@ -26,7 +28,9 @@ namespace Beacon.Api.Controllers
                 return Ok(ApiResponse<T>.SuccessResponse(result.Value, successMessage));
             }
 
-            return BadRequest(ApiResponse<T>.FailureResponse(result.Error.Message));
+            var statusCode = ErrorHttpStatusMapper.Map(result.Error.Code);
+            return StatusCode(statusCode,
+                ApiResponse<T>.FailureResponse(result.Error.Message, result.Error.Code));
         }
 
         protected IActionResult CreatedResult<T>(Result<T> result, string actionName, object routeValues, string successMessage = "Created successfully")
@@ -37,7 +41,9 @@ namespace Beacon.Api.Controllers
                     ApiResponse<T>.SuccessResponse(result.Value, successMessage));
             }
 
-            return BadRequest(ApiResponse<T>.FailureResponse(result.Error.Message));
+            var statusCode = ErrorHttpStatusMapper.Map(result.Error.Code);
+            return StatusCode(statusCode,
+                ApiResponse<T>.FailureResponse(result.Error.Message, result.Error.Code));
         }
     }
 }
