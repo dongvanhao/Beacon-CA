@@ -1,7 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"e:\\\\BackEnd-dotnet\\\\Beacon-CA\" log --oneline --max-count=10)"
+      "Bash(dotnet build*)",
+      "Bash(dotnet test*)",
+      "Bash(dotnet restore*)",
+      "Bash(dotnet ef migrations list*)",
+      "Bash(git -C * log*)",
+      "Bash(git -C * status*)",
+      "Bash(git -C * diff*)"
+    ],
+    "deny": [
+      "Bash(dotnet ef database drop*)",
+      "Bash(git push --force*)"
     ]
   }
 }

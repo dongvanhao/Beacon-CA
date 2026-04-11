@@ -1,4 +1,5 @@
-﻿using Beacon.Domain.Entities.Checkins;
+﻿using Beacon.Domain.Common;
+using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Notification;
 using Beacon.Domain.Entities.Safety;
@@ -19,6 +20,13 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
 
+        public DbSet<Admin> Admins => Set<Admin>();
+        public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
+        public DbSet<Role> Roles => Set<Role>();
+        public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
+        public DbSet<Permission> Permissions => Set<Permission>();
+        public DbSet<RefreshTokenAdmin> RefreshTokenAdmins => Set<RefreshTokenAdmin>();
+
         public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
         public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
         public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
@@ -37,6 +45,19 @@ namespace Beacon.Infrashtructure.Presistence
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
         {
+        }
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var entry in ChangeTracker.Entries<AuditableEntity>())
+        {
+            if (entry.State == EntityState.Added)
+                entry.Property(nameof(AuditableEntity.CreatedAtUtc)).CurrentValue = now;
+
+            if (entry.State is EntityState.Added or EntityState.Modified)
+                entry.Property(nameof(AuditableEntity.UpdatedAtUtc)).CurrentValue = now;
+        }
+            return await base.SaveChangesAsync(cancellationToken);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

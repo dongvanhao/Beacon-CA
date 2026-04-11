@@ -1,6 +1,1 @@
-{
-  "statusLine": {
-    "type": "command",
-    "command": "bash /e/BackEnd-dotnet/Beacon-CA/.claude/statusline-command.sh"
-  }
-}
+{}

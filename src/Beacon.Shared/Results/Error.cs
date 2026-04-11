@@ -15,7 +15,7 @@ namespace Beacon.Shared.Results
     */
     #endregion
 
-    public enum ErrorType { Validation, NotFound, Conflict, Unauthorized, Forbidden, Failure}
+    public enum ErrorType { Validation = 0, NotFound = 1, Conflict = 2, Unauthorized = 3, Forbidden = 4, Failure = 5}
     public sealed class Error
     {
         public static readonly Error None = new(string.Empty, string.Empty, ErrorType.Failure);

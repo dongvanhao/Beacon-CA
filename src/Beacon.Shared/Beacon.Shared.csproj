@@ -12,10 +12,14 @@
     <Folder Include="Abtractions\" />
 
     <Folder Include="Common\Guards\" />
-    <Folder Include="Common\Pagination\" />
-    <Folder Include="Constants\" />
     <Folder Include="Helpers\" />
 
+  </ItemGroup>
+
+
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
   </ItemGroup>
 
 

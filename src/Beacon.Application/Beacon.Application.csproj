@@ -7,10 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    
-    <Folder Include="Common\Behaviors\" />
     <Folder Include="Common\Dtos\" />
-    <Folder Include="Common\Interfaces\IService\" />
     <Folder Include="Common\Mappings\" />
     <Folder Include="DependencyInjection\" />
     <Folder Include="Features\Checkins\" />
@@ -26,7 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="FluentValidation" Version="8.0.0" />
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
+    <PackageReference Include="MediatR" Version="14.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
   </ItemGroup>
 
   <ItemGroup>

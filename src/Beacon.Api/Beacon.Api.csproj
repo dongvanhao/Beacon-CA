@@ -13,6 +13,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="12.1.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="8.0.0" />
   </ItemGroup>
 
@@ -24,8 +26,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Beacon.Application\Beacon.Application.csproj" />
+    <ProjectReference Include="..\Beacon.Infrashtructure\Beacon.Infrashtructure.csproj" />
     <ProjectReference Include="..\Beacon.Shared\Beacon.Shared.csproj" />
-    <ProjectReference Include="..\tests\Beacon.IntergrationTests\Beacon.IntergrationTests.csproj" />
   </ItemGroup>
 
 </Project>

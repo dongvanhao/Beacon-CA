@@ -87,8 +87,9 @@ Feature folders exist in both `Application` and `Domain` for:
 ## EF Core Conventions
 
 - Configurations use Fluent API in `Infrashtructure/Presistence/Configuration/`
-- Soft-delete query filters are applied per entity in the config class
+- Soft-delete query filters are applied in `AppDbContext.OnModelCreating`, NOT in the config class
 - Register new `IEntityTypeConfiguration<T>` classes — they are auto-discovered via `ApplyConfigurationsFromAssembly`
+- Always add `DbSet<T>` to `AppDbContext` when creating a new entity
 
 ## Exception Handling
 
@@ -96,3 +97,28 @@ Global middleware in `Beacon.Api` maps exceptions to HTTP codes:
 - `NotFoundException` → 404, `ConflictException` → 409, `UnauthorizedException` → 401, `ForbiddenException` → 403, `ValidationException` → 400, unhandled → 500
 
 Throw these custom exceptions only for unexpected/unrecoverable errors; use `Result.Failure` for all expected business failures.
+
+## Repository Interfaces
+
+Location: `src/Beacon.Domain/IRepository/`
+- No `IRepository<T>` base interface exists yet — declare each interface directly
+- Implementations go in `src/Beacon.Infrashtructure/Repository/{Module}/`
+
+## DI Registration (current state)
+
+All services registered inline in `src/Beacon.Api/Program.cs`.
+Extension method folders (`DependencyInjection/`, `Dependencyinjection/`, `Extensions/`) exist but are empty.
+For new repositories: `builder.Services.AddScoped<I{Resource}Repository, {Resource}Repository>();`
+
+## Mapping
+
+**Mapster is NOT INSTALLED.** Do not generate `TypeAdapterConfig` or `IRegister` code.
+Use manual property assignment until Mapster is installed:
+```csharp
+var dto = new EntityDto { Id = entity.Id, Name = entity.Name };
+```
+
+## Namespace Quirk
+
+- Folder `src/Beacon.Domain/Entities/Settings/` → namespace `Beacon.Domain.Entities.Setting` (no 's')
+- Project name `Beacon.Infrashtructure` — intentional typo, do not rename
