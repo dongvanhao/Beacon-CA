@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"e:\\\\BackEnd-dotnet\\\\Beacon-CA\" log --oneline --max-count=10)"
+    ]
+  }
+}

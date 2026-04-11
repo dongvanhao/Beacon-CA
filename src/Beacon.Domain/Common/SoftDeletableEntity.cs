@@ -10,5 +10,17 @@ namespace Beacon.Domain.Common
     {
         public bool IsDeleted { get; private set; } 
         public DateTime? DeletedAtUtc { get; private set; }
+
+        public void Delete()
+        {
+            IsDeleted = true;
+            DeletedAtUtc = DateTime.UtcNow;
+        }
+
+        public void Restore()
+        {
+            IsDeleted = false;
+            DeletedAtUtc = null;
+        }
     }
 }

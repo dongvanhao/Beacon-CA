@@ -9,6 +9,14 @@ namespace Beacon.Api.Controllers
     [ApiController]
     public abstract class BaseController : ControllerBase //BaseController giúp tránh lặp logic convert Result<T> -> ApiResponse<T> ở mọi controller.
     {
+        protected IActionResult HandleResult<T>(Result<T> result, string successMessage = "Success")
+        {
+            if (result.IsSuccess)
+                return Ok(ApiResponse<T>.SuccessResponse(result.Value, successMessage));
+
+            return MappErrorToResponse(ApiResponse<T>.FailureResponse(result.Error.Message, result.Error.Code), result.Error.Type);
+        }
+
         protected IActionResult HandleResult(Result result, string successMessage = "Success")
         {
             if (result.IsSuccess)
@@ -16,28 +24,31 @@ namespace Beacon.Api.Controllers
                 return Ok(ApiResponse<object>.SuccessResponse(null, successMessage));
             }
 
-            return BadRequest(ApiResponse<object>.FailureResponse(result.Error.Message));
+            return MappErrorToResponse(ApiResponse<object>.FailureResponse(result.Error.Message, result.Error.Code), result.Error.Type);
         }
 
-        protected IActionResult HandleResult<T>(Result<T> result, string successMessage = "Success")
+        protected IActionResult CreatedResult<T>(string location, Result<T> result, string successMessage = "Created successfully")
         {
             if (result.IsSuccess)
             {
-                return Ok(ApiResponse<T>.SuccessResponse(result.Value, successMessage));
+                return Created(location, ApiResponse<T>.SuccessResponse(result.Value, successMessage));
             }
 
-            return BadRequest(ApiResponse<T>.FailureResponse(result.Error.Message));
+            return MappErrorToResponse(ApiResponse<T>.FailureResponse(result.Error.Message, result.Error.Code), result.Error.Type);
         }
 
-        protected IActionResult CreatedResult<T>(Result<T> result, string actionName, object routeValues, string successMessage = "Created successfully")
+        private IActionResult MappErrorToResponse<T>(ApiResponse<T> response, ErrorType errorType)
         {
-            if (result.IsSuccess)
+            return errorType switch
             {
-                return CreatedAtAction(actionName, routeValues,
-                    ApiResponse<T>.SuccessResponse(result.Value, successMessage));
-            }
-
-            return BadRequest(ApiResponse<T>.FailureResponse(result.Error.Message));
+                ErrorType.Validation => BadRequest(response),
+                ErrorType.NotFound => NotFound(response),
+                ErrorType.Conflict => Conflict(response),
+                ErrorType.Unauthorized => Unauthorized(response),
+                ErrorType.Forbidden => StatusCode(StatusCodes.Status403Forbidden, response),
+                ErrorType.Failure => BadRequest(response),
+                _ => BadRequest(response),
+            };
         }
     }
 }

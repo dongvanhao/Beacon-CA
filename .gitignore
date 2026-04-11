@@ -491,3 +491,4 @@ appsettings.Local.json
 # OS
 Thumbs.db
 .DS_Store
+.claude/memory.md

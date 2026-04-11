@@ -14,7 +14,7 @@ namespace Beacon.Shared.Common.Responses
         public string Message { get; set; } = string.Empty;
         public string? Code { get; set; }
         public T? Data { get; set; }
-        public object? Errors { get; set; }
+        public List<string>? Errors { get; set; }
         public static ApiResponse<T> SuccessResponse(T? data, string message = "Success", string? code = null)
         {
             return new ApiResponse<T>
@@ -27,7 +27,7 @@ namespace Beacon.Shared.Common.Responses
             };
         }
 
-        public static ApiResponse<T> FailureResponse(string message, string? code = null, object? errors = null)
+        public static ApiResponse<T> FailureResponse(string message, string? code = null, List<string>? errors = null)
         {
             return new ApiResponse<T>
             {
