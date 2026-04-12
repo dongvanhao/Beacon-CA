@@ -17,5 +17,12 @@ namespace Beacon.Domain.Entities.Setting
 
         public User User { get; private set; } = default!;
         protected AppPreference() { }
+
+        public static AppPreference CreateDefault(Guid userId)
+            => new() { UserId = userId };
+
+        public void CompleteOnboarding() => IsOnboardingCompleted = true;
+        public void UpdateLanguage(string languageCode) => LanguageCode = languageCode;
+        public void UpdateTheme(string theme) => Theme = theme;
     }
 }

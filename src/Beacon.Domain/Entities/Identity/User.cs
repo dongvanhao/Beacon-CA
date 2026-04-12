@@ -44,5 +44,15 @@ namespace Beacon.Domain.Entities.Identity
         public ICollection<NotificationDelivery> NotificationDeliveries { get; private set; } = new List<NotificationDelivery>();
 
         protected User() { }
-}
+
+        public static User Create(string email, string passwordHash, string fullName, string? phoneNumber = null)
+            => new() { Email = email.ToLowerInvariant(), PasswordHash = passwordHash, FullName = fullName, PhoneNumber = phoneNumber };
+
+        public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
+        public void UpdatePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
+        public void VerifyEmail() => IsEmailVerified = true;
+        public void Deactivate() => IsActive = false;
+        public void Activate() => IsActive = true;
+        public void UpdateAvatar(Guid mediaObjectId) => AvatarMediaObjectId = mediaObjectId;
+    }
 }

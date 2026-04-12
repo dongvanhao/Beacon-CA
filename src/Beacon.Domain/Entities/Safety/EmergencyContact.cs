@@ -28,5 +28,21 @@ namespace Beacon.Domain.Entities.Safety
         public ICollection<NotificationDelivery> NotificationDeliveries { get; private set; } = new List<NotificationDelivery>();
 
         protected EmergencyContact() { }
+
+        public static EmergencyContact Create(Guid userId, string fullName, string contactValue,
+            ContactChannelType channelType, string? relationship = null, int priorityOrder = 1)
+            => new()
+            {
+                UserId = userId,
+                FullName = fullName,
+                ContactValue = contactValue,
+                ChannelType = channelType,
+                Relationship = relationship,
+                PriorityOrder = priorityOrder
+            };
+
+        public void SetAsPrimary() => IsPrimary = true;
+        public void Verify() => IsVerified = true;
+        public void Deactivate() => IsActive = false;
     }
 }

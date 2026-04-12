@@ -30,5 +30,22 @@ namespace Beacon.Domain.Entities.Setting
 
         public User User { get; private set; } = default!;
         protected NotificationPreference() { }
+
+        public static NotificationPreference CreateDefault(Guid userId)
+            => new() { UserId = userId };
+
+        public void SetQuietHours(TimeOnly start, TimeOnly end)
+        {
+            QuietHoursEnabled = true;
+            QuietHoursStartLocalTime = start;
+            QuietHoursEndLocalTime = end;
+        }
+
+        public void DisableQuietHours()
+        {
+            QuietHoursEnabled = false;
+            QuietHoursStartLocalTime = null;
+            QuietHoursEndLocalTime = null;
+        }
     }
 }

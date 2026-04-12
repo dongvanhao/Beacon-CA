@@ -23,4 +23,13 @@ public class SafetySetting : AuditableEntity
     public User User { get; private set; } = default!;
 
     protected SafetySetting() { }
+
+    public static SafetySetting CreateDefault(Guid userId, TimeOnly dailyDeadlineLocalTime)
+        => new() { UserId = userId, DailyDeadlineLocalTime = dailyDeadlineLocalTime };
+
+    public void UpdateDeadline(TimeOnly newDeadline) => DailyDeadlineLocalTime = newDeadline;
+    public void EnableMonitoring() => IsMonitoringEnabled = true;
+    public void DisableMonitoring() => IsMonitoringEnabled = false;
+    public void EnableAutoAlert() => IsAutoAlertEnabled = true;
+    public void DisableAutoAlert() => IsAutoAlertEnabled = false;
 }
