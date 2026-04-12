@@ -77,6 +77,9 @@ Choose the correct base for new entities:
 
 Feature folders exist in both `Application` and `Domain` for:
 - **Identity** — users, JWT auth, refresh tokens, devices, roles (`User`, `Admin`)
+  -  User auth: Register/Login/Logout/RefreshToken — `Application/Features/Identity/Commands/`
+  -  Admin auth: Login/Logout với RBAC (roles + permissions) — same folder
+  -  Authorization: `[HasPermission("x:y")]`, `[AdminOnly]` — `Api/Authorization/`
 - **Safety** — daily records, emergency contacts, alert incidents
 - **Checkins** — checkin records with media attachments
 - **Notification** — delivery tracking, multi-channel (email, SMS, push)
@@ -122,3 +125,21 @@ var dto = new EntityDto { Id = entity.Id, Name = entity.Name };
 
 - Folder `src/Beacon.Domain/Entities/Settings/` → namespace `Beacon.Domain.Entities.Setting` (no 's')
 - Project name `Beacon.Infrashtructure` — intentional typo, do not rename
+
+## Skills & Agents — Quick Reference
+
+| Lệnh | Dùng khi |
+|---|---|
+| `/create-entity` | Chỉ cần Domain Entity + EF config, chưa cần endpoint |
+| `/create-endpoint` | Full CRUD mới: entity → repository → handler → controller |
+| `/add-validation` | Thêm FluentValidation cho DTO mới |
+| `/add-migration` | Sau khi thay đổi entity/EF config |
+| `/write-unit-test` | Sau khi implement Handler/Service mới |
+| `/setup-di` | Hướng dẫn đăng ký DI hoặc tạo extension method |
+| `/create-auth-handler` | Tham khảo pattern User Auth đã implement |
+| `/create-admin-auth` | Tham khảo pattern Admin Auth + RBAC đã implement |
+
+| Agent | Gọi khi |
+|---|---|
+| `researcher` | So sánh packages, tìm best practice, research .NET ecosystem |
+| `api-reviewer` | Review convention/security/naming endpoint sau khi tạo xong |
