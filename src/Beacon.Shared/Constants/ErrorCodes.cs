@@ -16,6 +16,10 @@ namespace Beacon.Shared.Constants
             public const string TOKEN_EXPIRED = "TOKEN_EXPIRED";
             public const string TOKEN_INVALID = "TOKEN_INVALID";
             public const string ACCOUNT_INACTIVE = "ACCOUNT_INACTIVE";
+
+            public const string ADMIN_NOT_FOUND = "ADMIN_NOT_FOUND";
+            public const string ADMIN_INACTIVE = "ADMIN_INACTIVE";
+            public const string ADMIN_TOKEN_INVALID = "ADMIN_TOKEN_INVALID";
         }
 
         public static class Safety

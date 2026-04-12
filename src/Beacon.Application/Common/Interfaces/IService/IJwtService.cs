@@ -5,5 +5,6 @@ namespace Beacon.Application.Common.Interfaces.IService;
 public interface IJwtService
 {
     (string Token, DateTime ExpiresAt) GenerateAccessToken(User user);
+    (string Token, DateTime ExpiresAt) GenerateAdminAccessToken(Admin admin, IEnumerable<string> permissions);
     (string Token, DateTime ExpiresAt) GenerateRefreshToken();
 }
