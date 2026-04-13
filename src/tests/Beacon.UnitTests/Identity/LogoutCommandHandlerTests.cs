@@ -81,6 +81,6 @@ public class LogoutCommandHandlerTests
 
         // Assert — logout chỉ cần revoke token, không cần load User
         _userRepo.Verify(x => x.GetByIdAsync(It.IsAny<Guid>(), default), Times.Never);
-        _userRepo.Verify(x => x.GetByEmailAsync(It.IsAny<string>(), default), Times.Never);
+        _userRepo.Verify(x => x.GetByUsernameAsync(It.IsAny<string>(), default), Times.Never);
     }
 }

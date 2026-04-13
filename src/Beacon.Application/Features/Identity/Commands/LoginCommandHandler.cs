@@ -1,5 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Domain.Entities.Identity;
+using Beacon.Domain.Enums.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -9,6 +11,7 @@ namespace Beacon.Application.Features.Identity.Commands;
 
 public class LoginCommandHandler(
     IUserRepository userRepository,
+    IUserDeviceRepository deviceRepository,
     IJwtService jwtService) : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
     public async Task<Result<AuthResponse>> Handle(LoginCommand command, CancellationToken ct)
@@ -16,10 +19,10 @@ public class LoginCommandHandler(
         var req = command.Request;
 
         // 1. Find user
-        var user = await userRepository.GetByEmailAsync(req.Email, ct);
+        var user = await userRepository.GetByUsernameAsync(req.Username, ct);
         if (user is null)
             return Result<AuthResponse>.Failure(
-                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid email or password."));
+                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid username or password."));
 
         // 2. Check account status
         if (!user.IsActive)
@@ -29,18 +32,33 @@ public class LoginCommandHandler(
         // 3. Verify password
         if (!BCrypt.Net.BCrypt.Verify(req.Password, user.PasswordHash))
             return Result<AuthResponse>.Failure(
-                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid email or password."));
+                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid username or password."));
 
         // 4. Record login timestamp
         user.RecordLogin();
 
-        // 5. Generate tokens
-        var (accessToken, accessTokenExpiresAt) = jwtService.GenerateAccessToken(user);
+        // 5. Revoke all active refresh tokens (enforce single-device login)
+        var activeTokens = await userRepository.GetActiveRefreshTokensByUserIdAsync(user.Id, ct);
+        foreach (var t in activeTokens)
+            t.Revoke();
+
+        // 6. Auto-detect device from User-Agent header — client không cần gửi device info
+        var (platform, deviceName) = ParseUserAgent(command.UserAgent);
+        var device = UserDevice.Create(user.Id, platform, deviceName, Guid.NewGuid().ToString());
+        await deviceRepository.AddAsync(device, ct);
+
+        // 7. Save device first to get its Id
+        await userRepository.SaveChangesAsync(ct);
+
+        // 8. Generate tokens — embed DeviceId in access token so /devices/register can identify session
+        var (accessToken, accessTokenExpiresAt) = jwtService.GenerateAccessToken(user, device.Id);
         var (refreshTokenValue, refreshTokenExpiresAt) = jwtService.GenerateRefreshToken();
-        var refreshToken = Beacon.Domain.Entities.Identity.RefreshToken.Create(
+
+        var refreshToken = RefreshToken.Create(
             userId: user.Id,
             token: refreshTokenValue,
-            expiresAtUtc: refreshTokenExpiresAt);
+            expiresAtUtc: refreshTokenExpiresAt,
+            userDeviceId: device.Id);
 
         await userRepository.AddRefreshTokenAsync(refreshToken, ct);
         await userRepository.SaveChangesAsync(ct);
@@ -48,11 +66,29 @@ public class LoginCommandHandler(
         return Result<AuthResponse>.Success(new AuthResponse
         {
             UserId = user.Id,
-            Email = user.Email,
+            Username = user.Username,
             FullName = user.FullName,
             AccessToken = accessToken,
             RefreshToken = refreshTokenValue,
             AccessTokenExpiresAt = accessTokenExpiresAt
         });
+    }
+
+    // Đọc User-Agent header để tự nhận diện thiết bị — client không cần khai báo
+    private static (DevicePlatform Platform, string DeviceName) ParseUserAgent(string? userAgent)
+    {
+        if (string.IsNullOrWhiteSpace(userAgent))
+            return (DevicePlatform.Unknown, "Unknown Device");
+
+        if (userAgent.Contains("Android"))
+            return (DevicePlatform.Android, "Android Device");
+
+        if (userAgent.Contains("iPhone") || userAgent.Contains("iPad"))
+            return (DevicePlatform.iOS, "iOS Device");
+
+        if (userAgent.Contains("Windows") || userAgent.Contains("Macintosh") || userAgent.Contains("Linux"))
+            return (DevicePlatform.Web, "Web Browser");
+
+        return (DevicePlatform.Unknown, "Unknown Device");
     }
 }

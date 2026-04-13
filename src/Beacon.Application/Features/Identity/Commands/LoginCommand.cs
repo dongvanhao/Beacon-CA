@@ -4,4 +4,4 @@ using MediatR;
 
 namespace Beacon.Application.Features.Identity.Commands;
 
-public record LoginCommand(LoginRequest Request) : IRequest<Result<AuthResponse>>;
+public record LoginCommand(LoginRequest Request, string? UserAgent = null) : IRequest<Result<AuthResponse>>;

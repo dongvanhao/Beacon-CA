@@ -10,11 +10,11 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await context.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
-    public async Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
-        => await context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), ct);
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
+        => await context.Users.FirstOrDefaultAsync(u => u.Username == username.ToLowerInvariant(), ct);
 
-    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
-        => await context.Users.AnyAsync(u => u.Email == email.ToLowerInvariant(), ct);
+    public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default)
+        => await context.Users.AnyAsync(u => u.Username == username.ToLowerInvariant(), ct);
 
     public async Task AddAsync(User user, CancellationToken ct = default)
         => await context.Users.AddAsync(user, ct);
@@ -27,6 +27,13 @@ public class UserRepository(AppDbContext context) : IUserRepository
             .FirstOrDefaultAsync(rt => rt.Token == token
                 && rt.RevokedAtUtc == null
                 && rt.ExpiresAtUtc > DateTime.UtcNow, ct);
+
+    public async Task<List<RefreshToken>> GetActiveRefreshTokensByUserIdAsync(Guid userId, CancellationToken ct = default)
+        => await context.RefreshTokens
+            .Where(rt => rt.UserId == userId
+                && rt.RevokedAtUtc == null
+                && rt.ExpiresAtUtc > DateTime.UtcNow)
+            .ToListAsync(ct);
 
     public async Task SaveChangesAsync(CancellationToken ct = default)
         => await context.SaveChangesAsync(ct);

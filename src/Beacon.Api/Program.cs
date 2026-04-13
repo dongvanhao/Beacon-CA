@@ -72,6 +72,7 @@ builder.Services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Ass
 
 //  Auth — Repository + Service
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 
@@ -140,8 +141,8 @@ using (var scope = app.Services.CreateScope())
     // Seed SuperAdmin — chỉ chạy khi DB chưa có Admin nào
     if (!db.Admins.Any())
     {
-        var seedEmail    = app.Configuration["SeedAdmin:Email"]
-            ?? throw new InvalidOperationException("SeedAdmin:Email is not configured. Set via appsettings or environment variable SeedAdmin__Email.");
+        var seedUsername = app.Configuration["SeedAdmin:Username"]
+            ?? throw new InvalidOperationException("SeedAdmin:Username is not configured. Set via appsettings or environment variable SeedAdmin__Username.");
         var seedPassword = app.Configuration["SeedAdmin:Password"]
             ?? throw new InvalidOperationException("SeedAdmin:Password is not configured. Set via appsettings or environment variable SeedAdmin__Password.");
 
@@ -168,14 +169,14 @@ using (var scope = app.Services.CreateScope())
 
         // 4. Tạo Admin với password được hash
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(seedPassword);
-        var admin = Admin.Create(seedEmail, passwordHash, "Super Admin");
+        var admin = Admin.Create(seedUsername, passwordHash, "Super Admin");
         db.Admins.Add(admin);
 
         // 5. Gán role SuperAdmin cho admin
         db.AdminRoles.Add(AdminRole.Create(admin.Id, superAdminRole.Id));
 
         db.SaveChanges();
-        logger.LogInformation("SuperAdmin seeded successfully: {Email}", seedEmail);
+        logger.LogInformation("SuperAdmin seeded successfully: {Username}", seedUsername);
     }
 }
 

@@ -11,7 +11,7 @@ namespace Beacon.Infrashtructure.Services;
 
 public class JwtService(IConfiguration configuration) : IJwtService
 {
-    public (string Token, DateTime ExpiresAt) GenerateAccessToken(User user)
+    public (string Token, DateTime ExpiresAt) GenerateAccessToken(User user, Guid deviceId)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"]!;
@@ -27,7 +27,8 @@ public class JwtService(IConfiguration configuration) : IJwtService
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim("device_id", deviceId.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -57,7 +58,7 @@ public class JwtService(IConfiguration configuration) : IJwtService
         {
             new(JwtRegisteredClaimNames.Sub, admin.Id.ToString()),
             new(ClaimTypes.NameIdentifier, admin.Id.ToString()),
-            new(ClaimTypes.Email, admin.Email),
+            new(ClaimTypes.Name, admin.Username),
             new("actor", "admin"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

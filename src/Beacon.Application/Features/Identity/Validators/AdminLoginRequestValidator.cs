@@ -7,9 +7,9 @@ public class AdminLoginRequestValidator : AbstractValidator<AdminLoginRequest>
 {
     public AdminLoginRequestValidator()
     {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Invalid email format.");
+        RuleFor(x => x.Username)
+            .NotEmpty().WithMessage("Username is required.")
+            .MaximumLength(50).WithMessage("Username must not exceed 50 characters.");
 
         RuleFor(x => x.Password)
             .NotEmpty().WithMessage("Password is required.");

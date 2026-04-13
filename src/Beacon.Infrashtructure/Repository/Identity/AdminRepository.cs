@@ -10,20 +10,20 @@ public class AdminRepository(AppDbContext context) : IAdminRepository
     public async Task<Admin?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await context.Admins.FirstOrDefaultAsync(a => a.Id == id, ct);
 
-    public async Task<Admin?> GetByEmailAsync(string email, CancellationToken ct = default)
+    public async Task<Admin?> GetByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Admins
-            .FirstOrDefaultAsync(a => a.Email == email.ToLowerInvariant(), ct);
+            .FirstOrDefaultAsync(a => a.Username == username.ToLowerInvariant(), ct);
 
-    public async Task<Admin?> GetByEmailWithRolesAsync(string email, CancellationToken ct = default)
+    public async Task<Admin?> GetByUsernameWithRolesAsync(string username, CancellationToken ct = default)
         => await context.Admins
             .Include(a => a.AdminRoles)
                 .ThenInclude(ar => ar.Role)
                     .ThenInclude(r => r.RolePermissions)
                         .ThenInclude(rp => rp.Permission)
-            .FirstOrDefaultAsync(a => a.Email == email.ToLowerInvariant(), ct);
+            .FirstOrDefaultAsync(a => a.Username == username.ToLowerInvariant(), ct);
 
-    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
-        => await context.Admins.AnyAsync(a => a.Email == email.ToLowerInvariant(), ct);
+    public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default)
+        => await context.Admins.AnyAsync(a => a.Username == username.ToLowerInvariant(), ct);
 
     public async Task AddAsync(Admin admin, CancellationToken ct = default)
         => await context.Admins.AddAsync(admin, ct);

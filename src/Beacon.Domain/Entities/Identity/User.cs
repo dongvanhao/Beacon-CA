@@ -15,7 +15,7 @@ namespace Beacon.Domain.Entities.Identity
 {
     public class User : AuditableEntity
     {
-        public string Email { get; private set; } = default!;
+        public string Username { get; private set; } = default!;
         public string PasswordHash { get; private set; } = default!;
         public string FullName { get; private set; } = default!;
 
@@ -47,8 +47,8 @@ namespace Beacon.Domain.Entities.Identity
 
         protected User() { }
 
-        public static User Create(string email, string passwordHash, string fullName, string? phoneNumber = null)
-            => new() { Email = email.ToLowerInvariant(), PasswordHash = passwordHash, FullName = fullName, PhoneNumber = phoneNumber };
+        public static User Create(string username, string passwordHash, string fullName, string? phoneNumber = null)
+            => new() { Username = username.ToLowerInvariant(), PasswordHash = passwordHash, FullName = fullName, PhoneNumber = phoneNumber };
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
         public void UpdatePassword(string newPasswordHash) => PasswordHash = newPasswordHash;

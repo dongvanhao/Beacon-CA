@@ -17,10 +17,10 @@ public class LoginAdminCommandHandler(
         var req = command.Request;
 
         // 1. Tìm Admin kèm đầy đủ Roles → Permissions
-        var admin = await adminRepository.GetByEmailWithRolesAsync(req.Email, ct);
+        var admin = await adminRepository.GetByUsernameWithRolesAsync(req.Username, ct);
         if (admin is null)
             return Result<AdminAuthResponse>.Failure(
-                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid email or password."));
+                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid username or password."));
 
         // 2. Kiểm tra trạng thái tài khoản
         if (!admin.IsActive)
@@ -30,7 +30,7 @@ public class LoginAdminCommandHandler(
         // 3. Xác thực mật khẩu
         if (!BCrypt.Net.BCrypt.Verify(req.Password, admin.PasswordHash))
             return Result<AdminAuthResponse>.Failure(
-                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid email or password."));
+                Error.Unauthorized(ErrorCodes.Identity.INVALID_CREDENTIALS, "Invalid username or password."));
 
         // 4. Ghi nhận thời điểm đăng nhập
         admin.RecordLogin();
@@ -57,7 +57,7 @@ public class LoginAdminCommandHandler(
         return Result<AdminAuthResponse>.Success(new AdminAuthResponse
         {
             AdminId = admin.Id,
-            Email = admin.Email,
+            Username = admin.Username,
             FullName = admin.FullName,
             AccessToken = accessToken,
             RefreshToken = refreshTokenValue,

@@ -12,6 +12,7 @@ namespace Beacon.UnitTests.Identity;
 public class RegisterCommandHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepo = new();
+    private readonly Mock<IUserDeviceRepository> _deviceRepo = new();
     private readonly Mock<IJwtService> _jwtService = new();
     private readonly RegisterCommandHandler _handler;
 
@@ -21,24 +22,24 @@ public class RegisterCommandHandlerTests
     public RegisterCommandHandlerTests()
     {
         _jwtService
-            .Setup(x => x.GenerateAccessToken(It.IsAny<User>()))
+            .Setup(x => x.GenerateAccessToken(It.IsAny<User>(), It.IsAny<Guid>()))
             .Returns(("access-token", AccessExpiry));
         _jwtService
             .Setup(x => x.GenerateRefreshToken())
             .Returns(("refresh-token", RefreshExpiry));
 
-        _handler = new RegisterCommandHandler(_userRepo.Object, _jwtService.Object);
+        _handler = new RegisterCommandHandler(_userRepo.Object, _deviceRepo.Object, _jwtService.Object);
     }
 
     [Fact]
-    public async Task Handle_WhenEmailAlreadyExists_ReturnsConflictResult()
+    public async Task Handle_WhenUsernameAlreadyExists_ReturnsConflictResult()
     {
         // Arrange
         _userRepo
-            .Setup(x => x.ExistsByEmailAsync("test@example.com", default))
+            .Setup(x => x.ExistsByUsernameAsync("existinguser", default))
             .ReturnsAsync(true);
 
-        var command = BuildCommand("test@example.com");
+        var command = BuildCommand("existinguser");
 
         // Act
         var result = await _handler.Handle(command, default);
@@ -54,17 +55,17 @@ public class RegisterCommandHandlerTests
     {
         // Arrange
         _userRepo
-            .Setup(x => x.ExistsByEmailAsync("new@example.com", default))
+            .Setup(x => x.ExistsByUsernameAsync("newuser", default))
             .ReturnsAsync(false);
 
-        var command = BuildCommand("new@example.com", fullName: "John Doe");
+        var command = BuildCommand("newuser", fullName: "John Doe");
 
         // Act
         var result = await _handler.Handle(command, default);
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        result.Value.Email.Should().Be("new@example.com");
+        result.Value.Username.Should().Be("newuser");
         result.Value.FullName.Should().Be("John Doe");
         result.Value.AccessToken.Should().Be("access-token");
         result.Value.RefreshToken.Should().Be("refresh-token");
@@ -76,26 +77,27 @@ public class RegisterCommandHandlerTests
     {
         // Arrange
         _userRepo
-            .Setup(x => x.ExistsByEmailAsync(It.IsAny<string>(), default))
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
             .ReturnsAsync(false);
 
-        var command = BuildCommand("new@example.com");
+        var command = BuildCommand("newuser");
 
         // Act
         await _handler.Handle(command, default);
 
         // Assert
         _userRepo.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Once);
+        _deviceRepo.Verify(x => x.AddAsync(It.IsAny<UserDevice>(), default), Times.Once);
         _userRepo.Verify(x => x.AddRefreshTokenAsync(It.IsAny<RefreshToken>(), default), Times.Once);
-        _userRepo.Verify(x => x.SaveChangesAsync(default), Times.Once);
+        _userRepo.Verify(x => x.SaveChangesAsync(default), Times.Exactly(2));
     }
 
     [Fact]
-    public async Task Handle_WhenValidRequest_NormalizesEmailToLowercase()
+    public async Task Handle_WhenValidRequest_NormalizesUsernameToLowercase()
     {
         // Arrange
         _userRepo
-            .Setup(x => x.ExistsByEmailAsync(It.IsAny<string>(), default))
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
             .ReturnsAsync(false);
 
         User? capturedUser = null;
@@ -103,14 +105,14 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.AddAsync(It.IsAny<User>(), default))
             .Callback<User, CancellationToken>((u, _) => capturedUser = u);
 
-        var command = BuildCommand("UPPER@Example.COM");
+        var command = BuildCommand("UPPERCASE_User");
 
         // Act
         await _handler.Handle(command, default);
 
         // Assert
         capturedUser.Should().NotBeNull();
-        capturedUser!.Email.Should().Be("upper@example.com");
+        capturedUser!.Username.Should().Be("uppercase_user");
     }
 
     [Fact]
@@ -118,7 +120,7 @@ public class RegisterCommandHandlerTests
     {
         // Arrange
         _userRepo
-            .Setup(x => x.ExistsByEmailAsync(It.IsAny<string>(), default))
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
             .ReturnsAsync(false);
 
         User? capturedUser = null;
@@ -138,13 +140,13 @@ public class RegisterCommandHandlerTests
     }
 
     private static RegisterCommand BuildCommand(
-        string email = "user@example.com",
+        string username = "testuser",
         string password = "Password123",
         string fullName = "Test User",
         string? phoneNumber = null)
         => new(new RegisterRequest
         {
-            Email = email,
+            Username = username,
             Password = password,
             FullName = fullName,
             PhoneNumber = phoneNumber
