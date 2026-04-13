@@ -23,6 +23,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
+
+//  Health Check
+builder.Services.AddHealthChecks()
+    .AddSqlServer(
+        connectionString: connectionString!,
+        name: "sqlserver",
+        tags: ["db", "sql"]);
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -102,6 +109,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+//  CORS — cho phép tất cả origin, method, header (*)
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Auto-apply pending EF Core migrations on startup (retry cho Docker — SQL Server khởi động chậm hơn API)
@@ -143,9 +161,14 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+//  Health Check endpoint
+app.MapHealthChecks("/health");
 
 app.Run();
