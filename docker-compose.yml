@@ -25,6 +25,11 @@ services:
       ASPNETCORE_ENVIRONMENT: Development
       # Override connection string — ASP.NET Core tự đọc biến dạng này
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BeaconDb;User Id=sa;Password=BeaconDev@2024;TrustServerCertificate=True"
+      # JWT — dùng env var thay vì appsettings (user-secrets không chạy trong Docker)
+      JwtSettings__SecretKey: "beacon-super-secret-key-for-dev-at-least-32-chars"
+      # Seed SuperAdmin — chỉ dùng cho dev, override bằng secrets manager trên production
+      SeedAdmin__Email: "superadmin@beacon.com"
+      SeedAdmin__Password: "Admin@123456"
     ports:
       - "5000:8080"
     depends_on:

@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Storage;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Storage
+using Beacon.Domain.Entities.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -44,3 +46,4 @@ public class MediaObjectConfiguration : IEntityTypeConfiguration<MediaObject>
             .IsUnique();
     }
 }
+#endif

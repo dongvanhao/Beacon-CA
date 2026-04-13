@@ -1,4 +1,4 @@
-﻿using Beacon.Domain.Common;
+using Beacon.Domain.Common;
 using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Notification;
@@ -27,20 +27,21 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RefreshTokenAdmin> RefreshTokenAdmins => Set<RefreshTokenAdmin>();
 
-        public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
-        public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
-        public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
+        // === CÁC BẢNG TÍNH NĂNG CHƯA LÀM TỚI (Tạm ẩn) ===
+        // public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
+        // public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
+        // public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
 
-        public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
-        public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
+        // public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
+        // public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
 
-        public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
+        // public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
 
-        public DbSet<Checkin> Checkins => Set<Checkin>();
-        public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
+        // public DbSet<Checkin> Checkins => Set<Checkin>();
+        // public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
 
-        public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
-        public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+        // public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
+        // public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)
@@ -62,11 +63,22 @@ namespace Beacon.Infrashtructure.Presistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+            // Thay vì quét toàn bộ, chỉ apply map của các bảng Identity đang bật:
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.UserConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RefreshTokenConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.UserDeviceConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.AdminConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RefreshTokenAdminConfiguration());
+            
+            // Các bảng RBAC của Admin
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RoleConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.AdminRoleConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.PermissionConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RolePermissionConfiguration());
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
-            modelBuilder.Entity<EmergencyContact>().HasQueryFilter(x => !x.IsDeleted);
-            modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
+            // modelBuilder.Entity<EmergencyContact>().HasQueryFilter(x => !x.IsDeleted);
+            // modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
 
             base.OnModelCreating(modelBuilder);
         }

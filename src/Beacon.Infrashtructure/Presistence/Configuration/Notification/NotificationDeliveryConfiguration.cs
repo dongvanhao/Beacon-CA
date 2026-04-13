@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Notification;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Notification
+using Beacon.Domain.Entities.Notification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -63,3 +65,4 @@ public class NotificationDeliveryConfiguration : IEntityTypeConfiguration<Notifi
             .OnDelete(DeleteBehavior.SetNull);
     }
 }
+#endif

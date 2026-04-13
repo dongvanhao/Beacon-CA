@@ -24,5 +24,27 @@ namespace Beacon.Domain.Entities.Identity
         public UserDevice? UserDevice { get; private set; }
 
         protected RefreshToken() { }
+
+        public static RefreshToken Create(Guid userId, string token, DateTime expiresAtUtc,
+            string? createdByIp = null, Guid? userDeviceId = null)
+            => new()
+            {
+                UserId = userId,
+                Token = token,
+                ExpiresAtUtc = expiresAtUtc,
+                CreatedByIp = createdByIp,
+                UserDeviceId = userDeviceId
+            };
+
+        public void Revoke(string? revokedByIp = null, string? replacedByToken = null)
+        {
+            RevokedAtUtc = DateTime.UtcNow;
+            RevokedByIp = revokedByIp;
+            ReplacedByToken = replacedByToken;
+        }
+
+        public bool IsExpired => ExpiresAtUtc < DateTime.UtcNow;
+        public bool IsRevoked => RevokedAtUtc is not null;
+        public bool IsActive => !IsExpired && !IsRevoked;
     }
 }

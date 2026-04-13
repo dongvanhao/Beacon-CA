@@ -22,92 +22,6 @@ namespace Beacon.Infrashtructure.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Beacon.Domain.Entities.Checkins.Checkin", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CheckedInAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly>("CheckinDate")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("DailySafetyRecordId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DailySafetyRecordId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("Checkins", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Checkins.CheckinMedia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<Guid>("CheckinId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("MediaObjectId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MediaObjectId");
-
-                    b.HasIndex("CheckinId", "SortOrder");
-
-                    b.ToTable("CheckinMedias", (string)null);
-                });
-
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.Admin", b =>
                 {
                     b.Property<Guid>("Id")
@@ -116,11 +30,6 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("FullName")
                         .IsRequired()
@@ -141,9 +50,14 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("Username")
                         .IsUnique();
 
                     b.ToTable("Admins", (string)null);
@@ -259,10 +173,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CreatedByIp")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
-
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("datetime2");
 
@@ -272,10 +182,6 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<DateTime?>("RevokedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("RevokedByIp")
-                        .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)");
 
                     b.Property<string>("Token")
                         .IsRequired()
@@ -354,11 +260,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -382,9 +283,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
                     b.Property<string>("TimeZone")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -393,11 +291,16 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AvatarMediaObjectId");
 
-                    b.HasIndex("Email")
+                    b.HasIndex("Username")
                         .IsUnique();
 
                     b.ToTable("Users", (string)null);
@@ -450,369 +353,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.ToTable("UserDevices", (string)null);
                 });
 
-            modelBuilder.Entity("Beacon.Domain.Entities.Notification.NotificationDelivery", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("AlertIncidentId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("AttempCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Body")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<int>("Channel")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("EmergencyContactId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("FailedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<int>("Kind")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ProviderMessageId")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Recipient")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime?>("SentAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UserDeviceId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmergencyContactId");
-
-                    b.HasIndex("UserDeviceId");
-
-                    b.HasIndex("AlertIncidentId", "Status");
-
-                    b.HasIndex("UserId", "SentAtUtc");
-
-                    b.ToTable("NotificationDeliveries", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("AcknowledgedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("DailySafetyRecordId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("FailureReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime?>("ResolvedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("SentAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("TriggereAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DailySafetyRecordId")
-                        .IsUnique();
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("AlertIncidents", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.DailySafetyRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("CheckedInAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateOnly>("Date")
-                        .HasColumnType("date");
-
-                    b.Property<DateTime>("DeadlineAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("LastEvaluatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("MarkedMissedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ReminderSentAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ResolvedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Date")
-                        .IsUnique();
-
-                    b.ToTable("DailySafetyRecords", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.EmergencyContact", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("ChannelType")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ContactValue")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("FullName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsVerified")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("PriorityOrder")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Relationship")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "ContactValue", "ChannelType");
-
-                    b.ToTable("EmergencyContacts", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.AppPreference", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsOnboardingCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("LanguageCode")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<string>("Theme")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("AppPreferences", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.NotificationPreference", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsEmailEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsPushEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsTelegramEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("QuietHoursEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<TimeOnly?>("QuietHoursEndLocalTime")
-                        .HasColumnType("time");
-
-                    b.Property<TimeOnly?>("QuietHoursStartLocalTime")
-                        .HasColumnType("time");
-
-                    b.Property<bool>("SendMissedCheckInAlert")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("SendReminders")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("SendResolvedAlert")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("NotificationPreferences", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.SafetySetting", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("AutoAlertDelayMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<TimeOnly>("DailyDeadlineLocalTime")
-                        .HasColumnType("time");
-
-                    b.Property<int>("GracePeriodMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsAutoAlertEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsMonitoringEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("ReminderBeforeMinutes")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .IsUnique();
-
-                    b.ToTable("SafetySettings", (string)null);
-                });
-
             modelBuilder.Entity("Beacon.Domain.Entities.Storage.MediaObject", b =>
                 {
                     b.Property<Guid>("Id")
@@ -824,17 +364,14 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("BucketName")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ChecksumSha256")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -843,8 +380,7 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<string>("ETag")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("FileSizeBytes")
                         .HasColumnType("bigint");
@@ -854,13 +390,11 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("ObjectKey")
                         .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("OriginalFileName")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("StorageProvider")
                         .HasColumnType("int");
@@ -873,48 +407,7 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BucketName", "ObjectKey")
-                        .IsUnique();
-
-                    b.ToTable("MediaObjects", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Checkins.Checkin", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Safety.DailySafetyRecord", "DailySafetyRecord")
-                        .WithOne("Checkin")
-                        .HasForeignKey("Beacon.Domain.Entities.Checkins.Checkin", "DailySafetyRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("Checkins")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("DailySafetyRecord");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Checkins.CheckinMedia", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Checkins.Checkin", "Checkin")
-                        .WithMany("MediaItems")
-                        .HasForeignKey("CheckinId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Beacon.Domain.Entities.Storage.MediaObject", "MediaObject")
-                        .WithMany()
-                        .HasForeignKey("MediaObjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Checkin");
-
-                    b.Navigation("MediaObject");
+                    b.ToTable("MediaObject");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.AdminRole", b =>
@@ -1005,117 +498,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Beacon.Domain.Entities.Notification.NotificationDelivery", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Safety.AlertIncident", "AlertIncident")
-                        .WithMany("NotificationDeliveries")
-                        .HasForeignKey("AlertIncidentId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Beacon.Domain.Entities.Safety.EmergencyContact", "EmergencyContact")
-                        .WithMany("NotificationDeliveries")
-                        .HasForeignKey("EmergencyContactId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.UserDevice", "UserDevice")
-                        .WithMany("NotificationDeliveries")
-                        .HasForeignKey("UserDeviceId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("NotificationDeliveries")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("AlertIncident");
-
-                    b.Navigation("EmergencyContact");
-
-                    b.Navigation("User");
-
-                    b.Navigation("UserDevice");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Safety.DailySafetyRecord", "DailySafetyRecord")
-                        .WithOne("AlertIncident")
-                        .HasForeignKey("Beacon.Domain.Entities.Safety.AlertIncident", "DailySafetyRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("AlertIncidents")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("DailySafetyRecord");
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.DailySafetyRecord", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("DailySafetyRecords")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.EmergencyContact", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("EmergencyContacts")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.AppPreference", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithOne("AppPreference")
-                        .HasForeignKey("Beacon.Domain.Entities.Setting.AppPreference", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.NotificationPreference", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithOne("NotificationPreference")
-                        .HasForeignKey("Beacon.Domain.Entities.Setting.NotificationPreference", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Setting.SafetySetting", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithOne("SafetySetting")
-                        .HasForeignKey("Beacon.Domain.Entities.Setting.SafetySetting", "UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Checkins.Checkin", b =>
-                {
-                    b.Navigation("MediaItems");
-                });
-
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.Admin", b =>
                 {
                     b.Navigation("AdminRoles");
@@ -1137,49 +519,14 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.User", b =>
                 {
-                    b.Navigation("AlertIncidents");
-
-                    b.Navigation("AppPreference");
-
-                    b.Navigation("Checkins");
-
-                    b.Navigation("DailySafetyRecords");
-
                     b.Navigation("Devices");
 
-                    b.Navigation("EmergencyContacts");
-
-                    b.Navigation("NotificationDeliveries");
-
-                    b.Navigation("NotificationPreference");
-
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("SafetySetting");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.UserDevice", b =>
                 {
-                    b.Navigation("NotificationDeliveries");
-
                     b.Navigation("RefreshTokens");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>
-                {
-                    b.Navigation("NotificationDeliveries");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.DailySafetyRecord", b =>
-                {
-                    b.Navigation("AlertIncident");
-
-                    b.Navigation("Checkin");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Safety.EmergencyContact", b =>
-                {
-                    b.Navigation("NotificationDeliveries");
                 });
 #pragma warning restore 612, 618
         }

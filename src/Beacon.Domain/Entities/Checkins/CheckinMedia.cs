@@ -21,5 +21,15 @@ namespace Beacon.Domain.Entities.Checkins
         public MediaObject MediaObject { get; private set; } = default!;
         protected CheckinMedia() { }
 
+        public static CheckinMedia Create(Guid checkinId, Guid mediaObjectId,
+            int sortOrder = 0, bool isPrimary = false, string? caption = null)
+            => new()
+            {
+                CheckinId = checkinId,
+                MediaObjectId = mediaObjectId,
+                SortOrder = sortOrder,
+                IsPrimary = isPrimary,
+                Caption = caption
+            };
     }
 }

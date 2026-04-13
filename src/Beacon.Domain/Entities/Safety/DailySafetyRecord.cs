@@ -28,5 +28,31 @@ namespace Beacon.Domain.Entities.Safety
         public Checkin? Checkin { get; private set; }
         public AlertIncident? AlertIncident { get; private set; }
         protected DailySafetyRecord() { }
+
+        public static DailySafetyRecord Create(Guid userId, DateOnly date, DateTime deadlineAtUtc)
+            => new() { UserId = userId, Date = date, DeadlineAtUtc = deadlineAtUtc };
+
+        public void MarkCheckedIn(DateTime checkedInAtUtc)
+        {
+            CheckedInAtUtc = checkedInAtUtc;
+            Status = SafetyStatus.CheckedIn;
+        }
+
+        public void MarkMissed()
+        {
+            MarkedMissedAtUtc = DateTime.UtcNow;
+            Status = SafetyStatus.Missed;
+        }
+
+        public void MarkAlerted() => Status = SafetyStatus.Alerted;
+
+        public void MarkResolved()
+        {
+            ResolvedAtUtc = DateTime.UtcNow;
+            Status = SafetyStatus.Resolved;
+        }
+
+        public void RecordReminderSent() => ReminderSentAtUtc = DateTime.UtcNow;
+        public void RecordEvaluation() => LastEvaluatedAtUtc = DateTime.UtcNow;
     }
 }

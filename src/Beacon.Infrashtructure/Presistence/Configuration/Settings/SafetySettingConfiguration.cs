@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Setting;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Settings
+using Beacon.Domain.Entities.Setting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -38,3 +40,4 @@ public class SafetySettingConfiguration : IEntityTypeConfiguration<SafetySetting
             .OnDelete(DeleteBehavior.Cascade);
     }
 }
+#endif

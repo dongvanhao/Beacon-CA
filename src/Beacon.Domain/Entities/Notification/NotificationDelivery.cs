@@ -38,5 +38,38 @@ namespace Beacon.Domain.Entities.Notification
         public UserDevice? UserDevice { get; private set; }
 
         protected NotificationDelivery() { }
+
+        public static NotificationDelivery Create(Guid userId, NotificationKind kind,
+            NotificationChannel channel, string recipient, string title, string body,
+            Guid? alertIncidentId = null, Guid? emergencyContactId = null, Guid? userDeviceId = null)
+            => new()
+            {
+                UserId = userId,
+                Kind = kind,
+                Channel = channel,
+                Status = NotificationStatus.Pending,
+                Recipient = recipient,
+                Title = title,
+                Body = body,
+                AlertIncidentId = alertIncidentId,
+                EmergencyContactId = emergencyContactId,
+                UserDeviceId = userDeviceId
+            };
+
+        public void MarkSent(string? providerMessageId = null)
+        {
+            SentAtUtc = DateTime.UtcNow;
+            Status = NotificationStatus.Sent;
+            ProviderMessageId = providerMessageId;
+        }
+
+        public void MarkFailed(string reason)
+        {
+            FailedAtUtc = DateTime.UtcNow;
+            FailureReason = reason;
+            Status = NotificationStatus.Failed;
+        }
+
+        public void IncrementAttempt() => AttempCount++;
     }
 }

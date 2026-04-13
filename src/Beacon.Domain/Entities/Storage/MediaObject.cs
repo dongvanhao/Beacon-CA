@@ -25,5 +25,22 @@ namespace Beacon.Domain.Entities.Storage
         public string? ETag { get; private set; }
         public string? ChecksumSha256 { get; private set; }
         protected MediaObject() { }
+
+        public static MediaObject Create(string bucketName, string objectKey,
+            string originalFileName, string contentType, long fileSizeBytes,
+            StorageProvider storageProvider = StorageProvider.MinIO,
+            MediaAccessType accessType = MediaAccessType.Private,
+            Guid? uploadedByUserId = null)
+            => new()
+            {
+                BucketName = bucketName,
+                ObjectKey = objectKey,
+                OriginalFileName = originalFileName,
+                ContentType = contentType,
+                FileSizeBytes = fileSizeBytes,
+                StorageProvider = storageProvider,
+                AccessType = accessType,
+                UploadProviderByUserId = uploadedByUserId
+            };
     }
 }

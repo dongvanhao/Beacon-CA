@@ -1,4 +1,5 @@
-﻿
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Safety
 using Beacon.Domain.Entities.Safety;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -39,3 +40,4 @@ public class AlertIncidentConfiguration : IEntityTypeConfiguration<AlertIncident
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+#endif

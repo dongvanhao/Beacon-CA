@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Setting;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Settings
+using Beacon.Domain.Entities.Setting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,3 +26,4 @@ public class AppPreferenceConfiguration : IEntityTypeConfiguration<AppPreference
             .HasMaxLength(20);
     }
 }
+#endif

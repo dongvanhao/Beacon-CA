@@ -30,5 +30,40 @@ namespace Beacon.Domain.Entities.Safety
         public DailySafetyRecord DailySafetyRecord { get; private set; } = default!;
         public ICollection<NotificationDelivery> NotificationDeliveries { get; private set; } = new List<NotificationDelivery>();
         protected AlertIncident() { }
+
+        public static AlertIncident Create(Guid userId, Guid dailySafetyRecordId,
+            AlertIncidentType type, string? message = null)
+            => new()
+            {
+                UserId = userId,
+                DailySafetyRecordId = dailySafetyRecordId,
+                Type = type,
+                Message = message,
+                TriggereAtUtc = DateTime.UtcNow
+            };
+
+        public void MarkSent()
+        {
+            SentAtUtc = DateTime.UtcNow;
+            Status = AlertIncidentStatus.Sent;
+        }
+
+        public void Acknowledge()
+        {
+            AcknowledgedAtUtc = DateTime.UtcNow;
+            Status = AlertIncidentStatus.Acknowledged;
+        }
+
+        public void Resolve()
+        {
+            ResolvedAtUtc = DateTime.UtcNow;
+            Status = AlertIncidentStatus.Resolved;
+        }
+
+        public void MarkFailed(string reason)
+        {
+            FailureReason = reason;
+            Status = AlertIncidentStatus.Failed;
+        }
     }
 }

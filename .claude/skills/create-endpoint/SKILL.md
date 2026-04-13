@@ -92,6 +92,32 @@ var dto = new {Entity}Dto
 };
 ```
 
+## SOLID Checklist (BẮT BUỘC review trước khi commit)
+
+### S — Single Responsibility
+- [ ] Mỗi Handler chỉ xử lý đúng 1 command/query — không viết 2 use case trong 1 Handler
+- [ ] Handler **chỉ orchestrate**: gọi repository → gọi service → trả Result. KHÔNG chứa business logic phức tạp (tính toán, transformation dài)
+- [ ] Nếu Handler dài >50 dòng: tách logic thành domain method trên Entity hoặc service riêng
+
+### O — Open/Closed
+- [ ] Thêm endpoint mới = tạo Command/Query + Handler mới, KHÔNG sửa Handler cũ
+- [ ] Không hardcode magic string trong Handler (error codes phải dùng `ErrorCodes.{Module}.{CODE}` từ Shared)
+
+### L — Liskov Substitution
+- [ ] Repository implementation phải implement đúng toàn bộ interface contract
+- [ ] Không throw exception trong method mà interface signature không khai báo throws
+
+### I — Interface Segregation
+- [ ] Repository interface chỉ khai báo methods mà Handler thực sự cần
+- [ ] Nếu thêm method chỉ dùng cho 1 handler đặc biệt: cân nhắc tách interface hoặc thêm Query method riêng
+- [ ] KHÔNG thêm `SaveChangesAsync` vào interface nếu chỉ có 1 implementation
+
+### D — Dependency Inversion
+- [ ] Handler inject **interface** (`I{Entity}Repository`), KHÔNG inject concrete class
+- [ ] Controller inject `IMediator`, KHÔNG inject repository hoặc service trực tiếp
+- [ ] Service/Handler KHÔNG inject `IConfiguration` trực tiếp → dùng `IOptions<T>` nếu cần config
+- [ ] `Program.cs` là nơi duy nhất được phép đọc `IConfiguration` trực tiếp (composition root)
+
 ## Gotchas (dễ quên)
 - Quên đăng ký repository trong `Program.cs` → `InvalidOperationException` lúc runtime
 - Quên thêm `DbSet` vào `AppDbContext` → migration không tạo table

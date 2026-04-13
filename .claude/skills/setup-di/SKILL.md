@@ -34,6 +34,32 @@ builder.Services.AddScoped<I{ServiceName}, {ServiceName}>();
 | `AddSingleton` | Cache, config object, background service stateless |
 | `AddTransient` | Helper stateless không giữ state, rất ít dùng |
 
+## SOLID — DIP: Cấu hình typed với IOptions<T>
+
+**KHÔNG** inject `IConfiguration` vào Service/Repository (vi phạm DIP). Thay vào đó dùng pattern `IOptions<T>`:
+
+```csharp
+// 1. Tạo typed settings class (trong Infrastructure hoặc Application)
+public class MyServiceSettings
+{
+    public string ApiKey { get; set; } = default!;
+    public int TimeoutSeconds { get; set; } = 30;
+}
+
+// 2. Đăng ký trong Program.cs (composition root — được phép đọc IConfiguration ở đây)
+builder.Services.Configure<MyServiceSettings>(
+    builder.Configuration.GetSection("MyServiceSettings"));
+
+// 3. Service inject IOptions<T>, không inject IConfiguration
+public class MyService(IOptions<MyServiceSettings> options) : IMyService
+{
+    private readonly MyServiceSettings _settings = options.Value;
+    // ... dùng _settings.ApiKey, _settings.TimeoutSeconds
+}
+```
+
+> **Tại sao**: `IConfiguration` là low-level infrastructure. Service inject nó trực tiếp = phụ thuộc vào structure của `appsettings.json`. Nếu đổi tên key → lỗi runtime. `IOptions<T>` = typed, compile-time safe, dễ mock trong test.
+
 ## Khi nào tạo extension method
 
 Chỉ tạo extension method khi `Program.cs` có >50 dòng DI registration.

@@ -14,8 +14,13 @@ namespace Beacon.Api.Services
                 ? id
                 : Guid.Empty;
 
-        public string Email =>
-            _user?.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+        public Guid DeviceId =>
+            Guid.TryParse(_user?.FindFirst("device_id")?.Value, out var deviceId)
+                ? deviceId
+                : Guid.Empty;
+
+        public string Username =>
+            _user?.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
 
         public bool IsAuthenticated =>
             _user?.Identity?.IsAuthenticated ?? false;

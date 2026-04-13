@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Safety;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Safety
+using Beacon.Domain.Entities.Safety;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -34,3 +36,4 @@ public class EmergencyContactConfiguration : IEntityTypeConfiguration<EmergencyC
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+#endif

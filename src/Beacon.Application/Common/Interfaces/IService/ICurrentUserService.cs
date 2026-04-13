@@ -9,7 +9,8 @@ namespace Beacon.Application.Common.Interfaces.IService
     public interface ICurrentUserService
     {
         Guid UserId { get; }
-        string Email { get; }
+        Guid DeviceId { get; }
+        string Username { get; }
         bool IsAuthenticated { get; }
     }
 }

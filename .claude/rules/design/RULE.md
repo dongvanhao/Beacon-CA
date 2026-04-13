@@ -1,11 +1,4 @@
 ## Design rules
-
-### UI/UX
-- Màu sắc: #0078D4 (primary), #F2F2F2 (bg), #333333 (text)
-- Font: Segoe UI (Windows), Roboto (Web)
-- Layout: 12-column grid, max-width 1200px
-- Responsive: mobile-first, breakpoint 768px
-
 ### API Design
 - RESTful endpoints
 - Versioning: /api/v1/...

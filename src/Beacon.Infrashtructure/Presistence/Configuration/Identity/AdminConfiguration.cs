@@ -12,11 +12,11 @@ public class AdminConfiguration : IEntityTypeConfiguration<Admin>
 
         builder.HasKey(x => x.Id);
 
-        builder.Property(x => x.Email)
+        builder.Property(x => x.Username)
             .IsRequired()
-            .HasMaxLength(256);
+            .HasMaxLength(50);
 
-        builder.HasIndex(x => x.Email)
+        builder.HasIndex(x => x.Username)
             .IsUnique();
 
         builder.Property(x => x.PasswordHash)
