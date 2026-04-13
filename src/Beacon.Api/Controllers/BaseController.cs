@@ -1,4 +1,4 @@
-﻿using Beacon.Shared.Common.Responses;
+using Beacon.Shared.Common.Responses;
 using Beacon.Shared.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
