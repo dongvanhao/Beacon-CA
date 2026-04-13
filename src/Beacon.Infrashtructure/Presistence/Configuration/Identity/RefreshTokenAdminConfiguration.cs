@@ -19,11 +19,6 @@ public class RefreshTokenAdminConfiguration : IEntityTypeConfiguration<RefreshTo
         builder.HasIndex(x => x.Token)
             .IsUnique();
 
-        builder.Property(x => x.CreatedByIp)
-            .HasMaxLength(45);
-
-        builder.Property(x => x.RevokedByIp)
-            .HasMaxLength(45);
 
         builder.Property(x => x.ReplacedByToken)
             .HasMaxLength(500);

@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Checkins;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Checkins
+using Beacon.Domain.Entities.Checkins;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -28,3 +30,4 @@ public class CheckinMediaConfiguration : IEntityTypeConfiguration<CheckinMedia>
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
+#endif

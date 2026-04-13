@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Setting;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Settings
+using Beacon.Domain.Entities.Setting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -28,3 +30,4 @@ namespace Beacon.Infrashtructure.Presistence.Configuration.Setting
         }
     }
 }
+#endif

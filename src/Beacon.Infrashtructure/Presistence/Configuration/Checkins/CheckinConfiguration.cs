@@ -1,4 +1,6 @@
-﻿using Beacon.Domain.Entities.Checkins;
+#if false
+// Chưa dùng — sẽ bật lại khi implement module Checkins
+using Beacon.Domain.Entities.Checkins;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -44,3 +46,4 @@ namespace Beacon.Infrashtructure.Presistence.Configuration.Checkins
         }
     }
 }
+#endif

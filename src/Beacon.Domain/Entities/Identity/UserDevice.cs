@@ -1,4 +1,4 @@
-﻿using Beacon.Domain.Common;
+using Beacon.Domain.Common;
 using Beacon.Domain.Entities.Notification;
 using Beacon.Domain.Enums.Identity;
 using System;
@@ -22,7 +22,8 @@ namespace Beacon.Domain.Entities.Identity
 
         public User User { get; private set; } = default!;
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
-        public ICollection<NotificationDelivery> NotificationDeliveries { get; private set; } = new List<NotificationDelivery>();
+        // === CÁC BẢNG TÍNH NĂNG CHƯA LÀM TỚI (Tạm ẩn) ===
+        // public ICollection<NotificationDelivery> NotificationDeliveries { get; private set; } = new List<NotificationDelivery>();
 
         protected UserDevice() { }
 
