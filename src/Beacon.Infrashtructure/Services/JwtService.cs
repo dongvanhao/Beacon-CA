@@ -42,7 +42,7 @@ public class JwtService(IConfiguration configuration) : IJwtService
         return (new JwtSecurityTokenHandler().WriteToken(token), expiresAt);
     }
 
-    public (string Token, DateTime ExpiresAt) GenerateAdminAccessToken(Admin admin, IEnumerable<string> permissions)
+    public (string Token, DateTime ExpiresAt) GenerateAdminAccessToken(Admin admin, IEnumerable<string> roles, IEnumerable<string> permissions)
     {
         var jwtSettings = configuration.GetSection("JwtSettings");
         var secretKey = jwtSettings["SecretKey"]!;
@@ -62,6 +62,10 @@ public class JwtService(IConfiguration configuration) : IJwtService
             new("actor", "admin"),
             new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        // Nhúng tên các role vào token (dùng để bypass permission check cho SuperAdmin)
+        foreach (var role in roles)
+            claims.Add(new Claim(ClaimTypes.Role, role));
 
         foreach (var permission in permissions)
             claims.Add(new Claim("permission", permission));

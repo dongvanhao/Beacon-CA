@@ -35,7 +35,13 @@ public class LoginAdminCommandHandler(
         // 4. Ghi nhận thời điểm đăng nhập
         admin.RecordLogin();
 
-        // 5. Thu thập tất cả permissions từ tất cả roles đang active
+        // 5. Thu thập roles và permissions từ các role đang active
+        var activeRoles = admin.AdminRoles
+            .Where(ar => ar.Role.IsActive)
+            .Select(ar => ar.Role.Name)
+            .Distinct()
+            .ToList();
+
         var permissions = admin.AdminRoles
             .Where(ar => ar.Role.IsActive)
             .SelectMany(ar => ar.Role.RolePermissions)
@@ -44,7 +50,7 @@ public class LoginAdminCommandHandler(
             .ToList();
 
         // 6. Sinh tokens
-        var (accessToken, accessTokenExpiresAt) = jwtService.GenerateAdminAccessToken(admin, permissions);
+        var (accessToken, accessTokenExpiresAt) = jwtService.GenerateAdminAccessToken(admin, activeRoles, permissions);
         var (refreshTokenValue, refreshTokenExpiresAt) = jwtService.GenerateRefreshToken();
         var refreshTokenEntity = RefreshTokenAdmin.Create(
             adminId: admin.Id,

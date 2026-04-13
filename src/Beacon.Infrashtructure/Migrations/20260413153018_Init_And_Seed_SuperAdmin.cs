@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Beacon.Infrashtructure.Migrations
 {
     /// <inheritdoc />
-    public partial class Init_Identity : Migration
+    public partial class Init_And_Seed_SuperAdmin : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,7 +16,7 @@ namespace Beacon.Infrashtructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -113,7 +113,7 @@ namespace Beacon.Infrashtructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
+                    Username = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     PhoneNumber = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
@@ -251,9 +251,9 @@ namespace Beacon.Infrashtructure.Migrations
                 column: "RoleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Admins_Email",
+                name: "IX_Admins_Username",
                 table: "Admins",
-                column: "Email",
+                column: "Username",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -311,10 +311,37 @@ namespace Beacon.Infrashtructure.Migrations
                 column: "AvatarMediaObjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Email",
+                name: "IX_Users_Username",
                 table: "Users",
-                column: "Email",
+                column: "Username",
                 unique: true);
+
+            // ── Seed SuperAdmin ─────────────────────────────────────────────────────────
+            // Fixed GUIDs — không bao giờ thay đổi
+            var roleSuperAdminId = new Guid("22222222-2222-2222-2222-000000000001");
+            var superAdminId     = new Guid("33333333-3333-3333-3333-000000000001");
+            var seedDate         = new DateTime(2026, 4, 13, 0, 0, 0, DateTimeKind.Utc);
+
+            // BCrypt hash của "Admin@123" (work factor 11) — tính sẵn, không hash tại runtime
+            const string passwordHash = "$2a$11$Wa0ltlYcNt8Taw3cMG0ODuAh6/U4BXSDlUurQ2ttpguocKN9r5ZBG";
+
+            // Role SuperAdmin — bypass toàn bộ permission check, không cần seed permissions lúc này
+            migrationBuilder.InsertData(
+                table: "Roles",
+                columns: new[] { "Id", "Name", "Description", "IsActive", "CreatedAtUtc", "UpdatedAtUtc" },
+                values: new object[] { roleSuperAdminId, "SuperAdmin", "Full system access — bypasses all permission checks", true, seedDate, null });
+
+            // Tài khoản SuperAdmin (mật khẩu mặc định: Admin@123)
+            migrationBuilder.InsertData(
+                table: "Admins",
+                columns: new[] { "Id", "Username", "PasswordHash", "FullName", "IsActive", "LastLoginAtUtc", "CreatedAtUtc", "UpdatedAtUtc" },
+                values: new object[] { superAdminId, "superadmin", passwordHash, "Super Admin", true, null, seedDate, null });
+
+            // Gán role SuperAdmin cho tài khoản
+            migrationBuilder.InsertData(
+                table: "AdminRoles",
+                columns: new[] { "AdminId", "RoleId", "AssignedAtUtc" },
+                values: new object[] { superAdminId, roleSuperAdminId, seedDate });
         }
 
         /// <inheritdoc />

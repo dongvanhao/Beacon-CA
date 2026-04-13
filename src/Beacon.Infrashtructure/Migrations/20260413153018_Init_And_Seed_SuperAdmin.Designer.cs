@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Beacon.Infrashtructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260413142608_feat_rename_email_to_username")]
-    partial class feat_rename_email_to_username
+    [Migration("20260413153018_Init_And_Seed_SuperAdmin")]
+    partial class Init_And_Seed_SuperAdmin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
