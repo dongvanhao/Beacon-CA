@@ -1,4 +1,4 @@
-﻿using Beacon.Application.Common.Exceptions;
+using Beacon.Application.Common.Exceptions;
 using Beacon.Shared.Common.Responses;
 using System.Net;
 using System.Text.Json;

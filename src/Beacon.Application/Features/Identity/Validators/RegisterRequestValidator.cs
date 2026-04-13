@@ -1,29 +1,39 @@
-using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Features.Identity.Commands;
 using FluentValidation;
 
 namespace Beacon.Application.Features.Identity.Validators;
 
-public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
+/// <summary>
+/// Validator cho RegisterCommand.
+/// Target Command để ValidationBehavior pipeline có thể intercept.
+/// </summary>
+public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
 {
-    public RegisterRequestValidator()
+    public RegisterCommandValidator()
     {
-        RuleFor(x => x.Username)
-            .NotEmpty().WithMessage("Username is required.")
-            .MinimumLength(3).WithMessage("Username must be at least 3 characters.")
-            .MaximumLength(50).WithMessage("Username must not exceed 50 characters.")
-            .Matches(@"^[a-zA-Z0-9_\.]+$").WithMessage("Username may only contain letters, digits, underscores, and dots.");
+        RuleFor(x => x.Request.Username)
+            .NotEmpty().WithMessage("Tên đăng nhập không được để trống.")
+            .MinimumLength(3).WithMessage("Tên đăng nhập phải có ít nhất 3 ký tự.")
+            .MaximumLength(50).WithMessage("Tên đăng nhập không được vượt quá 50 ký tự.")
+            .Matches(@"^[a-zA-Z0-9_\.]+$")
+            .WithMessage("Tên đăng nhập chỉ được chứa chữ cái, chữ số, dấu gạch dưới và dấu chấm.");
 
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.")
-            .MinimumLength(8).WithMessage("Password must be at least 8 characters.")
-            .MaximumLength(100).WithMessage("Password must not exceed 100 characters.");
+        RuleFor(x => x.Request.Password)
+            .NotEmpty().WithMessage("Mật khẩu không được để trống.")
+            .MinimumLength(8).WithMessage("Mật khẩu phải có ít nhất 8 ký tự.")
+            .MaximumLength(100).WithMessage("Mật khẩu không được vượt quá 100 ký tự.")
+            .Matches("[A-Z]").WithMessage("Mật khẩu phải có ít nhất 1 chữ hoa.")
+            .Matches("[a-z]").WithMessage("Mật khẩu phải có ít nhất 1 chữ thường.")
+            .Matches("[0-9]").WithMessage("Mật khẩu phải có ít nhất 1 chữ số.")
+            .Matches(@"[!@#$%^&*()_+\-=\[\]{}|;':"",./<>?]")
+            .WithMessage("Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%...).");
 
-        RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("Full name is required.")
-            .MaximumLength(200).WithMessage("Full name must not exceed 200 characters.");
+        RuleFor(x => x.Request.FullName)
+            .NotEmpty().WithMessage("Họ và tên không được để trống.")
+            .MaximumLength(200).WithMessage("Họ và tên không được vượt quá 200 ký tự.");
 
-        RuleFor(x => x.PhoneNumber)
-            .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Invalid phone number format.")
-            .When(x => !string.IsNullOrEmpty(x.PhoneNumber));
+        RuleFor(x => x.Request.PhoneNumber)
+            .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.")
+            .When(x => !string.IsNullOrEmpty(x.Request.PhoneNumber));
     }
 }

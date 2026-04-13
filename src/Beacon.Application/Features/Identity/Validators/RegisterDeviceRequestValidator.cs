@@ -1,14 +1,18 @@
-using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Features.Identity.Commands;
 using FluentValidation;
 
 namespace Beacon.Application.Features.Identity.Validators;
 
-public class RegisterDeviceRequestValidator : AbstractValidator<RegisterDeviceRequest>
+/// <summary>
+/// Validator cho RegisterDeviceCommand.
+/// Target Command để ValidationBehavior pipeline có thể intercept.
+/// </summary>
+public class RegisterDeviceCommandValidator : AbstractValidator<RegisterDeviceCommand>
 {
-    public RegisterDeviceRequestValidator()
+    public RegisterDeviceCommandValidator()
     {
-        RuleFor(x => x.DeviceToken)
-            .NotEmpty().WithMessage("Device token is required.")
-            .MaximumLength(500).WithMessage("Device token must not exceed 500 characters.");
+        RuleFor(x => x.Request.DeviceToken)
+            .NotEmpty().WithMessage("Device token không được để trống.")
+            .MaximumLength(500).WithMessage("Device token không được vượt quá 500 ký tự.");
     }
 }

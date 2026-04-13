@@ -1,17 +1,26 @@
-using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Features.Identity.Commands;
 using FluentValidation;
 
 namespace Beacon.Application.Features.Identity.Validators;
 
-public class LoginRequestValidator : AbstractValidator<LoginRequest>
+/// <summary>
+/// Validator cho LoginCommand.
+/// Target Command để ValidationBehavior pipeline có thể intercept.
+/// </summary>
+public class LoginCommandValidator : AbstractValidator<LoginCommand>
 {
-    public LoginRequestValidator()
+    public LoginCommandValidator()
     {
-        RuleFor(x => x.Username)
-            .NotEmpty().WithMessage("Username is required.")
-            .MaximumLength(50).WithMessage("Username must not exceed 50 characters.");
+        // Login validator cố ý giữ nhẹ — không kiểm tra format hay complexity
+        // vì user đã có tài khoản, validate quá chặt sẽ chặn login hợp lệ.
+        // MaximumLength trên Password chống DoS: bcrypt rất chậm với input lớn.
 
-        RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("Password is required.");
+        RuleFor(x => x.Request.Username)
+            .NotEmpty().WithMessage("Tên đăng nhập không được để trống.")
+            .MaximumLength(50).WithMessage("Tên đăng nhập không được vượt quá 50 ký tự.");
+
+        RuleFor(x => x.Request.Password)
+            .NotEmpty().WithMessage("Mật khẩu không được để trống.")
+            .MaximumLength(100).WithMessage("Mật khẩu không được vượt quá 100 ký tự.");
     }
 }

@@ -1,13 +1,18 @@
-using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Features.Identity.Commands;
 using FluentValidation;
 
 namespace Beacon.Application.Features.Identity.Validators;
 
-public class LogoutRequestValidator : AbstractValidator<LogoutRequest>
+/// <summary>
+/// Validator cho LogoutCommand.
+/// LogoutCommand(string RefreshToken) — property trực tiếp, không bọc DTO.
+/// Target Command để ValidationBehavior pipeline có thể intercept.
+/// </summary>
+public class LogoutCommandValidator : AbstractValidator<LogoutCommand>
 {
-    public LogoutRequestValidator()
+    public LogoutCommandValidator()
     {
         RuleFor(x => x.RefreshToken)
-            .NotEmpty().WithMessage("Refresh token is required.");
+            .NotEmpty().WithMessage("Refresh token không được để trống.");
     }
 }
