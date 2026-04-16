@@ -28,8 +28,10 @@ namespace Beacon.Application.Common.Behaviors
             if (!validators.Any())
                 return await next();
 
-            var errors = validators
-                .Select(v => v.Validate(request))
+            var validationResults = await Task.WhenAll(
+                validators.Select(v => v.ValidateAsync(request, cancellationToken)));
+
+            var errors = validationResults
                 .SelectMany(r => r.Errors)
                 .Where(f => f is not null)
                 .Select(f => f.ErrorMessage)
