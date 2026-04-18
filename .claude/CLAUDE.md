@@ -107,11 +107,28 @@ Location: `src/Beacon.Domain/IRepository/`
 - No `IRepository<T>` base interface exists yet — declare each interface directly
 - Implementations go in `src/Beacon.Infrashtructure/Repository/{Module}/`
 
-## DI Registration (current state)
+## DI Registration
 
-All services registered inline in `src/Beacon.Api/Program.cs`.
-Extension method folders (`DependencyInjection/`, `Dependencyinjection/`, `Extensions/`) exist but are empty.
-For new repositories: `builder.Services.AddScoped<I{Resource}Repository, {Resource}Repository>();`
+Program.cs chỉ gọi extension methods — **không đăng ký trực tiếp vào Program.cs**.
+
+| Thêm gì | Sửa file nào |
+|---|---|
+| Repository mới | `src/Beacon.Infrashtructure/Dependencyinjection/InfrastructureServiceExtensions.cs` |
+| Handler/Validator mới | Tự động qua MediatR/FluentValidation assembly scan — không cần sửa gì |
+| Authorization policy mới | `src/Beacon.Api/Extensions/AuthExtensions.cs` |
+| Health check mới | `src/Beacon.Api/Extensions/HealthCheckExtensions.cs` |
+
+```csharp
+// Program.cs pattern (không sửa trừ khi thêm layer hoàn toàn mới)
+builder.Services.AddInfrastructure(builder.Configuration); // DbContext, Repos, JwtService
+builder.Services.AddApplication();                         // MediatR, FluentValidation
+builder.Services.AddApiAuth(builder.Configuration);        // JWT Bearer, Auth, CORS
+builder.Services.AddSwagger();                             // Swagger
+builder.Services.AddHealthChecking(builder.Configuration); // Health checks
+builder.Services.AddControllers();
+```
+
+**Lưu ý namespace:** Infrastructure folder dùng chữ thường `Dependencyinjection` (không phải `DependencyInjection`) — namespace là `Beacon.Infrashtructure.Dependencyinjection`.
 
 ## Mapping
 
