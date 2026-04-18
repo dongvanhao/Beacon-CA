@@ -1,4 +1,5 @@
 using Beacon.Api.Authorization;
+using Beacon.Api.HealthChecks;
 using Beacon.Api.Middleware;
 using Beacon.Api.Services;
 using Beacon.Application;
@@ -12,9 +13,12 @@ using Beacon.Infrashtructure.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,11 +29,16 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(connectionString));
 
 //  Health Check
+builder.Services.AddHttpClient();
 builder.Services.AddHealthChecks()
+    .AddCheck("backend", () => HealthCheckResult.Healthy("API is running"),
+        tags: ["live"])
     .AddSqlServer(
         connectionString: connectionString!,
         name: "sqlserver",
-        tags: ["db", "sql"]);
+        tags: ["db", "ready"])
+    .AddCheck<MinioHealthCheck>("minio",
+        tags: ["minio", "storage", "ready"]);
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -168,7 +177,72 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-//  Health Check endpoint
-app.MapHealthChecks("/health");
+//  Health Check endpoints
+static async Task WriteJsonResponse(HttpContext ctx, HealthReport report)
+{
+    ctx.Response.ContentType = "application/json";
+
+    var isHealthy = report.Status == HealthStatus.Healthy;
+    var message   = report.Status switch
+    {
+        HealthStatus.Healthy   => "All services healthy",
+        HealthStatus.Degraded  => "Some services degraded",
+        HealthStatus.Unhealthy => "One or more services unhealthy",
+        _                      => "Unknown status"
+    };
+
+    var result = new
+    {
+        success = isHealthy,
+        message,
+        code    = isHealthy ? (string?)null : "HEALTH_CHECK_FAILED",
+        data    = new
+        {
+            status        = report.Status.ToString(),
+            totalDuration = report.TotalDuration.ToString(@"hh\:mm\:ss\.fff"),
+            checks        = report.Entries.Select(e => new
+            {
+                name        = e.Key,
+                status      = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                duration    = e.Value.Duration.ToString(@"hh\:mm\:ss\.fff"),
+                error       = e.Value.Exception?.Message
+            })
+        },
+        errors = (object?)null
+    };
+
+    await ctx.Response.WriteAsync(
+        JsonSerializer.Serialize(result, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
+        ctx.RequestAborted);
+}
+
+var healthOptions = new HealthCheckOptions { ResponseWriter = WriteJsonResponse };
+
+app.MapHealthChecks("/health", healthOptions);
+
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate      = check => check.Tags.Contains("live"),
+    ResponseWriter = WriteJsonResponse
+});
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate      = check => check.Tags.Contains("ready"),
+    ResponseWriter = WriteJsonResponse
+});
+
+app.MapHealthChecks("/health/db", new HealthCheckOptions
+{
+    Predicate      = check => check.Tags.Contains("db"),
+    ResponseWriter = WriteJsonResponse
+});
+
+app.MapHealthChecks("/health/minio", new HealthCheckOptions
+{
+    Predicate      = check => check.Tags.Contains("minio"),
+    ResponseWriter = WriteJsonResponse
+});
 
 app.Run();
