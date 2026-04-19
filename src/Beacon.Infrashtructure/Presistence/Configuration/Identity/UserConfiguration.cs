@@ -20,13 +20,24 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.HasIndex(x => x.Username)
             .IsUnique();
 
+        builder.Property(x => x.Email)
+            .IsRequired()
+            .HasMaxLength(254);
+
+        builder.HasIndex(x => x.Email)
+            .IsUnique();
+
         builder.Property(x => x.PasswordHash)
             .IsRequired()
             .HasMaxLength(500);
 
-        builder.Property(x => x.FullName)
+        builder.Property(x => x.FamilyName)
             .IsRequired()
-            .HasMaxLength(200);
+            .HasMaxLength(100);
+
+        builder.Property(x => x.GivenName)
+            .IsRequired()
+            .HasMaxLength(100);
 
         builder.Property(x => x.PhoneNumber)
             .HasMaxLength(20);

@@ -25,22 +25,39 @@ public class RegisterCommandHandler(
             return Result<AuthResponse>.Failure(
                 Error.Conflict(ErrorCodes.Identity.USERNAME_ALREADY_EXISTS, "Username is already taken."));
 
-        // 2. Hash password
+        // 2. Check email conflict
+        if (await userRepository.ExistsByEmailAsync(req.Email, ct))
+            return Result<AuthResponse>.Failure(
+                Error.Conflict(ErrorCodes.Identity.EMAIL_ALREADY_EXISTS, "Email is already taken."));
+
+        // 3. Check phone conflict (only when supplied)
+        if (!string.IsNullOrWhiteSpace(req.PhoneNumber)
+            && await userRepository.ExistsByPhoneAsync(req.PhoneNumber, ct))
+            return Result<AuthResponse>.Failure(
+                Error.Conflict(ErrorCodes.Identity.PHONE_ALREADY_EXISTS, "Phone number is already taken."));
+
+        // 4. Hash password
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(req.Password);
 
-        // 3. Create user
-        var user = User.Create(req.Username, passwordHash, req.FullName, req.PhoneNumber);
+        // 5. Create user
+        var user = User.Create(
+            username: req.Username,
+            email: req.Email,
+            passwordHash: passwordHash,
+            familyName: req.FamilyName,
+            givenName: req.GivenName,
+            phoneNumber: req.PhoneNumber);
         await userRepository.AddAsync(user, ct);
 
-        // 4. Auto-detect device from User-Agent header
+        // 6. Auto-detect device from User-Agent header
         var (platform, deviceName) = ParseUserAgent(command.UserAgent);
         var device = UserDevice.Create(user.Id, platform, deviceName, Guid.NewGuid().ToString());
         await deviceRepository.AddAsync(device, ct);
 
-        // 5. Save user + device to get their Ids
+        // 7. Save user + device to get their Ids
         await userRepository.SaveChangesAsync(ct);
 
-        // 6. Generate tokens — embed DeviceId in access token
+        // 8. Generate tokens — embed DeviceId in access token
         var (accessToken, accessTokenExpiresAt) = jwtService.GenerateAccessToken(user, device.Id);
         var (refreshTokenValue, refreshTokenExpiresAt) = jwtService.GenerateRefreshToken();
         var refreshToken = RefreshToken.Create(

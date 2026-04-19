@@ -10,7 +10,9 @@ public sealed class UserProfileMapper
         {
             Id = user.Id,
             Username = user.Username,
-            FullName = user.FullName,
+            Email = user.Email,
+            FamilyName = user.FamilyName,
+            GivenName = user.GivenName,
             PhoneNumber = user.PhoneNumber,
             TimeZone = user.TimeZone,
             IsActive = user.IsActive,

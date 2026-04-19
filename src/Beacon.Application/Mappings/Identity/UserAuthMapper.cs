@@ -14,7 +14,9 @@ public sealed class UserAuthMapper
         {
             UserId = user.Id,
             Username = user.Username,
-            FullName = user.FullName,
+            Email = user.Email,
+            FamilyName = user.FamilyName,
+            GivenName = user.GivenName,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             AccessTokenExpiresAt = accessTokenExpiresAt

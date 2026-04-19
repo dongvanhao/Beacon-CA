@@ -12,6 +12,8 @@ namespace Beacon.Shared.Constants
         {
             public const string USER_NOT_FOUND = "USER_NOT_FOUND";
             public const string USERNAME_ALREADY_EXISTS = "USERNAME_ALREADY_EXISTS";
+            public const string EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
+            public const string PHONE_ALREADY_EXISTS = "PHONE_ALREADY_EXISTS";
             public const string INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
             public const string TOKEN_EXPIRED = "TOKEN_EXPIRED";
             public const string TOKEN_INVALID = "TOKEN_INVALID";

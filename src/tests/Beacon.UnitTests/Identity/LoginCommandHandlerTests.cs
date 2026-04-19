@@ -201,7 +201,12 @@ public class LoginCommandHandlerTests
     }
 
     private static User CreateActiveUser()
-        => User.Create("testuser", BCrypt.Net.BCrypt.HashPassword(CorrectPassword), "Test User");
+        => User.Create(
+            username: "testuser",
+            email: "test@example.com",
+            passwordHash: BCrypt.Net.BCrypt.HashPassword(CorrectPassword),
+            familyName: "Test",
+            givenName: "User");
 
     private static LoginCommand BuildCommand(
         string username = "testuser",

@@ -52,6 +52,53 @@ public class RegisterCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenEmailAlreadyExists_ReturnsConflictResult()
+    {
+        // Arrange
+        _userRepo
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
+            .ReturnsAsync(false);
+        _userRepo
+            .Setup(x => x.ExistsByEmailAsync("taken@example.com", default))
+            .ReturnsAsync(true);
+
+        var command = BuildCommand(email: "taken@example.com");
+
+        // Act
+        var result = await _handler.Handle(command, default);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        _userRepo.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenPhoneAlreadyExists_ReturnsConflictResult()
+    {
+        // Arrange
+        _userRepo
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
+            .ReturnsAsync(false);
+        _userRepo
+            .Setup(x => x.ExistsByEmailAsync(It.IsAny<string>(), default))
+            .ReturnsAsync(false);
+        _userRepo
+            .Setup(x => x.ExistsByPhoneAsync("+84901234567", default))
+            .ReturnsAsync(true);
+
+        var command = BuildCommand(phoneNumber: "+84901234567");
+
+        // Act
+        var result = await _handler.Handle(command, default);
+
+        // Assert
+        result.IsFailure.Should().BeTrue();
+        result.Error.Type.Should().Be(ErrorType.Conflict);
+        _userRepo.Verify(x => x.AddAsync(It.IsAny<User>(), default), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_WhenValidRequest_ReturnsAuthResponseWithTokens()
     {
         // Arrange
@@ -59,7 +106,7 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.ExistsByUsernameAsync("newuser", default))
             .ReturnsAsync(false);
 
-        var command = BuildCommand("newuser", fullName: "John Doe");
+        var command = BuildCommand("newuser", familyName: "Nguyen", givenName: "An");
 
         // Act
         var result = await _handler.Handle(command, default);
@@ -67,7 +114,8 @@ public class RegisterCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeTrue();
         result.Value.Username.Should().Be("newuser");
-        result.Value.FullName.Should().Be("John Doe");
+        result.Value.FamilyName.Should().Be("Nguyen");
+        result.Value.GivenName.Should().Be("An");
         result.Value.AccessToken.Should().Be("access-token");
         result.Value.RefreshToken.Should().Be("refresh-token");
         result.Value.AccessTokenExpiresAt.Should().Be(AccessExpiry);
@@ -117,6 +165,29 @@ public class RegisterCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenValidRequest_NormalizesEmailToLowercase()
+    {
+        // Arrange
+        _userRepo
+            .Setup(x => x.ExistsByUsernameAsync(It.IsAny<string>(), default))
+            .ReturnsAsync(false);
+
+        User? capturedUser = null;
+        _userRepo
+            .Setup(x => x.AddAsync(It.IsAny<User>(), default))
+            .Callback<User, CancellationToken>((u, _) => capturedUser = u);
+
+        var command = BuildCommand(email: "MIXED.Case@Example.COM");
+
+        // Act
+        await _handler.Handle(command, default);
+
+        // Assert
+        capturedUser.Should().NotBeNull();
+        capturedUser!.Email.Should().Be("mixed.case@example.com");
+    }
+
+    [Fact]
     public async Task Handle_WhenValidRequest_HashesPasswordBeforeSaving()
     {
         // Arrange
@@ -143,13 +214,17 @@ public class RegisterCommandHandlerTests
     private static RegisterCommand BuildCommand(
         string username = "testuser",
         string password = "Password123",
-        string fullName = "Test User",
+        string email = "test@example.com",
+        string familyName = "Test",
+        string givenName = "User",
         string? phoneNumber = null)
         => new(new RegisterRequest
         {
             Username = username,
             Password = password,
-            FullName = fullName,
+            Email = email,
+            FamilyName = familyName,
+            GivenName = givenName,
             PhoneNumber = phoneNumber
         });
 }

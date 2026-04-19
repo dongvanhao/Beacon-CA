@@ -19,15 +19,19 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     /// Các giá trị <c>code</c> có thể xuất hiện trong response:
     ///
     /// - <c>null</c>: Đăng ký thành công (success = true).
-    /// - <c>VALIDATION_ERROR</c>: Dữ liệu đầu vào không hợp lệ (username sai format, password yếu, v.v.).
+    /// - <c>VALIDATION_ERROR</c>: Dữ liệu đầu vào không hợp lệ (username/email sai format, password yếu, v.v.).
     /// - <c>USERNAME_ALREADY_EXISTS</c>: Tên đăng nhập đã được sử dụng.
+    /// - <c>EMAIL_ALREADY_EXISTS</c>: Email đã được sử dụng.
+    /// - <c>PHONE_ALREADY_EXISTS</c>: Số điện thoại đã được sử dụng.
     ///
     /// Cấu trúc <c>data</c> khi thành công:
     /// <code>
     /// {
     ///   "userId":             "guid",
     ///   "username":           "string",
-    ///   "fullName":           "string",
+    ///   "email":              "string",
+    ///   "familyName":         "string",
+    ///   "givenName":          "string",
     ///   "accessToken":        "string  (JWT, hết hạn sau 15 phút)",
     ///   "refreshToken":       "string  (hết hạn sau 7 ngày)",
     ///   "accessTokenExpiresAt": "datetime (UTC)"
@@ -65,7 +69,9 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     /// {
     ///   "userId":             "guid",
     ///   "username":           "string",
-    ///   "fullName":           "string",
+    ///   "email":              "string",
+    ///   "familyName":         "string",
+    ///   "givenName":          "string",
     ///   "accessToken":        "string  (JWT, hết hạn sau 15 phút)",
     ///   "refreshToken":       "string  (hết hạn sau 7 ngày)",
     ///   "accessTokenExpiresAt": "datetime (UTC)"
@@ -106,7 +112,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     public async Task<IActionResult> Logout([FromBody] LogoutRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new LogoutCommand(request.RefreshToken), ct));
 
-    #region 
+    #region
     /// <summary>
     /// Lấy thông tin profile của người dùng đang đăng nhập từ Access Token.
     /// </summary>
@@ -124,7 +130,9 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     /// {
     ///   "id":              "guid",
     ///   "username":        "string",
-    ///   "fullName":        "string",
+    ///   "email":           "string",
+    ///   "familyName":      "string",
+    ///   "givenName":       "string",
     ///   "phoneNumber":     "string | null",
     ///   "timeZone":        "string  (ví dụ: Asia/Ha_Noi)",
     ///   "isActive":        "boolean",
@@ -142,7 +150,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     public async Task<IActionResult> Me(CancellationToken ct)
         => HandleResult(await mediator.Send(new GetCurrentUserQuery(currentUser.UserId), ct));
 
-    #region 
+    #region
     /// <summary>
     /// Làm mới Access Token bằng Refresh Token (token rotation).
     /// </summary>
@@ -163,7 +171,9 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     /// {
     ///   "userId":             "guid",
     ///   "username":           "string",
-    ///   "fullName":           "string",
+    ///   "email":              "string",
+    ///   "familyName":         "string",
+    ///   "givenName":          "string",
     ///   "accessToken":        "string  (JWT mới, hết hạn sau 15 phút)",
     ///   "refreshToken":       "string  (token mới, hết hạn sau 7 ngày)",
     ///   "accessTokenExpiresAt": "datetime (UTC)"
@@ -177,4 +187,59 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     [AllowAnonymous]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new RefreshTokenCommand(request.RefreshToken), ct));
+
+    #region
+    /// <summary>
+    /// Kiểm tra email đã được sử dụng hay chưa — dùng cho form đăng ký phía client.
+    /// </summary>
+    /// <remarks>
+    /// Endpoint public (không yêu cầu token). Trả về <c>available = true</c> nếu email chưa tồn tại trong hệ thống.
+    ///
+    /// Các giá trị <c>code</c> có thể xuất hiện trong response:
+    ///
+    /// - <c>null</c>: Kiểm tra thành công (success = true).
+    /// - <c>VALIDATION_ERROR</c>: Email để trống hoặc sai định dạng.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "available": "boolean  (true = email còn trống / có thể dùng)"
+    /// }
+    /// </code>
+    ///
+    /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpGet("check-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CheckEmail([FromQuery] string email, CancellationToken ct)
+        => HandleResult(await mediator.Send(new CheckEmailAvailabilityQuery(email), ct));
+
+    #region
+    /// <summary>
+    /// Kiểm tra số điện thoại đã được sử dụng hay chưa — dùng cho form đăng ký phía client.
+    /// </summary>
+    /// <remarks>
+    /// Endpoint public (không yêu cầu token). Trả về <c>available = true</c> nếu số điện thoại chưa tồn tại trong hệ thống.
+    /// Tham số <c>phoneNumber</c> phải theo định dạng E.164 (ví dụ: <c>+84901234567</c>).
+    ///
+    /// Các giá trị <c>code</c> có thể xuất hiện trong response:
+    ///
+    /// - <c>null</c>: Kiểm tra thành công (success = true).
+    /// - <c>VALIDATION_ERROR</c>: Số điện thoại để trống hoặc sai định dạng.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "available": "boolean  (true = số điện thoại còn trống / có thể dùng)"
+    /// }
+    /// </code>
+    ///
+    /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpGet("check-phone")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CheckPhone([FromQuery] string phoneNumber, CancellationToken ct)
+        => HandleResult(await mediator.Send(new CheckPhoneAvailabilityQuery(phoneNumber), ct));
 }

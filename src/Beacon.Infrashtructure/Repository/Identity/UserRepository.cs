@@ -16,6 +16,12 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.Username == username.ToLowerInvariant(), ct);
 
+    public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
+        => await context.Users.AnyAsync(u => u.Email == email.ToLowerInvariant(), ct);
+
+    public async Task<bool> ExistsByPhoneAsync(string phoneNumber, CancellationToken ct = default)
+        => await context.Users.AnyAsync(u => u.PhoneNumber != null && u.PhoneNumber == phoneNumber, ct);
+
     public async Task AddAsync(User user, CancellationToken ct = default)
         => await context.Users.AddAsync(user, ct);
 
