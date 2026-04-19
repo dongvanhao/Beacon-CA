@@ -1,3 +1,4 @@
+using Beacon.Shared.Constants;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace Beacon.Api.HealthChecks;
@@ -20,23 +21,29 @@ public class MinioHealthCheck : IHealthCheck
         var endpoint = _configuration["MinIO:Endpoint"];
 
         if (string.IsNullOrWhiteSpace(endpoint))
-            return HealthCheckResult.Degraded("MinIO not configured yet");
+            return HealthCheckResult.Degraded(
+                "MinIO not configured yet",
+                data: new Dictionary<string, object> { ["code"] = ErrorCodes.HealthCheck.MINIO_NOT_CONFIGURED });
 
         try
         {
             var client = _httpClientFactory.CreateClient();
             client.Timeout = TimeSpan.FromSeconds(3);
 
-            // MinIO health endpoint — available on all MinIO instances
             var response = await client.GetAsync($"{endpoint.TrimEnd('/')}/minio/health/live", cancellationToken);
 
             return response.IsSuccessStatusCode
                 ? HealthCheckResult.Healthy("MinIO is reachable")
-                : HealthCheckResult.Unhealthy($"MinIO returned {(int)response.StatusCode}");
+                : HealthCheckResult.Unhealthy(
+                    $"MinIO returned {(int)response.StatusCode}",
+                    data: new Dictionary<string, object> { ["code"] = ErrorCodes.HealthCheck.MINIO_BAD_STATUS });
         }
         catch (Exception ex)
         {
-            return HealthCheckResult.Unhealthy($"MinIO unreachable: {ex.Message}");
+            return HealthCheckResult.Unhealthy(
+                $"MinIO unreachable: {ex.Message}",
+                exception: ex,
+                data: new Dictionary<string, object> { ["code"] = ErrorCodes.HealthCheck.MINIO_UNREACHABLE });
         }
     }
 }

@@ -4,7 +4,7 @@
 - ORM: Entity Framework Core 8 (KHÔNG dùng Dapper trừ khi query phức tạp)
 - Validation: FluentValidation 12.1.1
 - Mediator: MediatR 14.1.0
-- Mapping: Mapster — **CHƯA INSTALL**. Dùng manual property assignment cho đến khi cài.
+- Mapping: **Manual DTO Mapping (fixed decision — KHÔNG dùng AutoMapper/Mapster).** Dùng `sealed class` injectable per use case tại `src/Beacon.Application/Mappings/{Module}/{Entity}{UseCase}Mapper.cs`. Đăng ký Singleton trong `ApplicationServiceExtensions.cs`. Chi tiết xem section `## Mapping` trong CLAUDE.md.
 - Auth: Custom JWT Bearer — **KHÔNG dùng ASP.NET Core Identity**. `User` extends `AuditableEntity`, KHÔNG phải `IdentityUser`. Password hash thủ công.
 - Logging: Serilog (đã config trong Program.cs)
 - Caching: IMemoryCache (chưa có Redis)

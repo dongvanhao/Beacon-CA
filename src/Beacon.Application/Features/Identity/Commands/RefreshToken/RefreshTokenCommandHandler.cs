@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Constants;
@@ -10,7 +11,8 @@ namespace Beacon.Application.Features.Identity.Commands;
 
 public class RefreshTokenCommandHandler(
     IUserRepository userRepository,
-    IJwtService jwtService) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
+    IJwtService jwtService,
+    UserAuthMapper authMapper) : IRequestHandler<RefreshTokenCommand, Result<AuthResponse>>
 {
     public async Task<Result<AuthResponse>> Handle(RefreshTokenCommand command, CancellationToken ct)
     {
@@ -48,14 +50,7 @@ public class RefreshTokenCommandHandler(
         await userRepository.AddRefreshTokenAsync(newRefreshToken, ct);
         await userRepository.SaveChangesAsync(ct);
 
-        return Result<AuthResponse>.Success(new AuthResponse
-        {
-            UserId = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            AccessToken = accessToken,
-            RefreshToken = newRefreshTokenValue,
-            AccessTokenExpiresAt = accessTokenExpiresAt
-        });
+        return Result<AuthResponse>.Success(
+            authMapper.ToAuthResponse(user, accessToken, newRefreshTokenValue, accessTokenExpiresAt));
     }
 }

@@ -1,4 +1,5 @@
 using Beacon.Application.Common.Behaviors;
+using Beacon.Application.Mappings.Identity;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +17,10 @@ public static class ApplicationServiceExtensions
         });
 
         services.AddValidatorsFromAssembly(typeof(ApplicationAssemblyMarker).Assembly);
+
+        services.AddSingleton<UserAuthMapper>();
+        services.AddSingleton<UserProfileMapper>();
+        services.AddSingleton<AdminAuthMapper>();
 
         return services;
     }

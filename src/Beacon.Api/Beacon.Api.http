@@ -1,4 +1,4 @@
-@Beacon.Api_HostAddress = http://localhost:5000
+@Beacon.Api_HostAddress = http://localhost:5000/api/v1
 
 ### ──────────────────────────────────────
 ###  Health Checks
@@ -7,29 +7,24 @@
 ### Tổng hợp tất cả checks
 GET {{Beacon.Api_HostAddress}}/health
 Accept: application/json
-
 ###
 
 ### Liveness — App đang chạy không?
 GET {{Beacon.Api_HostAddress}}/health/live
 Accept: application/json
-
 ###
 
 ### Readiness — DB + MinIO sẵn sàng nhận request không?
 GET {{Beacon.Api_HostAddress}}/health/ready
 Accept: application/json
-
 ###
 
 ### Database only
 GET {{Beacon.Api_HostAddress}}/health/db
 Accept: application/json
-
 ###
 
 ### MinIO only
 GET {{Beacon.Api_HostAddress}}/health/minio
 Accept: application/json
-
 ###

@@ -28,9 +28,18 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .Matches(@"[!@#$%^&*()_+\-=\[\]{}|;':"",./<>?]")
             .WithMessage("Mật khẩu phải có ít nhất 1 ký tự đặc biệt (!@#$%...).");
 
-        RuleFor(x => x.Request.FullName)
-            .NotEmpty().WithMessage("Họ và tên không được để trống.")
-            .MaximumLength(200).WithMessage("Họ và tên không được vượt quá 200 ký tự.");
+        RuleFor(x => x.Request.Email)
+            .NotEmpty().WithMessage("Email không được để trống.")
+            .MaximumLength(254).WithMessage("Email không được vượt quá 254 ký tự.")
+            .EmailAddress().WithMessage("Email không hợp lệ.");
+
+        RuleFor(x => x.Request.FamilyName)
+            .NotEmpty().WithMessage("Họ không được để trống.")
+            .MaximumLength(100).WithMessage("Họ không được vượt quá 100 ký tự.");
+
+        RuleFor(x => x.Request.GivenName)
+            .NotEmpty().WithMessage("Tên không được để trống.")
+            .MaximumLength(100).WithMessage("Tên không được vượt quá 100 ký tự.");
 
         RuleFor(x => x.Request.PhoneNumber)
             .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.")

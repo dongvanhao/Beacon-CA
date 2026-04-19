@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Constants;
@@ -10,7 +11,8 @@ namespace Beacon.Application.Features.Identity.Commands;
 
 public class LoginAdminCommandHandler(
     IAdminRepository adminRepository,
-    IJwtService jwtService) : IRequestHandler<LoginAdminCommand, Result<AdminAuthResponse>>
+    IJwtService jwtService,
+    AdminAuthMapper adminAuthMapper) : IRequestHandler<LoginAdminCommand, Result<AdminAuthResponse>>
 {
     public async Task<Result<AdminAuthResponse>> Handle(LoginAdminCommand command, CancellationToken ct)
     {
@@ -60,15 +62,7 @@ public class LoginAdminCommandHandler(
         await adminRepository.AddRefreshTokenAsync(refreshTokenEntity, ct);
         await adminRepository.SaveChangesAsync(ct);
 
-        return Result<AdminAuthResponse>.Success(new AdminAuthResponse
-        {
-            AdminId = admin.Id,
-            Username = admin.Username,
-            FullName = admin.FullName,
-            AccessToken = accessToken,
-            RefreshToken = refreshTokenValue,
-            AccessTokenExpiresAt = accessTokenExpiresAt,
-            Permissions = permissions
-        });
+        return Result<AdminAuthResponse>.Success(
+            adminAuthMapper.ToAuthResponse(admin, accessToken, refreshTokenValue, accessTokenExpiresAt, permissions));
     }
 }
