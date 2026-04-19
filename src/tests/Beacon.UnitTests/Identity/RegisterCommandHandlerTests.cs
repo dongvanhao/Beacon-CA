@@ -1,6 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Commands;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Results;
@@ -28,7 +29,7 @@ public class RegisterCommandHandlerTests
             .Setup(x => x.GenerateRefreshToken())
             .Returns(("refresh-token", RefreshExpiry));
 
-        _handler = new RegisterCommandHandler(_userRepo.Object, _deviceRepo.Object, _jwtService.Object);
+        _handler = new RegisterCommandHandler(_userRepo.Object, _deviceRepo.Object, _jwtService.Object, new UserAuthMapper());
     }
 
     [Fact]

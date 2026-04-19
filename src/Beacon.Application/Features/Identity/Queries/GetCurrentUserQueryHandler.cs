@@ -1,4 +1,5 @@
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -6,7 +7,9 @@ using MediatR;
 
 namespace Beacon.Application.Features.Identity.Queries;
 
-public class GetCurrentUserQueryHandler(IUserRepository userRepository)
+public class GetCurrentUserQueryHandler(
+    IUserRepository userRepository,
+    UserProfileMapper profileMapper)
     : IRequestHandler<GetCurrentUserQuery, Result<UserProfileDto>>
 {
     public async Task<Result<UserProfileDto>> Handle(GetCurrentUserQuery query, CancellationToken ct)
@@ -16,17 +19,6 @@ public class GetCurrentUserQueryHandler(IUserRepository userRepository)
             return Result<UserProfileDto>.Failure(
                 Error.NotFound(ErrorCodes.Identity.USER_NOT_FOUND, "User not found."));
 
-        return Result<UserProfileDto>.Success(new UserProfileDto
-        {
-            Id = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            PhoneNumber = user.PhoneNumber,
-            TimeZone = user.TimeZone,
-            IsActive = user.IsActive,
-            IsEmailVerified = user.IsEmailVerified,
-            LastLoginAtUtc = user.LastLoginAtUtc,
-            CreatedAtUtc = user.CreatedAtUtc
-        });
+        return Result<UserProfileDto>.Success(profileMapper.ToProfileDto(user));
     }
 }

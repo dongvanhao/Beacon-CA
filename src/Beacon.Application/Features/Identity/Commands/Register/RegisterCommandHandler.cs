@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Enums.Identity;
 using Beacon.Domain.IRepository;
@@ -12,7 +13,8 @@ namespace Beacon.Application.Features.Identity.Commands;
 public class RegisterCommandHandler(
     IUserRepository userRepository,
     IUserDeviceRepository deviceRepository,
-    IJwtService jwtService) : IRequestHandler<RegisterCommand, Result<AuthResponse>>
+    IJwtService jwtService,
+    UserAuthMapper authMapper) : IRequestHandler<RegisterCommand, Result<AuthResponse>>
 {
     public async Task<Result<AuthResponse>> Handle(RegisterCommand command, CancellationToken ct)
     {
@@ -50,15 +52,8 @@ public class RegisterCommandHandler(
         await userRepository.AddRefreshTokenAsync(refreshToken, ct);
         await userRepository.SaveChangesAsync(ct);
 
-        return Result<AuthResponse>.Success(new AuthResponse
-        {
-            UserId = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            AccessToken = accessToken,
-            RefreshToken = refreshTokenValue,
-            AccessTokenExpiresAt = accessTokenExpiresAt
-        });
+        return Result<AuthResponse>.Success(
+            authMapper.ToAuthResponse(user, accessToken, refreshTokenValue, accessTokenExpiresAt));
     }
 
     private static (DevicePlatform Platform, string DeviceName) ParseUserAgent(string? userAgent)

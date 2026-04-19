@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Enums.Identity;
 using Beacon.Domain.IRepository;
@@ -12,7 +13,8 @@ namespace Beacon.Application.Features.Identity.Commands;
 public class LoginCommandHandler(
     IUserRepository userRepository,
     IUserDeviceRepository deviceRepository,
-    IJwtService jwtService) : IRequestHandler<LoginCommand, Result<AuthResponse>>
+    IJwtService jwtService,
+    UserAuthMapper authMapper) : IRequestHandler<LoginCommand, Result<AuthResponse>>
 {
     public async Task<Result<AuthResponse>> Handle(LoginCommand command, CancellationToken ct)
     {
@@ -63,15 +65,8 @@ public class LoginCommandHandler(
         await userRepository.AddRefreshTokenAsync(refreshToken, ct);
         await userRepository.SaveChangesAsync(ct);
 
-        return Result<AuthResponse>.Success(new AuthResponse
-        {
-            UserId = user.Id,
-            Username = user.Username,
-            FullName = user.FullName,
-            AccessToken = accessToken,
-            RefreshToken = refreshTokenValue,
-            AccessTokenExpiresAt = accessTokenExpiresAt
-        });
+        return Result<AuthResponse>.Success(
+            authMapper.ToAuthResponse(user, accessToken, refreshTokenValue, accessTokenExpiresAt));
     }
 
     // Đọc User-Agent header để tự nhận diện thiết bị — client không cần khai báo

@@ -1,6 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Commands;
 using Beacon.Application.Features.Identity.Dtos;
+using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Shared.Results;
@@ -35,7 +36,7 @@ public class LoginCommandHandlerTests
             .Setup(x => x.GetActiveRefreshTokensByUserIdAsync(It.IsAny<Guid>(), default))
             .ReturnsAsync(new List<RefreshToken>());
 
-        _handler = new LoginCommandHandler(_userRepo.Object, _deviceRepo.Object, _jwtService.Object);
+        _handler = new LoginCommandHandler(_userRepo.Object, _deviceRepo.Object, _jwtService.Object, new UserAuthMapper());
     }
 
     [Fact]

@@ -50,7 +50,7 @@ public async Task<Result<UserDto>> GetUserAsync(Guid id)
 {
     var user = await _repo.GetByIdAsync(id);
     if (user is null) return Result.Failure<UserDto>(Error.NotFound(ErrorCodes.USER_NOT_FOUND, "User not found"));
-    return Result.Success(_mapper.Map<UserDto>(user));
+    return Result.Success(_userProfileMapper.ToProfileDto(user));
 }
 
 // Controller layer — use BaseController helpers
@@ -115,6 +115,7 @@ Program.cs chỉ gọi extension methods — **không đăng ký trực tiếp v
 |---|---|
 | Repository mới | `src/Beacon.Infrashtructure/Dependencyinjection/InfrastructureServiceExtensions.cs` |
 | Handler/Validator mới | Tự động qua MediatR/FluentValidation assembly scan — không cần sửa gì |
+| Mapper mới | `src/Beacon.Application/DependencyInjection/ApplicationServiceExtensions.cs` (`AddSingleton<XxxMapper>()`) |
 | Authorization policy mới | `src/Beacon.Api/Extensions/AuthExtensions.cs` |
 | Health check mới | `src/Beacon.Api/Extensions/HealthCheckExtensions.cs` |
 
@@ -130,13 +131,80 @@ builder.Services.AddControllers();
 
 **Lưu ý namespace:** Infrastructure folder dùng chữ thường `Dependencyinjection` (không phải `DependencyInjection`) — namespace là `Beacon.Infrashtructure.Dependencyinjection`.
 
-## Mapping
+## Mapping (Manual DTO Mapping — fixed decision)
 
-**Mapster is NOT INSTALLED.** Do not generate `TypeAdapterConfig` or `IRegister` code.
-Use manual property assignment until Mapster is installed:
+**KHÔNG dùng AutoMapper / Mapster / bất kỳ mapping library nào.** Đã quyết định dùng manual DTO mapping permanent. Đừng đề xuất hay so sánh với Mapster/AutoMapper.
+
+### Pattern bắt buộc
+
+- 1 mapper = 1 file = 1 `sealed class` per use case
+- Vị trí: `src/Beacon.Application/Mappings/{Module}/{Entity}{UseCase}Mapper.cs`
+- Naming class: `{Entity}{UseCase}Mapper` (vd `UserAuthMapper`, `UserProfileMapper`, `AdminAuthMapper`)
+- Naming method: `To{Dto}(entity, ...context)` — vd `ToAuthResponse`, `ToProfileDto`
+- DI lifetime: **Singleton** (mapper stateless và pure)
+- Đăng ký trong `ApplicationServiceExtensions.cs` → `services.AddSingleton<XxxMapper>();`
+- Inject vào handler qua constructor
+
+### Cấm trong mapper
+
+- ❌ Business logic (validation, decision, computation) — đặt ở Domain hoặc Service
+- ❌ I/O (DB, HTTP, file) — mapper phải pure & sync
+- ❌ Async — `Task<TDto>` báo hiệu sai pattern
+- ❌ State — mapper phải stateless để Singleton an toàn
+- ❌ Static class — luôn instance class (cho phép DI dependency sau này)
+- ❌ Extension method — không dùng `this Entity`, dùng instance method
+- ❌ Generic `IMapper<TSource, TDest>` interface — over-engineering
+
+### Ví dụ
+
 ```csharp
-var dto = new EntityDto { Id = entity.Id, Name = entity.Name };
+// src/Beacon.Application/Mappings/Identity/UserAuthMapper.cs
+public sealed class UserAuthMapper
+{
+    public AuthResponse ToAuthResponse(User user, string accessToken, string refreshToken, DateTime expiresAt)
+        => new()
+        {
+            UserId = user.Id,
+            Username = user.Username,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            AccessTokenExpiresAt = expiresAt
+        };
+}
+
+// Handler inject mapper
+public class LoginCommandHandler(
+    IUserRepository userRepo,
+    IJwtService jwtService,
+    UserAuthMapper authMapper) : IRequestHandler<LoginCommand, Result<AuthResponse>>
+{
+    // ...
+    return Result<AuthResponse>.Success(
+        authMapper.ToAuthResponse(user, accessToken, refreshToken, expiresAt));
+}
 ```
+
+### Nested object → composition
+
+```csharp
+public sealed class CheckinDetailMapper(LocationMapper locationMapper)
+{
+    public CheckinDetailDto ToDetailDto(Checkin c)
+        => new()
+        {
+            Id = c.Id,
+            Location = c.Location is null ? null : locationMapper.ToDto(c.Location)
+        };
+}
+```
+
+### List mapping → LINQ Select
+
+```csharp
+var dtos = users.Select(userListMapper.ToListItem).ToList();
+```
+
+KHÔNG tạo `MapList()` wrapper — `Select` đã idiomatic.
 
 ## Namespace Quirk
 
