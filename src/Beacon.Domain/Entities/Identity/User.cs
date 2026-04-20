@@ -52,15 +52,15 @@ namespace Beacon.Domain.Entities.Identity
             };
         }
 
-        public void UpdateProfile(string familyName, string givenName, string? phoneNumber, string timeZone)
+        public void UpdateProfile(string familyName, string givenName, string? phoneNumber, string email)
         {
             if (string.IsNullOrWhiteSpace(familyName)) throw new ArgumentException("FamilyName không được rỗng.");
             if (string.IsNullOrWhiteSpace(givenName))  throw new ArgumentException("GivenName không được rỗng.");
-            if (string.IsNullOrWhiteSpace(timeZone))   throw new ArgumentException("TimeZone không được rỗng.");
+            if (string.IsNullOrWhiteSpace(email))      throw new ArgumentException("Email không được rỗng.");
             FamilyName  = familyName;
             GivenName   = givenName;
             PhoneNumber = phoneNumber?.Trim();
-            TimeZone    = timeZone;
+            Email       = email.Trim().ToLowerInvariant();
         }
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;

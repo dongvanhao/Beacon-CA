@@ -1,17 +1,17 @@
 # Database — Beacon
 
-> SQL injection prevention → `security/RULE.md`. Repository interface location → `CLAUDE.md`.
+> SQL injection → `security/RULE.md`. Repository interface location → `CLAUDE.md`.
 
 ---
 
-## Quy tắc truy cập dữ liệu
+## Nguyên tắc
 
 | ❌ | ✅ |
 |---|---|
-| Handler inject `AppDbContext` trực tiếp | Handler inject `IXyzRepository` |
-| Generic `IRepository<T>` | Interface riêng, method có tên domain rõ ràng |
-| `SELECT *` / lấy toàn bộ navigation prop không dùng | Project DTO ngay trong query hoặc dùng `Select` |
-| Xóa cứng entity nhạy cảm | `SoftDeletableEntity` → `IsDeleted = true` |
+| Handler inject `AppDbContext` | Handler inject `IXyzRepository` |
+| Generic `IRepository<T>` | Interface domain-meaningful riêng |
+| `SELECT *` / load navigation prop không cần | Projection DTO hoặc `Select` |
+| Hard delete entity nhạy cảm | `SoftDeletableEntity` → `IsDeleted = true` |
 
 ---
 
@@ -36,43 +36,43 @@ public class UserRepository(AppDbContext db) : IUserRepository
 ```
 
 - Repository **không** chứa business logic — chỉ query/persist.
-- Repository trả `Entity?` (nullable) cho single-item query — handler quyết định null có phải lỗi không.
-- `SaveChangesAsync` gọi trong **handler** sau khi hoàn thành thao tác, không gọi trong repository method riêng lẻ (trừ khi repository là unit of work).
+- Trả `Entity?` cho single-item query; handler quyết định null = lỗi gì.
+- `SaveChangesAsync` gọi trong **handler**, không rải lẻ trong từng repo method.
 
 ---
 
-## Entity Configuration (Fluent API)
+## EF Core Configuration
 
-Mỗi entity có **một file** `IEntityTypeConfiguration<T>` riêng tại `Infrastructure/Presistence/Configuration/{Module}/`:
+Mỗi entity = 1 file `IEntityTypeConfiguration<T>` tại `Infrashtructure/Presistence/Configuration/{Module}/`:
 
 ```csharp
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
-    public void Configure(EntityTypeBuilder<User> builder)
+    public void Configure(EntityTypeBuilder<User> b)
     {
-        builder.ToTable("Users");
-        builder.HasKey(u => u.Id);
-        builder.Property(u => u.Email).IsRequired().HasMaxLength(256);
-        // FK, Index, v.v.
+        b.ToTable("Users");
+        b.HasKey(u => u.Id);
+        b.Property(u => u.Email).IsRequired().HasMaxLength(256);
+        b.HasIndex(u => u.Email).IsUnique();
     }
 }
 ```
 
-- Auto-discovered qua `ApplyConfigurationsFromAssembly` — **không cần đăng ký thủ công**.
+- Auto-discover qua `ApplyConfigurationsFromAssembly` — **không** đăng ký thủ công.
 - **Soft-delete query filter** đặt trong `AppDbContext.OnModelCreating`, **KHÔNG** trong config class.
-- Mọi entity mới phải có `DbSet<T>` trong `AppDbContext`.
+- Entity mới → thêm `DbSet<T>` vào `AppDbContext`.
 
 ---
 
-## Naming Convention (DB)
+## DB Naming
 
-| Thành phần | Convention | Ví dụ |
+| | Convention | Ví dụ |
 |---|---|---|
-| Table | PascalCase số nhiều | `Users`, `MediaObjects`, `RefreshTokens` |
-| Column | PascalCase (EF convention) | `CreatedAtUtc`, `IsDeleted` |
-| Index | `IX_[Table]_[Column]` | `IX_Users_Email` |
-| Foreign key | `FK_[Table]_[Referenced]_[Column]` | `FK_MediaObjects_Users_UploadedByUserId` |
-| Primary key | `PK_[Table]` | `PK_Users` |
+| Table | PascalCase plural | `Users`, `MediaObjects`, `RefreshTokens` |
+| Column | PascalCase (EF default) | `CreatedAtUtc`, `IsDeleted` |
+| Index | `IX_{Table}_{Column}` | `IX_Users_Email` |
+| FK | `FK_{Table}_{Referenced}_{Column}` | `FK_MediaObjects_Users_UploadedByUserId` |
+| PK | `PK_{Table}` | `PK_Users` |
 
 ---
 
@@ -80,28 +80,24 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
 ```csharp
 // ❌ N+1
-var users = await db.Users.ToListAsync();
-foreach (var u in users) { var orders = await db.Orders... }
+foreach (var u in await db.Users.ToListAsync()) { await db.Orders.Where(o => o.UserId == u.Id)... }
 
 // ✅ Eager load
-var users = await db.Users.Include(u => u.Orders).ToListAsync();
+await db.Users.Include(u => u.Orders).ToListAsync();
 
-// ✅ Projection (tốt hơn nếu chỉ cần 1 số field)
-var dtos = await db.Users
-    .Select(u => new UserListItem { Id = u.Id, Email = u.Email })
-    .ToListAsync();
+// ✅ Projection (ưu tiên khi chỉ cần ít field)
+await db.Users.Select(u => new UserListItem { Id = u.Id, Email = u.Email }).ToListAsync();
 ```
 
-Verify N+1 bằng integration test có log SQL (sensitive data logging bật trong Development).
+Verify bằng integration test có SQL log (`EnableSensitiveDataLogging` bật trong Development).
 
 ---
 
 ## Transactions
 
-Dùng khi nhiều bảng phải persist cùng lúc (all-or-nothing):
+Chỉ cần khi nhiều bảng persist atomic trong các `SaveChangesAsync` riêng biệt. Nếu chỉ 1 `SaveChangesAsync` bao tất cả thay đổi → EF tự atomic, **không cần** transaction.
 
 ```csharp
-// Trong handler — inject AppDbContext qua IUnitOfWork nếu có, hoặc qua repo riêng
 using var tx = await db.Database.BeginTransactionAsync(ct);
 try
 {
@@ -110,31 +106,18 @@ try
     await db.SaveChangesAsync(ct);
     await tx.CommitAsync(ct);
 }
-catch
-{
-    await tx.RollbackAsync(ct);
-    throw;
-}
+catch { await tx.RollbackAsync(ct); throw; }
 ```
-
-> Nếu chỉ một `SaveChangesAsync` bao toàn bộ thao tác trong một request → EF tự atomic, không cần transaction tường minh.
 
 ---
 
 ## Migrations
 
 ```bash
-# Tạo migration (từ solution root)
-dotnet ef migrations add <Name> \
-  --project src/Beacon.Infrashtructure \
-  --startup-project src/Beacon.Api
-
-# Apply
-dotnet ef database update \
-  --project src/Beacon.Infrashtructure \
-  --startup-project src/Beacon.Api
+dotnet ef migrations add <Name> --project src/Beacon.Infrashtructure --startup-project src/Beacon.Api
+dotnet ef database update       --project src/Beacon.Infrashtructure --startup-project src/Beacon.Api
 ```
 
-- Migration file là **immutable** sau khi apply vào shared env — không sửa file cũ, tạo migration mới.
-- Review file migration trước khi apply: kiểm tra không có `DROP COLUMN` / `DROP TABLE` ngoài ý muốn.
-- Seed data đặt trong migration (xem `Init_And_Seed_SuperAdmin`) — không seed trong `Program.cs`.
+- Migration file **immutable** sau khi apply vào shared env — tạo migration mới, không sửa file cũ.
+- Review migration trước `database update`: chú ý `DROP COLUMN` / `DROP TABLE` ngoài ý muốn.
+- Seed data trong migration (xem `Init_And_Seed_SuperAdmin`), **không** seed trong `Program.cs`.

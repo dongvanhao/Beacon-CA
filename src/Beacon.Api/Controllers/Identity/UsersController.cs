@@ -4,6 +4,7 @@ using Beacon.Application.Features.Identity.Commands.UpdateProfile;
 using Beacon.Application.Features.Identity.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Beacon.Api.Controllers;
@@ -23,6 +24,7 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     /// - <c>null</c>: Cập nhật thành công (success = true).
     /// - <c>VALIDATION_ERROR</c>: Dữ liệu đầu vào không hợp lệ.
     /// - <c>USER_NOT_FOUND</c>: Không tìm thấy người dùng.
+    /// - <c>EMAIL_ALREADY_IN_USE</c>: Email đã được sử dụng bởi tài khoản khác.
     /// - <c>PHONE_ALREADY_IN_USE</c>: Số điện thoại đã được sử dụng bởi tài khoản khác.
     ///
     /// Cấu trúc <c>data</c> khi thành công:
@@ -46,6 +48,17 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     ///
     /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
+    /// <param name="request">
+    /// Body JSON chứa thông tin hồ sơ cần cập nhật:
+    /// <code>
+    /// {
+    ///   "familyName":  "string",           // Họ (bắt buộc)
+    ///   "givenName":   "string",           // Tên (bắt buộc)
+    ///   "email":       "string",           // Email mới (bắt buộc)
+    ///   "phoneNumber": "string | null"     // Số điện thoại (tuỳ chọn)
+    /// }
+    /// </code>
+    /// </param>
     #endregion
     [HttpPatch("me")]
     [Authorize]
@@ -54,31 +67,36 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
 
     #region
     /// <summary>
-    /// Cập nhật avatar của người dùng hiện tại từ một media đã upload.
+    /// Upload và gán avatar cho người dùng hiện tại.
     /// </summary>
     /// <remarks>
     /// Yêu cầu <c>Authorization: Bearer &lt;token&gt;</c>.
     ///
-    /// Luồng sử dụng: client upload file qua <c>POST /api/v1/media</c> để nhận <c>mediaObjectId</c>,
-    /// sau đó gọi endpoint này để gán media đó làm avatar.
+    /// Body: <c>multipart/form-data</c> với field <c>file</c> (ảnh jpeg/png/webp/gif, tối đa 10MB).
+    ///
+    /// Luồng xử lý: endpoint tự động upload ảnh lên MinIO, sinh thumbnail, lưu metadata
+    /// và gán làm avatar trong một request duy nhất. Avatar cũ (nếu có) sẽ bị soft-delete.
     ///
     /// Các giá trị <c>code</c> có thể xuất hiện trong response:
     ///
     /// - <c>null</c>: Cập nhật avatar thành công (success = true).
-    /// - <c>VALIDATION_ERROR</c>: Dữ liệu đầu vào không hợp lệ.
+    /// - <c>VALIDATION_ERROR</c>: File rỗng, sai MIME type, hoặc vượt quá 10MB.
     /// - <c>USER_NOT_FOUND</c>: Không tìm thấy người dùng.
-    /// - <c>MEDIA_NOT_FOUND</c>: Media không tồn tại hoặc đã bị xóa.
-    /// - <c>MEDIA_FORBIDDEN</c>: Media không thuộc về người dùng hiện tại.
-    /// - <c>INVALID_FILE_TYPE</c>: Media không phải file ảnh.
+    /// - <c>UPLOAD_FAILED</c>: Lỗi khi upload lên storage hoặc lưu metadata.
     ///
     /// Cấu trúc <c>data</c> khi thành công: giống với <c>PATCH /api/v1/users/me</c>,
     /// bao gồm <c>avatarUrl</c> là presigned URL của avatar vừa được gán (hết hạn 15 phút).
     ///
     /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
+    /// <param name="file">
+    /// File ảnh avatar (<c>multipart/form-data</c>, field name: <c>file</c>).
+    /// Chấp nhận: image/jpeg, image/png, image/webp, image/gif. Tối đa 10MB.
+    /// </param>
     #endregion
     [HttpPut("me/avatar")]
     [Authorize]
-    public async Task<IActionResult> UpdateAvatar([FromBody] UpdateAvatarRequest request, CancellationToken ct)
-        => HandleResult(await mediator.Send(new UpdateAvatarCommand(currentUser.UserId, request.MediaObjectId), ct));
+    [RequestSizeLimit(11L * 1024 * 1024)]
+    public async Task<IActionResult> UpdateAvatar(IFormFile file, CancellationToken ct)
+        => HandleResult(await mediator.Send(new UpdateAvatarCommand(file, currentUser.UserId), ct));
 }
