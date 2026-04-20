@@ -37,6 +37,7 @@ public static class AuthExtensions
             });
 
         services.AddSingleton<IAuthorizationHandler, PermissionAuthorizationHandler>();
+        services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
         services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", p => p.RequireClaim("actor", "admin"));

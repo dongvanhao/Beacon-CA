@@ -35,7 +35,7 @@ namespace Beacon.Infrashtructure.Presistence
         // public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
         // public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
 
-        // public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
+        public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
 
         // public DbSet<Checkin> Checkins => Set<Checkin>();
         // public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
@@ -76,9 +76,12 @@ namespace Beacon.Infrashtructure.Presistence
             modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.PermissionConfiguration());
             modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RolePermissionConfiguration());
 
+            // Storage module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Storage.MediaObjectConfiguration());
+
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
             // modelBuilder.Entity<EmergencyContact>().HasQueryFilter(x => !x.IsDeleted);
-            // modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
 
             base.OnModelCreating(modelBuilder);
         }

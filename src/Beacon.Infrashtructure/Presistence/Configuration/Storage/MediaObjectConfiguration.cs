@@ -1,5 +1,3 @@
-#if false
-// Chưa dùng — sẽ bật lại khi implement module Storage
 using Beacon.Domain.Entities.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -20,12 +18,18 @@ public class MediaObjectConfiguration : IEntityTypeConfiguration<MediaObject>
         builder.Property(x => x.AccessType)
             .HasConversion<int>();
 
+        builder.Property(x => x.MediaType)
+            .HasConversion<int>();
+
         builder.Property(x => x.BucketName)
             .IsRequired()
             .HasMaxLength(100);
 
         builder.Property(x => x.ObjectKey)
             .IsRequired()
+            .HasMaxLength(1000);
+
+        builder.Property(x => x.ThumbnailObjectKey)
             .HasMaxLength(1000);
 
         builder.Property(x => x.OriginalFileName)
@@ -44,6 +48,8 @@ public class MediaObjectConfiguration : IEntityTypeConfiguration<MediaObject>
 
         builder.HasIndex(x => new { x.BucketName, x.ObjectKey })
             .IsUnique();
+
+        builder.HasIndex(x => x.UploadProviderByUserId);
+        builder.HasIndex(x => x.CreatedAtUtc);
     }
 }
-#endif
