@@ -1,6 +1,8 @@
+using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
 using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.IRepository;
+using Beacon.Domain.IRepository.Storage;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using MediatR;
@@ -9,6 +11,8 @@ namespace Beacon.Application.Features.Identity.Commands.UpdateProfile;
 
 public class UpdateProfileCommandHandler(
     IUserRepository userRepository,
+    IMediaObjectRepository mediaRepository,
+    IStorageService storage,
     UserProfileMapper mapper) : IRequestHandler<UpdateProfileCommand, Result<UserProfileDto>>
 {
     public async Task<Result<UserProfileDto>> Handle(UpdateProfileCommand command, CancellationToken ct)
@@ -34,6 +38,14 @@ public class UpdateProfileCommandHandler(
         user.UpdateProfile(req.FamilyName, req.GivenName, req.PhoneNumber, req.TimeZone);
         await userRepository.SaveChangesAsync(ct);
 
-        return Result<UserProfileDto>.Success(mapper.ToProfileDto(user));
+        string? avatarUrl = null;
+        if (user.AvatarMediaObjectId is { } avatarId)
+        {
+            var media = await mediaRepository.GetByIdAsync(avatarId, ct);
+            if (media is not null)
+                avatarUrl = (await storage.GetMediaUrlsAsync(media, ct)).Url;
+        }
+
+        return Result<UserProfileDto>.Success(mapper.ToProfileDto(user, avatarUrl));
     }
 }
