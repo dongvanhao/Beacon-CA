@@ -1,5 +1,5 @@
 using Beacon.Application.Common.Interfaces.IService;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Minio;
 using Minio.DataModel.Args;
 
@@ -8,16 +8,20 @@ namespace Beacon.Infrashtructure.Services.Storage;
 public class MinioStorageService : IStorageService
 {
     private readonly IMinioClient _minio;
-    private readonly int _presignedUrlExpirySeconds;
+    private readonly IMinioClient _presignedMinio;
+    private readonly MinioSettings _settings;
 
-    public string BucketName { get; }
+    public string BucketName => _settings.BucketName;
 
-    public MinioStorageService(IMinioClient minio, IConfiguration configuration)
+    public MinioStorageService(IMinioClient minio, IOptions<MinioSettings> options)
     {
         _minio = minio;
-        BucketName = configuration["MinIO:BucketName"]
-            ?? throw new InvalidOperationException("MinIO:BucketName is not configured.");
-        _presignedUrlExpirySeconds = configuration.GetValue<int?>("MinIO:PresignedUrlExpirySeconds") ?? 900;
+        _settings = options.Value;
+
+        // Client riêng để generate presigned URL — ký bằng PublicEndpoint
+        // để URL trả về client có thể truy cập được từ bên ngoài Docker.
+        // (Host PHẢI khớp lúc ký vì "host" nằm trong X-Amz-SignedHeaders)
+        _presignedMinio = BuildPresignedClient(_settings);
     }
 
     public async Task<StorageUploadResult> UploadAsync(
@@ -43,9 +47,11 @@ public class MinioStorageService : IStorageService
         var args = new PresignedGetObjectArgs()
             .WithBucket(BucketName)
             .WithObject(objectKey)
-            .WithExpiry(_presignedUrlExpirySeconds);
+            .WithExpiry(_settings.PresignedUrlExpirySeconds);
 
-        return await _minio.PresignedGetObjectAsync(args);
+        // Dùng _presignedMinio (public endpoint) để SDK ký với host đúng ngay từ đầu.
+        // Signature sẽ chứa host=localhost:9000 → browser truy cập được.
+        return await _presignedMinio.PresignedGetObjectAsync(args);
     }
 
     public async Task RemoveAsync(string objectKey, CancellationToken ct = default)
@@ -55,5 +61,28 @@ public class MinioStorageService : IStorageService
             .WithObject(objectKey);
 
         await _minio.RemoveObjectAsync(args, ct);
+    }
+
+    /// <summary>
+    /// Tạo MinioClient dùng riêng cho presigned URL.
+    /// Client này trỏ vào PublicEndpoint (vd: localhost:9000) thay vì internal endpoint (minio:9000),
+    /// do đó signature được tính với host công khai — URL trả về client là valid.
+    /// </summary>
+    private static IMinioClient BuildPresignedClient(MinioSettings settings)
+    {
+        var publicEndpoint = settings.GetPublicEndpoint()
+            .Replace("https://", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("http://", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .TrimEnd('/');
+
+        var builder = new MinioClient()
+            .WithEndpoint(publicEndpoint)
+            .WithCredentials(settings.AccessKey, settings.SecretKey);
+
+        // UseSSL theo public endpoint (production dùng HTTPS)
+        var publicScheme = settings.GetPublicEndpoint().StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+        if (publicScheme) builder = builder.WithSSL();
+
+        return builder.Build();
     }
 }

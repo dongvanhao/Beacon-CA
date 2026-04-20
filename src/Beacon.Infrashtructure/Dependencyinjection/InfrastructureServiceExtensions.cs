@@ -9,6 +9,7 @@ using Beacon.Infrashtructure.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Minio;
 
 namespace Beacon.Infrashtructure.Dependencyinjection;
@@ -38,23 +39,24 @@ public static class InfrastructureServiceExtensions
 
     private static void AddMinio(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IMinioClient>(_ =>
-        {
-            var rawEndpoint = configuration["MinIO:Endpoint"] ?? "localhost:9000";
-            var useSsl = configuration.GetValue<bool?>("MinIO:UseSSL") ?? false;
-            var accessKey = configuration["MinIO:AccessKey"] ?? string.Empty;
-            var secretKey = configuration["MinIO:SecretKey"] ?? string.Empty;
+        // ✅ Tập trung toàn bộ cấu hình MinIO vào MinioSettings — chỉ đọc từ 1 section "MinIO"
+        services.Configure<MinioSettings>(configuration.GetSection(MinioSettings.SectionName));
 
-            var endpoint = rawEndpoint
+        services.AddSingleton<IMinioClient>(sp =>
+        {
+            var settings = sp.GetRequiredService<IOptions<MinioSettings>>().Value;
+
+            // SDK chỉ cần internal endpoint (không cần scheme prefix)
+            var internalEndpoint = settings.Endpoint
                 .Replace("https://", string.Empty, StringComparison.OrdinalIgnoreCase)
                 .Replace("http://", string.Empty, StringComparison.OrdinalIgnoreCase)
                 .TrimEnd('/');
 
             var builder = new MinioClient()
-                .WithEndpoint(endpoint)
-                .WithCredentials(accessKey, secretKey);
+                .WithEndpoint(internalEndpoint)
+                .WithCredentials(settings.AccessKey, settings.SecretKey);
 
-            if (useSsl) builder = builder.WithSSL();
+            if (settings.UseSSL) builder = builder.WithSSL();
 
             return builder.Build();
         });
