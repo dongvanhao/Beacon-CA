@@ -40,7 +40,12 @@ namespace Beacon.Shared.Constants
         public static class Storage
         {
             public const string MEDIA_NOT_FOUND = "MEDIA_NOT_FOUND";
+            public const string MEDIA_FORBIDDEN = "MEDIA_FORBIDDEN";
             public const string UPLOAD_FAILED = "UPLOAD_FAILED";
+            public const string INVALID_FILE_TYPE = "INVALID_FILE_TYPE";
+            public const string FILE_TOO_LARGE = "FILE_TOO_LARGE";
+            public const string FILE_EMPTY = "FILE_EMPTY";
+            public const string STORAGE_UNAVAILABLE = "STORAGE_UNAVAILABLE";
         }
 
         /// <summary>

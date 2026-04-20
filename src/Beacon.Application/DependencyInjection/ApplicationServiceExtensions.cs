@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Behaviors;
 using Beacon.Application.Mappings.Identity;
+using Beacon.Application.Mappings.Storage;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<UserAuthMapper>();
         services.AddSingleton<UserProfileMapper>();
         services.AddSingleton<AdminAuthMapper>();
+        services.AddSingleton<MediaDtoMapper>();
 
         return services;
     }
