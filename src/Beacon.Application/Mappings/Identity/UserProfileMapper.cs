@@ -5,7 +5,7 @@ namespace Beacon.Application.Mappings.Identity;
 
 public sealed class UserProfileMapper
 {
-    public UserProfileDto ToProfileDto(User user)
+    public UserProfileDto ToProfileDto(User user, string? avatarUrl = null)
         => new()
         {
             Id = user.Id,
@@ -18,6 +18,8 @@ public sealed class UserProfileMapper
             IsActive = user.IsActive,
             IsEmailVerified = user.IsEmailVerified,
             LastLoginAtUtc = user.LastLoginAtUtc,
-            CreatedAtUtc = user.CreatedAtUtc
+            CreatedAtUtc = user.CreatedAtUtc,
+            AvatarMediaObjectId = user.AvatarMediaObjectId,
+            AvatarUrl = avatarUrl,
         };
 }

@@ -13,4 +13,6 @@ public class UserProfileDto
     public bool IsEmailVerified { get; set; }
     public DateTime? LastLoginAtUtc { get; set; }
     public DateTime CreatedAtUtc { get; set; }
+    public Guid? AvatarMediaObjectId { get; set; }
+    public string? AvatarUrl { get; set; }
 }

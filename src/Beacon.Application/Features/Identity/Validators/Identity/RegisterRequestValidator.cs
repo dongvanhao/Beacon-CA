@@ -42,7 +42,7 @@ public class RegisterCommandValidator : AbstractValidator<RegisterCommand>
             .MaximumLength(100).WithMessage("Tên không được vượt quá 100 ký tự.");
 
         RuleFor(x => x.Request.PhoneNumber)
-            .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.")
+            .Matches(@"^(0|\+?[1-9])\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.")
             .When(x => !string.IsNullOrEmpty(x.Request.PhoneNumber));
     }
 }

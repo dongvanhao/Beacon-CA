@@ -22,6 +22,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task<bool> ExistsByPhoneAsync(string phoneNumber, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.PhoneNumber != null && u.PhoneNumber == phoneNumber, ct);
 
+    public async Task<bool> ExistsByPhoneExcludingUserAsync(string phoneNumber, Guid excludeUserId, CancellationToken ct = default)
+        => await context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber.Trim() && u.Id != excludeUserId, ct);
+
     public async Task AddAsync(User user, CancellationToken ct = default)
         => await context.Users.AddAsync(user, ct);
 

@@ -9,6 +9,7 @@ public interface IUserRepository
     Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default);
     Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> ExistsByPhoneAsync(string phoneNumber, CancellationToken ct = default);
+    Task<bool> ExistsByPhoneExcludingUserAsync(string phoneNumber, Guid excludeUserId, CancellationToken ct = default);
     Task AddAsync(User user, CancellationToken ct = default);
     Task AddRefreshTokenAsync(RefreshToken token, CancellationToken ct = default);
     Task<RefreshToken?> GetActiveRefreshTokenAsync(string token, CancellationToken ct = default);

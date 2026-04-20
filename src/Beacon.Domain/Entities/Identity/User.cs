@@ -48,8 +48,19 @@ namespace Beacon.Domain.Entities.Identity
                 PasswordHash = passwordHash,
                 FamilyName = familyName,
                 GivenName = givenName,
-                PhoneNumber = phoneNumber
+                PhoneNumber = phoneNumber?.Trim()
             };
+        }
+
+        public void UpdateProfile(string familyName, string givenName, string? phoneNumber, string timeZone)
+        {
+            if (string.IsNullOrWhiteSpace(familyName)) throw new ArgumentException("FamilyName không được rỗng.");
+            if (string.IsNullOrWhiteSpace(givenName))  throw new ArgumentException("GivenName không được rỗng.");
+            if (string.IsNullOrWhiteSpace(timeZone))   throw new ArgumentException("TimeZone không được rỗng.");
+            FamilyName  = familyName;
+            GivenName   = givenName;
+            PhoneNumber = phoneNumber?.Trim();
+            TimeZone    = timeZone;
         }
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
