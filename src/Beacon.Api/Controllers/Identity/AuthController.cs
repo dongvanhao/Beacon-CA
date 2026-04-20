@@ -138,7 +138,9 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     ///   "isActive":        "boolean",
     ///   "isEmailVerified": "boolean",
     ///   "lastLoginAtUtc":  "datetime | null",
-    ///   "createdAtUtc":    "datetime"
+    ///   "createdAtUtc":    "datetime",
+    ///   "avatarMediaObjectId": "guid | null",
+    ///   "avatarUrl":       "string | null  (presigned URL từ MinIO, hết hạn 15 phút; null nếu chưa set avatar)"
     /// }
     /// </code>
     ///

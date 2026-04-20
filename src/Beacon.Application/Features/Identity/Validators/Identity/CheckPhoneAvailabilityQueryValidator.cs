@@ -9,6 +9,6 @@ public class CheckPhoneAvailabilityQueryValidator : AbstractValidator<CheckPhone
     {
         RuleFor(x => x.PhoneNumber)
             .NotEmpty().WithMessage("Số điện thoại không được để trống.")
-            .Matches(@"^\+?[1-9]\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.");
+            .Matches(@"^(0|\+?[1-9])\d{1,14}$").WithMessage("Số điện thoại không hợp lệ.");
     }
 }
