@@ -105,6 +105,149 @@ All feature work follows this pipeline:
 
 ---
 
+## Project Structure
+
+```
+Beacon-CA/
+├── src/
+│   ├── Beacon.Api/                          # Presentation layer
+│   │   ├── Authorization/                   # [HasPermission], [AdminOnly], policy provider
+│   │   ├── Controllers/
+│   │   │   ├── Identity/
+│   │   │   │   ├── AdminAuthController.cs   # POST api/v1/admin/auth/login|logout
+│   │   │   │   ├── AuthController.cs        # POST api/v1/auth/register|login|logout|refresh-token
+│   │   │   │   └── UsersController.cs       # PATCH api/v1/users/me, PUT api/v1/users/me/avatar
+│   │   │   ├── Storage/
+│   │   │   │   └── MediaController.cs       # CRUD api/v1/media
+│   │   │   ├── BaseController.cs            # HandleResult<T>, CreatedResult<T>
+│   │   │   └── DevicesController.cs         # POST api/v1/devices/register
+│   │   ├── Extensions/
+│   │   │   ├── AuthExtensions.cs
+│   │   │   ├── HealthCheckExtensions.cs
+│   │   │   └── SwaggerExtensions.cs
+│   │   ├── HealthChecks/
+│   │   │   └── MinioHealthCheck.cs
+│   │   ├── Middleware/
+│   │   │   └── ExceptionHandlingMiddleware.cs
+│   │   ├── Backgroundjobs/                  # (scaffolding only)
+│   │   ├── appsettings.json
+│   │   └── Program.cs
+│   │
+│   ├── Beacon.Application/                  # Use-case layer (no framework deps except MediatR)
+│   │   ├── Common/
+│   │   │   ├── Behaviors/
+│   │   │   │   └── ValidationBehavior.cs    # MediatR pipeline: auto-validate commands
+│   │   │   ├── Exceptions/                  # NotFoundException, ConflictException, etc.
+│   │   │   └── Interfaces/IService/         # ICurrentUserService, IJwtService, IStorageService, IImageProcessor
+│   │   ├── DependencyInjection/
+│   │   │   └── ApplicationServiceExtensions.cs
+│   │   ├── Features/
+│   │   │   ├── Identity/
+│   │   │   │   ├── Commands/                # Register, Login, Logout, RefreshToken,
+│   │   │   │   │                            #   LoginAdmin, LogoutAdmin, RegisterDevice,
+│   │   │   │   │                            #   UpdateProfile, UpdateAvatar
+│   │   │   │   ├── Queries/                 # GetCurrentUser, CheckEmailAvailability, CheckPhoneAvailability
+│   │   │   │   ├── Dtos/                    # Request/Response DTOs (RegisterRequest, AuthResponse, UserProfileDto…)
+│   │   │   │   ├── Services/
+│   │   │   │   └── Validators/Identity/     # FluentValidation — one file per Command/Query
+│   │   │   ├── Storage/
+│   │   │   │   ├── Commands/                # Upload, SoftDelete, HardDelete
+│   │   │   │   ├── Queries/                 # GetMediaById, ListMedia
+│   │   │   │   ├── Dtos/                    # MediaDto, UploadMediaRequest
+│   │   │   │   └── Validators/Storage/      # UploadMediaCommandValidator, ListMediaQueryValidator
+│   │   │   ├── Checkins/                    # (scaffolding only)
+│   │   │   ├── Group/                       # (scaffolding only)
+│   │   │   ├── Messaging/                   # (scaffolding only)
+│   │   │   ├── Notification/                # (scaffolding only)
+│   │   │   └── Safety/                      # (scaffolding only)
+│   │   ├── Mappings/
+│   │   │   ├── Identity/                    # UserAuthMapper, UserProfileMapper, AdminAuthMapper
+│   │   │   └── Storage/                     # MediaDtoMapper
+│   │   └── Services/
+│   │       └── CurrentUserService.cs
+│   │
+│   ├── Beacon.Domain/                       # Core domain — zero framework dependencies
+│   │   ├── Common/
+│   │   │   ├── BaseEntity.cs                # Guid Id
+│   │   │   ├── AuditableEntity.cs           # + CreatedAtUtc, UpdatedAtUtc
+│   │   │   └── SoftDeletableEntity.cs       # + IsDeleted (EF query filter)
+│   │   ├── Entities/
+│   │   │   ├── Identity/                    # User, Admin, Role, Permission, RefreshToken,
+│   │   │   │                                #   RefreshTokenAdmin, AdminRole, RolePermission, UserDevice
+│   │   │   ├── Storage/                     # MediaObject
+│   │   │   ├── Checkins/                    # Checkin, CheckinMedia
+│   │   │   ├── Safety/                      # AlertIncident, DailySafetyRecord, EmergencyContact
+│   │   │   ├── Notification/                # NotificationDelivery
+│   │   │   └── Settings/                    # SafetySetting, NotificationPreference, AppPreference
+│   │   ├── Enums/                           # MediaType, MediaAccessType, StorageProvider,
+│   │   │                                    #   DevicePlatform, NotificationChannel, SafetyStatus…
+│   │   ├── IRepository/                     # IUserRepository, IAdminRepository,
+│   │   │   └── Storage/                     #   IUserDeviceRepository, IMediaObjectRepository
+│   │   └── Constants/
+│   │
+│   ├── Beacon.Infrashtructure/              # ⚠️ typo tracked — see Open Decisions
+│   │   ├── Dependencyinjection/             # ⚠️ lowercase 'i' — tracked
+│   │   │   └── InfrastructureServiceExtensions.cs
+│   │   ├── Presistence/
+│   │   │   ├── Configuration/               # IEntityTypeConfiguration<T> — one per entity
+│   │   │   │   ├── Identity/
+│   │   │   │   ├── Storage/
+│   │   │   │   ├── Checkins/
+│   │   │   │   ├── Safety/
+│   │   │   │   ├── Notification/
+│   │   │   │   └── Settings/
+│   │   │   └── AppDbContext.cs
+│   │   ├── Repository/
+│   │   │   ├── Identity/                    # UserRepository, AdminRepository, UserDeviceRepository
+│   │   │   └── Storage/                     # MediaObjectRepository
+│   │   ├── Services/
+│   │   │   ├── Storage/                     # MinioStorageService, ImageSharpProcessor, MinioBucketInitializer
+│   │   │   └── JwtService.cs
+│   │   └── Migrations/
+│   │
+│   └── Beacon.Shared/                       # Cross-cutting, no business logic
+│       ├── Results/                         # Result<T>, Error, ErrorType
+│       ├── Common/
+│       │   ├── Responses/                   # ApiResponse<T>
+│       │   └── Pagination/                  # PaginatedList<T>, CursorPagedResult<T>
+│       └── Constants/
+│           └── ErrorCodes.cs                # SCREAMING_SNAKE_CASE string constants
+│
+├── tests/
+│   ├── Beacon.UnitTests/
+│   │   ├── Identity/                        # LoginCommandHandlerTests, RegisterCommandHandlerTests…
+│   │   └── Storage/                         # (to be populated)
+│   └── Beacon.IntergrationTests/            # ⚠️ typo tracked — WebApplicationFactory tests
+│
+├── .claude/
+│   └── CLAUDE.md                            # This file
+├── Docs/
+│   └── api-conventions.md
+├── docker-compose.yml
+└── Dockerfile
+```
+
+### Quy ước đặt file trong feature folder
+
+Mỗi use case có thư mục riêng chứa cả Command/Query + Handler:
+
+```
+Features/Identity/Commands/Login/
+    LoginCommand.cs          # IRequest<Result<AuthResponse>>
+    LoginCommandHandler.cs   # IRequestHandler<LoginCommand, Result<AuthResponse>>
+```
+
+Validator đặt trong `Validators/{Module}/`:
+
+```
+Features/Identity/Validators/Identity/
+    LoginRequestValidator.cs     # AbstractValidator<LoginCommand>
+```
+
+> Lý do tách: validator nằm ngoài use case folder để có thể tái dụng và dễ dò qua IDE.
+
+---
+
 ## Mandatory Rules
 
 All rules below are **non-negotiable**. Code review will reject PRs that violate them unless an explicit ADR documents the exception.
@@ -564,3 +707,4 @@ This document is versioned alongside the code. When you make a structural change
 | Date       | Change                                          | Author  |
 | ---------- | ----------------------------------------------- | ------- |
 | 2026-04-19 | Initial restructure with workflow, rules, open decisions | Team    |
+| 2026-04-20 | Add Project Structure section with full directory tree   | Team    |
