@@ -36,7 +36,7 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     ///   "familyName":          "string",
     ///   "givenName":           "string",
     ///   "phoneNumber":         "string?  (có thể null)",
-    ///   "timeZone":            "string",
+    ///   "timeZone":            "string  (readonly — không thay đổi được qua endpoint này)",
     ///   "isActive":            "bool",
     ///   "isEmailVerified":     "bool",
     ///   "lastLoginAtUtc":      "datetime?  (UTC)",
@@ -49,13 +49,13 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
     /// <param name="request">
-    /// Body JSON chứa thông tin hồ sơ cần cập nhật:
+    /// Body JSON chứa các trường muốn cập nhật (tất cả đều tuỳ chọn — null hoặc bỏ qua = giữ nguyên giá trị hiện tại):
     /// <code>
     /// {
-    ///   "familyName":  "string",           // Họ (bắt buộc)
-    ///   "givenName":   "string",           // Tên (bắt buộc)
-    ///   "email":       "string",           // Email mới (bắt buộc)
-    ///   "phoneNumber": "string | null"     // Số điện thoại (tuỳ chọn)
+    ///   "familyName":  "string?",          // Họ (tuỳ chọn)
+    ///   "givenName":   "string?",          // Tên (tuỳ chọn)
+    ///   "email":       "string?",          // Email mới (tuỳ chọn)
+    ///   "phoneNumber": "string?",          // Số điện thoại (tuỳ chọn)
     /// }
     /// </code>
     /// </param>
