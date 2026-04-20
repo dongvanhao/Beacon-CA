@@ -29,7 +29,7 @@ public class UploadMediaCommandHandler(
             : MediaType.Video;
 
         var ext = Path.GetExtension(file.FileName);
-        var datePrefix = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        var datePrefix = DateTime.UtcNow.ToString("yyyy/MM/dd");
         var fileId = Guid.NewGuid().ToString("N");
         var objectKey = $"{datePrefix}/{fileId}{ext}";
         string? thumbnailKey = null;
