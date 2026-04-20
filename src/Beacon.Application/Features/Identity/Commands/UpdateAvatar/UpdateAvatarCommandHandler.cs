@@ -1,3 +1,4 @@
+using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Dtos;
 using Beacon.Application.Mappings.Identity;
 using Beacon.Domain.Enums;
@@ -12,6 +13,7 @@ namespace Beacon.Application.Features.Identity.Commands.UpdateAvatar;
 public class UpdateAvatarCommandHandler(
     IUserRepository userRepository,
     IMediaObjectRepository mediaRepository,
+    IStorageService storage,
     UserProfileMapper mapper) : IRequestHandler<UpdateAvatarCommand, Result<UserProfileDto>>
 {
     public async Task<Result<UserProfileDto>> Handle(UpdateAvatarCommand command, CancellationToken ct)
@@ -47,6 +49,7 @@ public class UpdateAvatarCommandHandler(
         user.UpdateAvatar(command.MediaObjectId);
         await userRepository.SaveChangesAsync(ct);
 
-        return Result<UserProfileDto>.Success(mapper.ToProfileDto(user));
+        var avatarUrl = (await storage.GetMediaUrlsAsync(newMedia, ct)).Url;
+        return Result<UserProfileDto>.Success(mapper.ToProfileDto(user, avatarUrl));
     }
 }

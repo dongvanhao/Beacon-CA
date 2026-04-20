@@ -39,7 +39,8 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     ///   "isEmailVerified":     "bool",
     ///   "lastLoginAtUtc":      "datetime?  (UTC)",
     ///   "createdAtUtc":        "datetime  (UTC)",
-    ///   "avatarMediaObjectId": "guid?  (có thể null)"
+    ///   "avatarMediaObjectId": "guid?  (có thể null)",
+    ///   "avatarUrl":           "string | null  (presigned URL từ MinIO, hết hạn 15 phút; null nếu chưa set avatar)"
     /// }
     /// </code>
     ///
@@ -70,7 +71,8 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     /// - <c>MEDIA_FORBIDDEN</c>: Media không thuộc về người dùng hiện tại.
     /// - <c>INVALID_FILE_TYPE</c>: Media không phải file ảnh.
     ///
-    /// Cấu trúc <c>data</c> khi thành công: giống với <c>PATCH /api/v1/users/me</c>.
+    /// Cấu trúc <c>data</c> khi thành công: giống với <c>PATCH /api/v1/users/me</c>,
+    /// bao gồm <c>avatarUrl</c> là presigned URL của avatar vừa được gán (hết hạn 15 phút).
     ///
     /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
