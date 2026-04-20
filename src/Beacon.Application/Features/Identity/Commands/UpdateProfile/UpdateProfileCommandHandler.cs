@@ -24,28 +24,29 @@ public class UpdateProfileCommandHandler(
 
         var req = command.Request;
 
-        // ── Kiểm tra email unique (nếu khác email hiện tại) ──────────────
-        var trimmedEmail = req.Email.Trim().ToLowerInvariant();
-        if (trimmedEmail != user.Email)
+        // ── Resolve giá trị cuối cùng: dùng giá trị mới nếu được gửi, giữ nguyên nếu null ──
+        var newFamilyName = req.FamilyName?.Trim() ?? user.FamilyName;
+        var newGivenName  = req.GivenName?.Trim()  ?? user.GivenName;
+        var newEmail      = req.Email?.Trim().ToLowerInvariant() ?? user.Email;
+        var newPhone      = req.PhoneNumber is not null ? req.PhoneNumber : user.PhoneNumber;
+
+        // ── Kiểm tra email unique (chỉ khi email thay đổi) ───────────────
+        if (newEmail != user.Email)
         {
-            if (await userRepository.ExistsByEmailExcludingUserAsync(trimmedEmail, command.UserId, ct))
+            if (await userRepository.ExistsByEmailExcludingUserAsync(newEmail, command.UserId, ct))
                 return Result<UserProfileDto>.Failure(
                     Error.Conflict(ErrorCodes.Identity.EMAIL_ALREADY_IN_USE, "Email đã được sử dụng bởi tài khoản khác."));
         }
 
-        // ── Kiểm tra phone unique (nếu có thay đổi) ───────────────────────
-        if (!string.IsNullOrWhiteSpace(req.PhoneNumber))
+        // ── Kiểm tra phone unique (chỉ khi phone thay đổi và không null) ─
+        if (!string.IsNullOrWhiteSpace(newPhone) && newPhone != user.PhoneNumber)
         {
-            var trimmedPhone = req.PhoneNumber.Trim();
-            if (trimmedPhone != user.PhoneNumber)
-            {
-                if (await userRepository.ExistsByPhoneExcludingUserAsync(trimmedPhone, command.UserId, ct))
-                    return Result<UserProfileDto>.Failure(
-                        Error.Conflict(ErrorCodes.Identity.PHONE_ALREADY_IN_USE, "Số điện thoại đã được sử dụng."));
-            }
+            if (await userRepository.ExistsByPhoneExcludingUserAsync(newPhone, command.UserId, ct))
+                return Result<UserProfileDto>.Failure(
+                    Error.Conflict(ErrorCodes.Identity.PHONE_ALREADY_IN_USE, "Số điện thoại đã được sử dụng."));
         }
 
-        user.UpdateProfile(req.FamilyName, req.GivenName, req.PhoneNumber, req.Email);
+        user.UpdateProfile(newFamilyName, newGivenName, newPhone, newEmail);
         await userRepository.SaveChangesAsync(ct);
 
         string? avatarUrl = null;
