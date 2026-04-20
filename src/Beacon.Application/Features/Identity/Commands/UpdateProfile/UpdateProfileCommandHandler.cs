@@ -24,6 +24,16 @@ public class UpdateProfileCommandHandler(
 
         var req = command.Request;
 
+        // ── Kiểm tra email unique (nếu khác email hiện tại) ──────────────
+        var trimmedEmail = req.Email.Trim().ToLowerInvariant();
+        if (trimmedEmail != user.Email)
+        {
+            if (await userRepository.ExistsByEmailExcludingUserAsync(trimmedEmail, command.UserId, ct))
+                return Result<UserProfileDto>.Failure(
+                    Error.Conflict(ErrorCodes.Identity.EMAIL_ALREADY_IN_USE, "Email đã được sử dụng bởi tài khoản khác."));
+        }
+
+        // ── Kiểm tra phone unique (nếu có thay đổi) ───────────────────────
         if (!string.IsNullOrWhiteSpace(req.PhoneNumber))
         {
             var trimmedPhone = req.PhoneNumber.Trim();
@@ -35,7 +45,7 @@ public class UpdateProfileCommandHandler(
             }
         }
 
-        user.UpdateProfile(req.FamilyName, req.GivenName, req.PhoneNumber, req.TimeZone);
+        user.UpdateProfile(req.FamilyName, req.GivenName, req.PhoneNumber, req.Email);
         await userRepository.SaveChangesAsync(ct);
 
         string? avatarUrl = null;

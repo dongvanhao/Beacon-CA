@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,6 +15,7 @@ namespace Beacon.Shared.Constants
             public const string EMAIL_ALREADY_EXISTS = "EMAIL_ALREADY_EXISTS";
             public const string PHONE_ALREADY_EXISTS = "PHONE_ALREADY_EXISTS";
             public const string PHONE_ALREADY_IN_USE = "PHONE_ALREADY_IN_USE";
+            public const string EMAIL_ALREADY_IN_USE = "EMAIL_ALREADY_IN_USE";
             public const string INVALID_CREDENTIALS = "INVALID_CREDENTIALS";
             public const string TOKEN_EXPIRED = "TOKEN_EXPIRED";
             public const string TOKEN_INVALID = "TOKEN_INVALID";
