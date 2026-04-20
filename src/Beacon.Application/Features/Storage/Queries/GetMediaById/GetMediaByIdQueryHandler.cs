@@ -25,10 +25,7 @@ public class GetMediaByIdQueryHandler(
             return Result<MediaDto>.Failure(
                 Error.Forbidden(ErrorCodes.Storage.MEDIA_FORBIDDEN, "Bạn không có quyền xem media này."));
 
-        var url = await storage.GeneratePresignedGetUrlAsync(media.ObjectKey, ct);
-        var thumbUrl = string.IsNullOrWhiteSpace(media.ThumbnailObjectKey)
-            ? null
-            : await storage.GeneratePresignedGetUrlAsync(media.ThumbnailObjectKey, ct);
+        var (url, thumbUrl) = await storage.GetMediaUrlsAsync(media, ct);
 
         return Result<MediaDto>.Success(mapper.ToDto(media, url, thumbUrl));
     }

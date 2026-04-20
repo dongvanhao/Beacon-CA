@@ -23,14 +23,8 @@ public class ListMediaQueryHandler(
         var hasMore = items.Count > query.Limit;
         if (hasMore) items.RemoveAt(items.Count - 1);
 
-        var dtos = await Task.WhenAll(items.Select(async m =>
-        {
-            var url = await storage.GeneratePresignedGetUrlAsync(m.ObjectKey, ct);
-            var thumbUrl = string.IsNullOrWhiteSpace(m.ThumbnailObjectKey)
-                ? null
-                : await storage.GeneratePresignedGetUrlAsync(m.ThumbnailObjectKey, ct);
-            return mapper.ToDto(m, url, thumbUrl);
-        }));
+        var urlResults = await storage.GetMediaUrlsBatchAsync(items, ct);
+        var dtos = urlResults.Select(r => mapper.ToDto(r.Media, r.Url, r.ThumbUrl)).ToList();
 
         var result = new CursorPagedResult<MediaDto>
         {

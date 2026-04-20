@@ -28,7 +28,7 @@ public class GetCurrentUserQueryHandler(
         {
             var media = await mediaRepository.GetByIdAsync(avatarId, ct);
             if (media is not null)
-                avatarUrl = await storage.GeneratePresignedGetUrlAsync(media.ObjectKey, ct);
+                avatarUrl = (await storage.GetMediaUrlsAsync(media, ct)).Url;
         }
 
         return Result<UserProfileDto>.Success(profileMapper.ToProfileDto(user, avatarUrl));

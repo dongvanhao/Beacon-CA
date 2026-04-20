@@ -104,10 +104,7 @@ public class UploadMediaCommandHandler(
                 Error.Failure(ErrorCodes.Storage.UPLOAD_FAILED, "Không thể lưu metadata media."));
         }
 
-        var url = await storage.GeneratePresignedGetUrlAsync(objectKey, ct);
-        var thumbUrl = thumbnailKey is null
-            ? null
-            : await storage.GeneratePresignedGetUrlAsync(thumbnailKey, ct);
+        var (url, thumbUrl) = await storage.GetMediaUrlsAsync(media, ct);
 
         return Result<MediaDto>.Success(mapper.ToDto(media, url, thumbUrl));
     }
