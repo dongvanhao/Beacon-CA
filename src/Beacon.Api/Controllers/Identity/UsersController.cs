@@ -1,4 +1,5 @@
 using Beacon.Application.Common.Interfaces.IService;
+using Beacon.Application.Features.Identity.Commands.ChangePassword;
 using Beacon.Application.Features.Identity.Commands.UpdateAvatar;
 using Beacon.Application.Features.Identity.Commands.UpdateProfile;
 using Beacon.Application.Features.Identity.Dtos;
@@ -99,4 +100,32 @@ public class UsersController(IMediator mediator, ICurrentUserService currentUser
     [RequestSizeLimit(11L * 1024 * 1024)]
     public async Task<IActionResult> UpdateAvatar(IFormFile file, CancellationToken ct)
         => HandleResult(await mediator.Send(new UpdateAvatarCommand(file, currentUser.UserId), ct));
+
+    #region
+    /// <summary>
+    /// Đổi mật khẩu của người dùng hiện tại.
+    /// </summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Sau khi đổi mật khẩu thành công, tất cả refresh token active sẽ bị revoke.
+    /// Client nên tự logout và đăng nhập lại bằng mật khẩu mới.
+    ///
+    /// Các giá trị <c>code</c>:
+    /// - <c>null</c>: Đổi mật khẩu thành công.
+    /// - <c>VALIDATION_ERROR</c>: Mật khẩu mới không đáp ứng yêu cầu độ phức tạp.
+    /// - <c>INVALID_CURRENT_PASSWORD</c>: Mật khẩu hiện tại không đúng.
+    /// - <c>NEW_PASSWORD_SAME_AS_OLD</c>: Mật khẩu mới phải khác mật khẩu hiện tại.
+    /// - <c>ACCOUNT_INACTIVE</c>: Tài khoản đã bị vô hiệu hóa.
+    /// - <c>TOKEN_INVALID</c>: Token không hợp lệ (user không tồn tại).
+    ///
+    /// Cấu trúc <c>data</c> khi thành công: <c>null</c>
+    ///
+    /// Format: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpPatch("me/password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request, CancellationToken ct)
+        => HandleResult(await mediator.Send(new ChangePasswordCommand(request), ct));
 }

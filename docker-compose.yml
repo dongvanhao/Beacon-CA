@@ -4,14 +4,14 @@ services:
     container_name: beacon-sqlserver
     environment:
       ACCEPT_EULA: "Y"
-      SA_PASSWORD: "BeaconDev@2024"
+      SA_PASSWORD: "${DB_PASSWORD}"
       MSSQL_PID: Developer
     ports:
       - "1433:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"BeaconDev@2024\" -Q 'SELECT 1' -No -b" ]
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${DB_PASSWORD}\" -Q 'SELECT 1' -No -b" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -21,8 +21,8 @@ services:
     container_name: beacon-minio
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: "minioadmin"
-      MINIO_ROOT_PASSWORD: "minioadmin"
+      MINIO_ROOT_USER: "${MINIO_ROOT_USER}"
+      MINIO_ROOT_PASSWORD: "${MINIO_ROOT_PASSWORD}"
     ports:
       - "9000:9000" # S3 API
       - "9001:9001" # Console UI
@@ -42,17 +42,17 @@ services:
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       # Override connection string — ASP.NET Core tự đọc biến dạng này
-      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BeaconDb;User Id=sa;Password=BeaconDev@2024;TrustServerCertificate=True"
+      ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BeaconDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
       # JWT — dùng env var thay vì appsettings (user-secrets không chạy trong Docker)
-      JwtSettings__SecretKey: "beacon-super-secret-key-for-dev-at-least-32-chars"
+      JwtSettings__SecretKey: "${JWT_SECRET_KEY}"
       # Seed SuperAdmin — chỉ dùng cho dev, override bằng secrets manager trên production
-      SeedAdmin__Email: "superadmin@beacon.com"
-      SeedAdmin__Password: "Admin@123456"
+      SeedAdmin__Email: "${SEED_ADMIN_EMAIL}"
+      SeedAdmin__Password: "${SEED_ADMIN_PASSWORD}"
       # MinIO — override endpoint cho Docker network
       MinIO__Endpoint: "http://minio:9000"
       MinIO__PublicEndpoint: "http://${HOST_IP}:9000"
-      MinIO__AccessKey: "minioadmin"
-      MinIO__SecretKey: "minioadmin"
+      MinIO__AccessKey: "${MINIO_ROOT_USER}"
+      MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
     ports:
       - "5000:8080"
     depends_on:

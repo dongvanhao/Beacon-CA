@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace Beacon.Api.Controllers;
 
 [Route("api/v1/admin/auth")]
+[Authorize]
 public class AdminAuthController(IMediator mediator) : BaseController
 {
     #region

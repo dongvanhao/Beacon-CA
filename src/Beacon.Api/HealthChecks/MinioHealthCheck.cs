@@ -41,7 +41,7 @@ public class MinioHealthCheck : IHealthCheck
         catch (Exception ex)
         {
             return HealthCheckResult.Unhealthy(
-                $"MinIO unreachable: {ex.Message}",
+                "MinIO service unavailable.",
                 exception: ex,
                 data: new Dictionary<string, object> { ["code"] = ErrorCodes.HealthCheck.MINIO_UNREACHABLE });
         }

@@ -8,6 +8,11 @@ namespace Beacon.Shared.Constants
 {
     public static class ErrorCodes
     {
+        public static class Validation
+        {
+            public const string VALIDATION_ERROR = "VALIDATION_ERROR";
+        }
+
         public static class Identity
         {
             public const string USER_NOT_FOUND = "USER_NOT_FOUND";
@@ -24,6 +29,9 @@ namespace Beacon.Shared.Constants
             public const string ADMIN_NOT_FOUND = "ADMIN_NOT_FOUND";
             public const string ADMIN_INACTIVE = "ADMIN_INACTIVE";
             public const string ADMIN_TOKEN_INVALID = "ADMIN_TOKEN_INVALID";
+
+            public const string INVALID_CURRENT_PASSWORD = "INVALID_CURRENT_PASSWORD";
+            public const string NEW_PASSWORD_SAME_AS_OLD = "NEW_PASSWORD_SAME_AS_OLD";
         }
 
         public static class Safety
