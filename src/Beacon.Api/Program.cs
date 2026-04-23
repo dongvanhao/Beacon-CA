@@ -9,7 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
-builder.Services.AddApiAuth(builder.Configuration);
+builder.Services.AddApiAuth(builder.Configuration, builder.Environment);
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
 builder.Services.AddControllers();
@@ -17,8 +17,10 @@ builder.Services.AddControllers();
 var app = builder.Build();
 
 // Auto-apply pending EF Core migrations on startup (retry cho Docker — SQL Server khởi động chậm hơn API)
-using (var scope = app.Services.CreateScope())
+// Skip khi environment = "Testing" (integration tests dùng InMemory DB)
+if (!app.Environment.IsEnvironment("Testing"))
 {
+    using var scope = app.Services.CreateScope();
     var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     var logger = app.Logger;
     var maxRetries = 5;
@@ -46,10 +48,12 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSwaggerDocs();
 app.UseHttpsRedirection();
-app.UseCors("AllowAll");
+app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthCheckEndpoints();
 
 app.Run();
+
+public partial class Program { }

@@ -12,7 +12,8 @@ public static class AuthExtensions
 {
     public static IServiceCollection AddApiAuth(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IWebHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
         services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -45,11 +46,28 @@ public static class AuthExtensions
 
         services.AddCors(options =>
         {
+            // Dev: mở tất cả origin cho dễ debug
             options.AddPolicy("AllowAll", policy =>
             {
                 policy.AllowAnyOrigin()
                       .AllowAnyMethod()
                       .AllowAnyHeader();
+            });
+
+            // Prod: chỉ whitelist origin cụ thể từ config Cors:AllowedOrigins
+            var allowedOrigins = configuration
+                .GetSection("Cors:AllowedOrigins")
+                .Get<string[]>() ?? [];
+
+            options.AddPolicy("AllowSpecificOrigins", policy =>
+            {
+                if (allowedOrigins.Length > 0)
+                    policy.WithOrigins(allowedOrigins)
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials();
+                else
+                    policy.SetIsOriginAllowed(_ => false); // fail-closed nếu chưa config
             });
         });
 

@@ -84,27 +84,31 @@ public static class HealthCheckExtensions
     {
         var options = new HealthCheckOptions { ResponseWriter = WriteJsonResponse };
 
-        app.MapHealthChecks("/api/v1/health",        options);
-        app.MapHealthChecks("/api/v1/health/live",   new HealthCheckOptions
-        {
-            Predicate      = check => check.Tags.Contains("live"),
-            ResponseWriter = WriteJsonResponse
-        });
-        app.MapHealthChecks("/api/v1/health/ready",  new HealthCheckOptions
-        {
-            Predicate      = check => check.Tags.Contains("ready"),
-            ResponseWriter = WriteJsonResponse
-        });
+        // /health, /health/db, /health/minio — chỉ admin mới xem được (expose infrastructure info)
+        app.MapHealthChecks("/api/v1/health",        options)
+           .RequireAuthorization("AdminOnly");
         app.MapHealthChecks("/api/v1/health/db",     new HealthCheckOptions
         {
             Predicate      = check => check.Tags.Contains("db"),
             ResponseWriter = WriteJsonResponse
-        });
+        }).RequireAuthorization("AdminOnly");
         app.MapHealthChecks("/api/v1/health/minio",  new HealthCheckOptions
         {
             Predicate      = check => check.Tags.Contains("minio"),
             ResponseWriter = WriteJsonResponse
-        });
+        }).RequireAuthorization("AdminOnly");
+
+        // /live, /ready — public cho Kubernetes liveness/readiness probe
+        app.MapHealthChecks("/api/v1/health/live",   new HealthCheckOptions
+        {
+            Predicate      = check => check.Tags.Contains("live"),
+            ResponseWriter = WriteJsonResponse
+        }).AllowAnonymous();
+        app.MapHealthChecks("/api/v1/health/ready",  new HealthCheckOptions
+        {
+            Predicate      = check => check.Tags.Contains("ready"),
+            ResponseWriter = WriteJsonResponse
+        }).AllowAnonymous();
 
         return app;
     }
