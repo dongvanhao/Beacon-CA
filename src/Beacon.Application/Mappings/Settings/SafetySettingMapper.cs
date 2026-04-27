@@ -11,8 +11,7 @@ public sealed class SafetySettingMapper
         ReminderBeforeMinutes:  s.ReminderBeforeMinutes,
         AutoAlertDelayMinutes:  s.AutoAlertDelayMinutes,
         IsMonitoringEnabled:    s.IsMonitoringEnabled,
-        IsAutoAlertEnabled:     s.IsAutoAlertEnabled,
-        IsDefault:              false);
+        IsAutoAlertEnabled:     s.IsAutoAlertEnabled);
 
     public SafetySettingDto ToDefaultDto() => new(
         DailyDeadlineLocalTime: "23:59",
@@ -20,6 +19,5 @@ public sealed class SafetySettingMapper
         ReminderBeforeMinutes:  30,
         AutoAlertDelayMinutes:  15,
         IsMonitoringEnabled:    true,
-        IsAutoAlertEnabled:     true,
-        IsDefault:              true);
+        IsAutoAlertEnabled:     true);
 }

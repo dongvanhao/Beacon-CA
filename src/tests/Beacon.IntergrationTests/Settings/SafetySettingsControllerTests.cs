@@ -44,8 +44,7 @@ public class SafetySettingsControllerTests : IClassFixture<BeaconWebApplicationF
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<SafetySettingDto>>();
         body!.Success.Should().BeTrue();
         body.Data.Should().NotBeNull();
-        body.Data!.IsDefault.Should().BeTrue();
-        body.Data.DailyDeadlineLocalTime.Should().Be("23:59");
+        body.Data!.DailyDeadlineLocalTime.Should().Be("23:59");
         body.Data.GracePeriodMinutes.Should().Be(15);
         body.Data.ReminderBeforeMinutes.Should().Be(30);
         body.Data.AutoAlertDelayMinutes.Should().Be(15);
@@ -77,8 +76,7 @@ public class SafetySettingsControllerTests : IClassFixture<BeaconWebApplicationF
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<SafetySettingDto>>();
         body!.Success.Should().BeTrue();
-        body.Data!.IsDefault.Should().BeFalse();
-        body.Data.DailyDeadlineLocalTime.Should().Be("22:30");
+        body.Data!.DailyDeadlineLocalTime.Should().Be("22:30");
         body.Data.GracePeriodMinutes.Should().Be(10);
         body.Data.ReminderBeforeMinutes.Should().Be(20);
         body.Data.IsMonitoringEnabled.Should().BeFalse();
@@ -116,8 +114,7 @@ public class SafetySettingsControllerTests : IClassFixture<BeaconWebApplicationF
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<SafetySettingDto>>();
         body!.Success.Should().BeTrue();
-        body.Data!.IsDefault.Should().BeFalse();
-        body.Data.DailyDeadlineLocalTime.Should().Be("21:00");
+        body.Data!.DailyDeadlineLocalTime.Should().Be("21:00");
         body.Data.GracePeriodMinutes.Should().Be(20);
         body.Data.IsAutoAlertEnabled.Should().BeFalse();
     }

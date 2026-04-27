@@ -6,6 +6,5 @@ public record SafetySettingDto(
     int ReminderBeforeMinutes,
     int AutoAlertDelayMinutes,
     bool IsMonitoringEnabled,
-    bool IsAutoAlertEnabled,
-    bool IsDefault
+    bool IsAutoAlertEnabled
 );

@@ -45,7 +45,6 @@ public class UpdateSafetySettingHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.DailyDeadlineLocalTime.Should().Be("21:00");
         result.Value.GracePeriodMinutes.Should().Be(20);
-        result.Value.IsDefault.Should().BeFalse();
         _repo.Verify(r => r.AddAsync(It.IsAny<SafetySetting>(), default), Times.Once);
     }
 
