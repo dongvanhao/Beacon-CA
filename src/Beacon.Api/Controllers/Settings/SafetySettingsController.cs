@@ -18,7 +18,7 @@ public class SafetySettingsController(IMediator mediator, ICurrentUserService cu
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Trả về default values nếu người dùng chưa cấu hình (<c>isDefault: true</c>).
+    /// Trả về default values nếu người dùng chưa cấu hình.
     ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
@@ -31,8 +31,7 @@ public class SafetySettingsController(IMediator mediator, ICurrentUserService cu
     ///   "reminderBeforeMinutes": 30,
     ///   "autoAlertDelayMinutes": 15,
     ///   "isMonitoringEnabled": true,
-    ///   "isAutoAlertEnabled": true,
-    ///   "isDefault": true|false
+    ///   "isAutoAlertEnabled": true
     /// }
     /// </code>
     ///
