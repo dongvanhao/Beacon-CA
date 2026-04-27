@@ -9,19 +9,21 @@ public sealed class CheckinStatusMapper
         DateTime? checkedInAtUtc,
         bool hasCheckedIn,
         bool isMonitoringEnabled,
-        bool isAutoAlertEnabled)
+        bool isAutoAlertEnabled,
+        int streak)
     {
         if (hasCheckedIn)
             return new(true, CheckinDailyStatus.CheckedIn, deadlineAtUtc, null, checkedInAtUtc,
-                isMonitoringEnabled, isAutoAlertEnabled);
+                isMonitoringEnabled, isAutoAlertEnabled, streak);
 
         // Monitoring tắt: không countdown, không overdue
         if (!isMonitoringEnabled)
             return new(false, CheckinDailyStatus.Pending, deadlineAtUtc, null, null,
-                isMonitoringEnabled, isAutoAlertEnabled);
+                isMonitoringEnabled, isAutoAlertEnabled, streak);
 
         var remainingSeconds = (long)(deadlineAtUtc - DateTime.UtcNow).TotalSeconds;
         var status = remainingSeconds >= 0 ? CheckinDailyStatus.Pending : CheckinDailyStatus.Overdue;
-        return new(false, status, deadlineAtUtc, remainingSeconds, null, isMonitoringEnabled, isAutoAlertEnabled);
+        return new(false, status, deadlineAtUtc, remainingSeconds, null,
+            isMonitoringEnabled, isAutoAlertEnabled, streak);
     }
 }

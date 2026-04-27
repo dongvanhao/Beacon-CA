@@ -75,7 +75,8 @@ public class CheckinsController(IMediator mediator, ICurrentUserService currentU
     ///   "remainingSeconds": "long | null — null khi CheckedIn hoặc monitoring tắt, âm khi Overdue",
     ///   "checkedInAtUtc": "datetime | null",
     ///   "isMonitoringEnabled": "bool — false: tắt toàn bộ countdown và overdue",
-    ///   "isAutoAlertEnabled": "bool — false: vẫn overdue nhưng không gửi alert tự động"
+    ///   "isAutoAlertEnabled": "bool — false: vẫn overdue nhưng không gửi alert tự động",
+    ///   "streak": "int — số ngày check-in liên tục tính đến hôm nay (0 nếu chưa có)"
     /// }
     /// </code>
     ///

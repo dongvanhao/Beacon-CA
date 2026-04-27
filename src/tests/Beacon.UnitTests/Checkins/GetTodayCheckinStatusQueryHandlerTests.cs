@@ -2,6 +2,7 @@ using Beacon.Application.Features.Checkins.Queries.GetTodayCheckinStatus;
 using Beacon.Application.Mappings.Checkins;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Setting;
+using Beacon.Domain.IRepository.Checkins;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
 using FluentAssertions;
@@ -13,6 +14,7 @@ public class GetTodayCheckinStatusQueryHandlerTests
 {
     private readonly Mock<IDailySafetyRecordRepository> _dailySafetyRecordRepo = new();
     private readonly Mock<ISafetySettingRepository> _safetySettingRepo = new();
+    private readonly Mock<ICheckinRepository> _checkinRepo = new();
     private readonly CheckinStatusMapper _mapper = new();
     private readonly GetTodayCheckinStatusQueryHandler _handler;
 
@@ -20,9 +22,14 @@ public class GetTodayCheckinStatusQueryHandlerTests
 
     public GetTodayCheckinStatusQueryHandlerTests()
     {
+        _checkinRepo
+            .Setup(r => r.GetStreakAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
         _handler = new GetTodayCheckinStatusQueryHandler(
             _dailySafetyRecordRepo.Object,
             _safetySettingRepo.Object,
+            _checkinRepo.Object,
             _mapper);
     }
 
@@ -108,6 +115,55 @@ public class GetTodayCheckinStatusQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.DeadlineAtUtc.TimeOfDay.Should().Be(new TimeSpan(23, 59, 0));
+    }
+
+    // ─── Streak ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Handle_ReturnsStreak_WhenRepoReturnsNonZero()
+    {
+        SetupNoRecord();
+        _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync((SafetySetting?)null);
+        _checkinRepo
+            .Setup(r => r.GetStreakAsync(UserId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(5);
+
+        var result = await _handler.Handle(new GetTodayCheckinStatusQuery(UserId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Streak.Should().Be(5);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsZeroStreak_WhenNoCheckinHistory()
+    {
+        SetupNoRecord();
+        _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync((SafetySetting?)null);
+        _checkinRepo
+            .Setup(r => r.GetStreakAsync(UserId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
+
+        var result = await _handler.Handle(new GetTodayCheckinStatusQuery(UserId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Streak.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Handle_ReturnsStreak_EvenWhenCheckedIn()
+    {
+        var checkedInAt = DateTime.UtcNow.AddHours(-1);
+        var record = MakeCheckedInRecord(checkedInAt);
+        SetupRecord(record);
+        _checkinRepo
+            .Setup(r => r.GetStreakAsync(UserId, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(3);
+
+        var result = await _handler.Handle(new GetTodayCheckinStatusQuery(UserId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.HasCheckedIn.Should().BeTrue();
+        result.Value.Streak.Should().Be(3);
     }
 
     // ─── Helpers ─────────────────────────────────────────────────────────────

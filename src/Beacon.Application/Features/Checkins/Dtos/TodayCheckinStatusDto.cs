@@ -7,5 +7,6 @@ public record TodayCheckinStatusDto(
     long? RemainingSeconds,
     DateTime? CheckedInAtUtc,
     bool IsMonitoringEnabled,
-    bool IsAutoAlertEnabled
+    bool IsAutoAlertEnabled,
+    int Streak
 );
