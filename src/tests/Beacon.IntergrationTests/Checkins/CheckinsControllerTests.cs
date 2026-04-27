@@ -51,6 +51,7 @@ public class CheckinsControllerTests : IClassFixture<BeaconWebApplicationFactory
         body.Data.Status.Should().BeOneOf("Pending", "Overdue");
         body.Data.RemainingSeconds.Should().NotBeNull();
         body.Data.CheckedInAtUtc.Should().BeNull();
+        body.Data.Streak.Should().Be(0);
     }
 
     // ─── CheckedIn ──────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ public class CheckinsControllerTests : IClassFixture<BeaconWebApplicationFactory
         body.Data.Status.Should().Be("CheckedIn");
         body.Data.RemainingSeconds.Should().BeNull();
         body.Data.CheckedInAtUtc.Should().NotBeNull();
+        body.Data.Streak.Should().BeGreaterThanOrEqualTo(0);
     }
 
     // ─── Overdue: qua deadline, chưa checkin ────────────────────────────────
