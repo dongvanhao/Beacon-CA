@@ -1,10 +1,11 @@
 namespace Beacon.Application.Features.Settings.Dtos;
 
-public record UpdateSafetySettingRequest(
-    string DailyDeadlineLocalTime,
-    int GracePeriodMinutes,
-    int ReminderBeforeMinutes,
-    int AutoAlertDelayMinutes,
-    bool IsMonitoringEnabled,
-    bool IsAutoAlertEnabled
-);
+public class UpdateSafetySettingRequest
+{
+    public string? DailyDeadlineLocalTime { get; set; }
+    public int? GracePeriodMinutes { get; set; }
+    public int? ReminderBeforeMinutes { get; set; }
+    public int? AutoAlertDelayMinutes { get; set; }
+    public bool? IsMonitoringEnabled { get; set; }
+    public bool? IsAutoAlertEnabled { get; set; }
+}

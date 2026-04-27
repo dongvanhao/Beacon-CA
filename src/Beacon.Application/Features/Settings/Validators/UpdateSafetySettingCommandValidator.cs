@@ -10,18 +10,19 @@ public class UpdateSafetySettingCommandValidator : AbstractValidator<UpdateSafet
         RuleFor(x => x.Request.DailyDeadlineLocalTime)
             .NotEmpty().WithMessage("Giờ deadline không được để trống.")
             .Matches(@"^\d{2}:\d{2}$").WithMessage("Giờ deadline phải theo định dạng HH:mm.")
-            .Must(t => TimeOnly.TryParse(t, out _)).WithMessage("Giờ deadline không hợp lệ.");
+            .Must(t => TimeOnly.TryParse(t, out _)).WithMessage("Giờ deadline không hợp lệ.")
+            .When(x => x.Request.DailyDeadlineLocalTime is not null);
 
         RuleFor(x => x.Request.GracePeriodMinutes)
-            .InclusiveBetween(0, 120)
-            .WithMessage("Thời gian ân hạn phải từ 0 đến 120 phút.");
+            .InclusiveBetween(0, 120).WithMessage("Thời gian ân hạn phải từ 0 đến 120 phút.")
+            .When(x => x.Request.GracePeriodMinutes is not null);
 
         RuleFor(x => x.Request.ReminderBeforeMinutes)
-            .InclusiveBetween(0, 120)
-            .WithMessage("Thời gian nhắc nhở phải từ 0 đến 120 phút.");
+            .InclusiveBetween(0, 120).WithMessage("Thời gian nhắc nhở phải từ 0 đến 120 phút.")
+            .When(x => x.Request.ReminderBeforeMinutes is not null);
 
         RuleFor(x => x.Request.AutoAlertDelayMinutes)
-            .InclusiveBetween(0, 60)
-            .WithMessage("Thời gian chờ cảnh báo phải từ 0 đến 60 phút.");
+            .InclusiveBetween(0, 60).WithMessage("Thời gian chờ cảnh báo phải từ 0 đến 60 phút.")
+            .When(x => x.Request.AutoAlertDelayMinutes is not null);
     }
 }
