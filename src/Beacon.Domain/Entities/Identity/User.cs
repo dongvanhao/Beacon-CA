@@ -30,6 +30,7 @@ namespace Beacon.Domain.Entities.Identity
         // Relations
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
         public ICollection<UserDevice> Devices { get; private set; } = new List<UserDevice>();
+        public Setting.SafetySetting? SafetySetting { get; private set; }
 
         protected User() { }
 

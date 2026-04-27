@@ -27,8 +27,9 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<Permission> Permissions => Set<Permission>();
         public DbSet<RefreshTokenAdmin> RefreshTokenAdmins => Set<RefreshTokenAdmin>();
 
+        public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
+
         // === CÁC BẢNG TÍNH NĂNG CHƯA LÀM TỚI (Tạm ẩn) ===
-        // public DbSet<SafetySetting> SafetySettings => Set<SafetySetting>();
         // public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
         // public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
 
@@ -78,6 +79,9 @@ namespace Beacon.Infrashtructure.Presistence
 
             // Storage module
             modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Storage.MediaObjectConfiguration());
+
+            // Settings module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Setting.SafetySettingConfiguration());
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);

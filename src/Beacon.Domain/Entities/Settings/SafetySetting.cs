@@ -32,4 +32,20 @@ public class SafetySetting : AuditableEntity
     public void DisableMonitoring() => IsMonitoringEnabled = false;
     public void EnableAutoAlert() => IsAutoAlertEnabled = true;
     public void DisableAutoAlert() => IsAutoAlertEnabled = false;
+
+    public void UpdateSettings(
+        TimeOnly dailyDeadlineLocalTime,
+        int gracePeriodMinutes,
+        int reminderBeforeMinutes,
+        int autoAlertDelayMinutes,
+        bool isMonitoringEnabled,
+        bool isAutoAlertEnabled)
+    {
+        DailyDeadlineLocalTime = dailyDeadlineLocalTime;
+        GracePeriodMinutes     = gracePeriodMinutes;
+        ReminderBeforeMinutes  = reminderBeforeMinutes;
+        AutoAlertDelayMinutes  = autoAlertDelayMinutes;
+        IsMonitoringEnabled    = isMonitoringEnabled;
+        IsAutoAlertEnabled     = isAutoAlertEnabled;
+    }
 }

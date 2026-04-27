@@ -52,12 +52,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .HasForeignKey(x => x.AvatarMediaObjectId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // === CÁC BẢNG TÍNH NĂNG CHƯA LÀM TỚI (Tạm ẩn) ===
-        // builder.HasOne(x => x.SafetySetting)
-        //     .WithOne(x => x.User)
-        //     .HasForeignKey<SafetySetting>(x => x.UserId)
-        //     .OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(x => x.SafetySetting)
+            .WithOne(x => x.User)
+            .HasForeignKey<SafetySetting>(x => x.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
+        // === CÁC BẢNG TÍNH NĂNG CHƯA LÀM TỚI (Tạm ẩn) ===
         // builder.HasOne(x => x.NotificationPreference)
         //     .WithOne(x => x.User)
         //     .HasForeignKey<NotificationPreference>(x => x.UserId)
