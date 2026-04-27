@@ -27,6 +27,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<MediaDtoMapper>();
         services.AddSingleton<SafetySettingMapper>();
         services.AddSingleton<CheckinMapper>();
+        services.AddSingleton<CheckinStatusMapper>();
 
         return services;
     }

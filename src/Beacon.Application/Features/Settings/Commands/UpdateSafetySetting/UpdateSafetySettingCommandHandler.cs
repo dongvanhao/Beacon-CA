@@ -17,19 +17,22 @@ public class UpdateSafetySettingCommandHandler(
         var req      = cmd.Request;
         var deadline = TimeOnly.Parse(req.DailyDeadlineLocalTime);
 
+        // IsAutoAlertEnabled không có nghĩa khi monitoring tắt — normalize trước khi lưu
+        var effectiveAutoAlert = req.IsMonitoringEnabled && req.IsAutoAlertEnabled;
+
         var setting = await repo.GetByUserIdAsync(cmd.UserId, ct);
 
         if (setting is null)
         {
             setting = SafetySetting.CreateDefault(cmd.UserId, deadline);
             setting.UpdateSettings(deadline, req.GracePeriodMinutes, req.ReminderBeforeMinutes,
-                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, req.IsAutoAlertEnabled);
+                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, effectiveAutoAlert);
             await repo.AddAsync(setting, ct);
         }
         else
         {
             setting.UpdateSettings(deadline, req.GracePeriodMinutes, req.ReminderBeforeMinutes,
-                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, req.IsAutoAlertEnabled);
+                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, effectiveAutoAlert);
         }
 
         await repo.SaveChangesAsync(ct);

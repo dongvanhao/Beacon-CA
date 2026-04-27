@@ -19,8 +19,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Beacon.IntergrationTests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Beacon.UnitTests", "tests\Beacon.UnitTests\Beacon.UnitTests.csproj", "{E53D6B5F-38C8-4F25-AEAD-4AC1DCCFCBBA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Beacon.UnitTests", "..\tests\Beacon.UnitTests\Beacon.UnitTests.csproj", "{2506730B-3453-40CA-A2B9-FE726C4BA0E5}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -115,18 +113,6 @@ Global
 		{E53D6B5F-38C8-4F25-AEAD-4AC1DCCFCBBA}.Release|x64.Build.0 = Release|Any CPU
 		{E53D6B5F-38C8-4F25-AEAD-4AC1DCCFCBBA}.Release|x86.ActiveCfg = Release|Any CPU
 		{E53D6B5F-38C8-4F25-AEAD-4AC1DCCFCBBA}.Release|x86.Build.0 = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|x64.Build.0 = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Debug|x86.Build.0 = Debug|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|x64.ActiveCfg = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|x64.Build.0 = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|x86.ActiveCfg = Release|Any CPU
-		{2506730B-3453-40CA-A2B9-FE726C4BA0E5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
