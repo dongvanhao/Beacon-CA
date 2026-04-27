@@ -14,13 +14,15 @@ public class UpdateSafetySettingHandlerTests
     private readonly SafetySettingMapper _mapper = new();
     private readonly UpdateSafetySettingCommandHandler _handler;
 
-    private static readonly UpdateSafetySettingRequest ValidRequest = new(
-        DailyDeadlineLocalTime: "21:00",
-        GracePeriodMinutes:     20,
-        ReminderBeforeMinutes:  45,
-        AutoAlertDelayMinutes:  10,
-        IsMonitoringEnabled:    true,
-        IsAutoAlertEnabled:     false);
+    private static readonly UpdateSafetySettingRequest ValidRequest = new()
+    {
+        DailyDeadlineLocalTime = "21:00",
+        GracePeriodMinutes     = 20,
+        ReminderBeforeMinutes  = 45,
+        AutoAlertDelayMinutes  = 10,
+        IsMonitoringEnabled    = true,
+        IsAutoAlertEnabled     = false
+    };
 
     public UpdateSafetySettingHandlerTests()
     {

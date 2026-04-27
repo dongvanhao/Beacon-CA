@@ -14,25 +14,31 @@ public class UpdateSafetySettingCommandHandler(
 {
     public async Task<Result<SafetySettingDto>> Handle(UpdateSafetySettingCommand cmd, CancellationToken ct)
     {
-        var req      = cmd.Request;
-        var deadline = TimeOnly.Parse(req.DailyDeadlineLocalTime);
+        var req     = cmd.Request;
+        var setting = await repo.GetByUserIdAsync(cmd.UserId, ct);
+
+        // Giữ nguyên giá trị cũ nếu field không được gửi lên; dùng default cho lần tạo đầu tiên
+        var deadline     = req.DailyDeadlineLocalTime is not null
+                               ? TimeOnly.Parse(req.DailyDeadlineLocalTime)
+                               : setting?.DailyDeadlineLocalTime ?? new TimeOnly(8, 0);
+        var gracePeriod  = req.GracePeriodMinutes      ?? setting?.GracePeriodMinutes      ?? 15;
+        var reminder     = req.ReminderBeforeMinutes    ?? setting?.ReminderBeforeMinutes    ?? 30;
+        var autoDelay    = req.AutoAlertDelayMinutes    ?? setting?.AutoAlertDelayMinutes    ?? 15;
+        var isMonitoring = req.IsMonitoringEnabled      ?? setting?.IsMonitoringEnabled      ?? true;
+        var isAutoAlert  = req.IsAutoAlertEnabled       ?? setting?.IsAutoAlertEnabled       ?? true;
 
         // IsAutoAlertEnabled không có nghĩa khi monitoring tắt — normalize trước khi lưu
-        var effectiveAutoAlert = req.IsMonitoringEnabled && req.IsAutoAlertEnabled;
-
-        var setting = await repo.GetByUserIdAsync(cmd.UserId, ct);
+        var effectiveAutoAlert = isMonitoring && isAutoAlert;
 
         if (setting is null)
         {
             setting = SafetySetting.CreateDefault(cmd.UserId, deadline);
-            setting.UpdateSettings(deadline, req.GracePeriodMinutes, req.ReminderBeforeMinutes,
-                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, effectiveAutoAlert);
+            setting.UpdateSettings(deadline, gracePeriod, reminder, autoDelay, isMonitoring, effectiveAutoAlert);
             await repo.AddAsync(setting, ct);
         }
         else
         {
-            setting.UpdateSettings(deadline, req.GracePeriodMinutes, req.ReminderBeforeMinutes,
-                req.AutoAlertDelayMinutes, req.IsMonitoringEnabled, effectiveAutoAlert);
+            setting.UpdateSettings(deadline, gracePeriod, reminder, autoDelay, isMonitoring, effectiveAutoAlert);
         }
 
         await repo.SaveChangesAsync(ct);
