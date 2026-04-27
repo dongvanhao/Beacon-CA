@@ -23,7 +23,7 @@ public class CheckinsController(IMediator mediator, ICurrentUserService currentU
     ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
-    /// - <c>VALIDATION_ERROR</c>: Dữ liệu không hợp lệ (type ngoài enum, note &gt; 1000 ký tự, lat/long sai range).
+    /// - <c>VALIDATION_ERROR</c>: Dữ liệu không hợp lệ (note &gt; 1000 ký tự, lat/long sai range hoặc thiếu cặp).
     /// - <c>MEDIA_NOT_FOUND</c>: mediaId không tồn tại.
     /// - <c>ALREADY_CHECKED_IN</c>: Đã check-in hôm nay rồi.
     ///
@@ -34,7 +34,7 @@ public class CheckinsController(IMediator mediator, ICurrentUserService currentU
     ///   "dailySafetyRecordId": "guid",
     ///   "checkinDate": "yyyy-MM-dd",
     ///   "checkedInAtUtc": "datetime",
-    ///   "type": "Manual|Recovery|Emergency",
+    ///   "type": "Manual",
     ///   "note": "string|null",
     ///   "latitude": "decimal|null",
     ///   "longitude": "decimal|null",

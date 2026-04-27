@@ -29,7 +29,6 @@ public class CreateCheckinCommandHandlerTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     private static readonly CreateCheckinRequest BasicRequest = new(
-        Type: CheckinType.Manual,
         Note: "Tôi ổn",
         Latitude: 10.762622m,
         Longitude: 106.660172m,

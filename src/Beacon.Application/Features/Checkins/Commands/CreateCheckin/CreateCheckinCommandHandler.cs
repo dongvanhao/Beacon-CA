@@ -2,6 +2,7 @@ using Beacon.Application.Features.Checkins.Dtos;
 using Beacon.Application.Mappings.Checkins;
 using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Safety;
+using Beacon.Domain.Enums.Checkins;
 using Beacon.Domain.IRepository.Checkins;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
@@ -47,7 +48,7 @@ public class CreateCheckinCommandHandler(
                     Error.NotFound(ErrorCodes.Storage.MEDIA_NOT_FOUND, "Không tìm thấy media."));
         }
 
-        var checkin = Checkin.Create(cmd.UserId, record.Id, req.Type, req.Note, req.Latitude, req.Longitude);
+        var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Manual, req.Note, req.Latitude, req.Longitude);
 
         if (req.MediaId.HasValue)
             checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
