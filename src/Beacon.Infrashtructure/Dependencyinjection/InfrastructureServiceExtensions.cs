@@ -1,9 +1,13 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.IRepository;
+using Beacon.Domain.IRepository.Checkins;
+using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Infrashtructure.Presistence;
+using Beacon.Infrashtructure.Repository.Checkins;
 using Beacon.Infrashtructure.Repository.Identity;
+using Beacon.Infrashtructure.Repository.Safety;
 using Beacon.Infrashtructure.Repository.Settings;
 using Beacon.Infrashtructure.Repository.Storage;
 using Beacon.Infrashtructure.Services;
@@ -32,6 +36,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IMediaObjectRepository, MediaObjectRepository>();
         services.AddScoped<ISafetySettingRepository, SafetySettingRepository>();
+        services.AddScoped<ICheckinRepository, CheckinRepository>();
+        services.AddScoped<IDailySafetyRecordRepository, DailySafetyRecordRepository>();
 
         services.AddScoped<IJwtService, JwtService>();
 

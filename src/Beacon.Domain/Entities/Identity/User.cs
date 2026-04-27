@@ -1,4 +1,6 @@
 using Beacon.Domain.Common;
+using Beacon.Domain.Entities.Checkins;
+using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Storage;
 
 namespace Beacon.Domain.Entities.Identity
@@ -31,6 +33,8 @@ namespace Beacon.Domain.Entities.Identity
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
         public ICollection<UserDevice> Devices { get; private set; } = new List<UserDevice>();
         public Setting.SafetySetting? SafetySetting { get; private set; }
+        public ICollection<DailySafetyRecord> DailySafetyRecords { get; private set; } = new List<DailySafetyRecord>();
+        public ICollection<Checkin> Checkins { get; private set; } = new List<Checkin>();
 
         protected User() { }
 

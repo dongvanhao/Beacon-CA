@@ -1,0 +1,69 @@
+using Beacon.Application.Features.Checkins.Dtos;
+using Beacon.Application.Mappings.Checkins;
+using Beacon.Domain.Entities.Checkins;
+using Beacon.Domain.Entities.Safety;
+using Beacon.Domain.IRepository.Checkins;
+using Beacon.Domain.IRepository.Safety;
+using Beacon.Domain.IRepository.Settings;
+using Beacon.Domain.IRepository.Storage;
+using Beacon.Shared.Constants;
+using Beacon.Shared.Results;
+using MediatR;
+
+namespace Beacon.Application.Features.Checkins.Commands.CreateCheckin;
+
+public class CreateCheckinCommandHandler(
+    IDailySafetyRecordRepository dailySafetyRecordRepo,
+    ISafetySettingRepository safetySettingRepo,
+    IMediaObjectRepository mediaRepo,
+    ICheckinRepository checkinRepo,
+    CheckinMapper mapper)
+    : IRequestHandler<CreateCheckinCommand, Result<CheckinDto>>
+{
+    public async Task<Result<CheckinDto>> Handle(CreateCheckinCommand cmd, CancellationToken ct)
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        var record = await dailySafetyRecordRepo.GetByUserIdAndDateAsync(cmd.UserId, today, ct);
+
+        if (record is null)
+        {
+            var deadline = await ComputeDeadlineAsync(cmd.UserId, today, ct);
+            record = DailySafetyRecord.Create(cmd.UserId, today, deadline);
+            await dailySafetyRecordRepo.AddAsync(record, ct);
+        }
+
+        if (record.Status == Beacon.Domain.Enums.Safety.SafetyStatus.CheckedIn)
+            return Result<CheckinDto>.Failure(
+                Error.Conflict(ErrorCodes.Safety.ALREADY_CHECKED_IN, "Bạn đã check-in hôm nay rồi."));
+
+        var req = cmd.Request;
+
+        if (req.MediaId.HasValue)
+        {
+            var media = await mediaRepo.GetByIdAsync(req.MediaId.Value, ct);
+            if (media is null)
+                return Result<CheckinDto>.Failure(
+                    Error.NotFound(ErrorCodes.Storage.MEDIA_NOT_FOUND, "Không tìm thấy media."));
+        }
+
+        var checkin = Checkin.Create(cmd.UserId, record.Id, req.Type, req.Note, req.Latitude, req.Longitude);
+
+        if (req.MediaId.HasValue)
+            checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
+
+        record.MarkCheckedIn(checkin.CheckedInAtUtc);
+
+        await checkinRepo.AddAsync(checkin, ct);
+        await checkinRepo.SaveChangesAsync(ct);
+
+        return Result<CheckinDto>.Success(mapper.ToDto(checkin, req.MediaId));
+    }
+
+    private async Task<DateTime> ComputeDeadlineAsync(Guid userId, DateOnly today, CancellationToken ct)
+    {
+        var setting = await safetySettingRepo.GetByUserIdAsync(userId, ct);
+        var deadlineTime = setting?.DailyDeadlineLocalTime ?? new TimeOnly(23, 59);
+        return today.ToDateTime(deadlineTime, DateTimeKind.Utc);
+    }
+}

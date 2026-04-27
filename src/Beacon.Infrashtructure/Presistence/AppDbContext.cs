@@ -34,12 +34,12 @@ namespace Beacon.Infrashtructure.Presistence
         // public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
 
         // public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
-        // public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
+        public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
 
         public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
 
-        // public DbSet<Checkin> Checkins => Set<Checkin>();
-        // public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
+        public DbSet<Checkin> Checkins => Set<Checkin>();
+        public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
 
         // public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
         // public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
@@ -82,6 +82,13 @@ namespace Beacon.Infrashtructure.Presistence
 
             // Settings module
             modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Setting.SafetySettingConfiguration());
+
+            // Safety module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Safety.DailySafetyRecordConfiguration());
+
+            // Checkins module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinMediaConfiguration());
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);

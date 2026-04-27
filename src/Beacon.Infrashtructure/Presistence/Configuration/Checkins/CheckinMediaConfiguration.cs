@@ -1,10 +1,8 @@
-#if false
-// Chưa dùng — sẽ bật lại khi implement module Checkins
 using Beacon.Domain.Entities.Checkins;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Beacon.Infrastructure.Persistence.Configurations.Checkins;
+namespace Beacon.Infrashtructure.Presistence.Configuration.Checkins;
 
 public class CheckinMediaConfiguration : IEntityTypeConfiguration<CheckinMedia>
 {
@@ -30,4 +28,3 @@ public class CheckinMediaConfiguration : IEntityTypeConfiguration<CheckinMedia>
             .OnDelete(DeleteBehavior.Restrict);
     }
 }
-#endif

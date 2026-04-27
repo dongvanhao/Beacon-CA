@@ -1,4 +1,5 @@
 using Beacon.Application.Common.Behaviors;
+using Beacon.Application.Mappings.Checkins;
 using Beacon.Application.Mappings.Identity;
 using Beacon.Application.Mappings.Settings;
 using Beacon.Application.Mappings.Storage;
@@ -25,6 +26,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<AdminAuthMapper>();
         services.AddSingleton<MediaDtoMapper>();
         services.AddSingleton<SafetySettingMapper>();
+        services.AddSingleton<CheckinMapper>();
 
         return services;
     }
