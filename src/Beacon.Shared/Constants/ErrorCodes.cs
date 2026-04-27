@@ -34,6 +34,11 @@ namespace Beacon.Shared.Constants
             public const string NEW_PASSWORD_SAME_AS_OLD = "NEW_PASSWORD_SAME_AS_OLD";
         }
 
+        public static class Settings
+        {
+            public const string SAFETY_SETTING_NOT_FOUND = "SAFETY_SETTING_NOT_FOUND";
+        }
+
         public static class Safety
         {
             public const string RECORD_NOT_FOUND = "SAFETY_RECORD_NOT_FOUND";
