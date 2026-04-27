@@ -45,7 +45,7 @@ public class SafetySettingsControllerTests : IClassFixture<BeaconWebApplicationF
         body!.Success.Should().BeTrue();
         body.Data.Should().NotBeNull();
         body.Data!.IsDefault.Should().BeTrue();
-        body.Data.DailyDeadlineLocalTime.Should().Be("20:00");
+        body.Data.DailyDeadlineLocalTime.Should().Be("23:59");
         body.Data.GracePeriodMinutes.Should().Be(15);
         body.Data.ReminderBeforeMinutes.Should().Be(30);
         body.Data.AutoAlertDelayMinutes.Should().Be(15);

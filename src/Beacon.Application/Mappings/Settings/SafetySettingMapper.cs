@@ -15,7 +15,7 @@ public sealed class SafetySettingMapper
         IsDefault:              false);
 
     public SafetySettingDto ToDefaultDto() => new(
-        DailyDeadlineLocalTime: "20:00",
+        DailyDeadlineLocalTime: "23:59",
         GracePeriodMinutes:     15,
         ReminderBeforeMinutes:  30,
         AutoAlertDelayMinutes:  15,

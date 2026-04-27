@@ -1,5 +1,4 @@
 using Beacon.Application.Features.Checkins.Commands.CreateCheckin;
-using Beacon.Domain.Enums.Checkins;
 using FluentValidation;
 
 namespace Beacon.Application.Features.Checkins.Validators.Checkins;
@@ -8,10 +7,6 @@ public class CreateCheckinCommandValidator : AbstractValidator<CreateCheckinComm
 {
     public CreateCheckinCommandValidator()
     {
-        RuleFor(x => x.Request.Type)
-            .IsInEnum()
-            .WithMessage("Loại check-in không hợp lệ. Các giá trị cho phép: Manual (1), Recovery (2), Emergency (3).");
-
         RuleFor(x => x.Request.Note)
             .MaximumLength(1000)
             .WithMessage("Ghi chú không được vượt quá 1000 ký tự.")

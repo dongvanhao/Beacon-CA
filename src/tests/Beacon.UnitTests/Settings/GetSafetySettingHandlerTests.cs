@@ -51,7 +51,7 @@ public class GetSafetySettingHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().NotBeNull();
         result.Value!.IsDefault.Should().BeTrue();
-        result.Value.DailyDeadlineLocalTime.Should().Be("20:00");
+        result.Value.DailyDeadlineLocalTime.Should().Be("23:59");
         result.Value.GracePeriodMinutes.Should().Be(15);
         result.Value.ReminderBeforeMinutes.Should().Be(30);
         result.Value.AutoAlertDelayMinutes.Should().Be(15);
