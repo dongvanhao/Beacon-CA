@@ -16,18 +16,23 @@ public class GetTodayCheckinStatusQueryHandler(
     CheckinStatusMapper mapper)
     : IRequestHandler<GetTodayCheckinStatusQuery, Result<TodayCheckinStatusDto>>
 {
+    private static readonly TimeZoneInfo VietnamTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
     public async Task<Result<TodayCheckinStatusDto>> Handle(
         GetTodayCheckinStatusQuery query, CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTz));
 
         var record  = await dailySafetyRecordRepo.GetByUserIdAndDateAsync(query.UserId, today, ct);
         var setting = await safetySettingRepo.GetByUserIdAsync(query.UserId, ct);
         var streak  = await checkinRepo.GetStreakAsync(query.UserId, today, ct);
 
+        var fallbackDeadlineVn = today.ToDateTime(
+            setting?.DailyDeadlineLocalTime ?? new TimeOnly(23, 59), DateTimeKind.Unspecified);
         var deadlineAtUtc = record is not null
             ? record.DeadlineAtUtc
-            : today.ToDateTime(setting?.DailyDeadlineLocalTime ?? new TimeOnly(23, 59), DateTimeKind.Utc);
+            : TimeZoneInfo.ConvertTimeToUtc(fallbackDeadlineVn, VietnamTz);
 
         var isMonitoringEnabled = setting?.IsMonitoringEnabled ?? true;
         var isAutoAlertEnabled  = setting?.IsAutoAlertEnabled  ?? true;
