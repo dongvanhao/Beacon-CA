@@ -113,8 +113,14 @@ public class GetTodayCheckinStatusQueryHandlerTests
 
         var result = await _handler.Handle(new GetTodayCheckinStatusQuery(UserId), CancellationToken.None);
 
+        // DeadlineAtUtc lưu UTC. Default là 23:59 giờ VN (UTC+7) → 16:59 UTC.
+        var vnTz = TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+        var todayVn = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, vnTz));
+        var expectedUtc = TimeZoneInfo.ConvertTimeToUtc(
+            todayVn.ToDateTime(new TimeOnly(23, 59), DateTimeKind.Unspecified), vnTz);
+
         result.IsSuccess.Should().BeTrue();
-        result.Value!.DeadlineAtUtc.TimeOfDay.Should().Be(new TimeSpan(23, 59, 0));
+        result.Value!.DeadlineAtUtc.TimeOfDay.Should().Be(expectedUtc.TimeOfDay);
     }
 
     // ─── Streak ──────────────────────────────────────────────────────────────
@@ -169,10 +175,7 @@ public class GetTodayCheckinStatusQueryHandlerTests
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private static DailySafetyRecord MakePendingRecord(DateTime deadline)
-    {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
-        return DailySafetyRecord.Create(UserId, today, deadline);
-    }
+        => DailySafetyRecord.Create(UserId, TodayVn, deadline);
 
     private static DailySafetyRecord MakeCheckedInRecord(DateTime checkedInAt)
     {
@@ -181,13 +184,19 @@ public class GetTodayCheckinStatusQueryHandlerTests
         return record;
     }
 
+    private static readonly TimeZoneInfo VnTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
+    private static DateOnly TodayVn =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VnTz));
+
     private void SetupRecord(DailySafetyRecord record)
         => _dailySafetyRecordRepo
-            .Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+            .Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
 
     private void SetupNoRecord()
         => _dailySafetyRecordRepo
-            .Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+            .Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync((DailySafetyRecord?)null);
 }
