@@ -74,16 +74,15 @@ public class FriendsController(IMediator mediator) : BaseController
         => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit), ct));
 
     #region
-    /// <summary>Tìm người dùng theo số điện thoại để gửi lời mời kết bạn.</summary>
+    /// <summary>Tìm kiếm người dùng theo tên hoặc số điện thoại.</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Tìm kiếm chính xác theo số điện thoại trong toàn bộ hệ thống.
-    /// Trả về thông tin người dùng kèm trạng thái quan hệ với user hiện tại.
-    /// Không trả kết quả nếu số điện thoại là của chính user đang đăng nhập.
+    /// Tìm kiếm theo tên (username, họ, tên) hoặc số điện thoại (exact match).
+    /// Không trả về chính user đang đăng nhập. Tối đa 10 kết quả.
     ///
     /// **Query params:**
-    /// - <c>search</c> (string, bắt buộc, tối thiểu 3 ký tự): Từ khoá tìm kiếm — hiện tại khớp theo số điện thoại (exact match).
+    /// - <c>search</c> (string, bắt buộc, tối thiểu 3 ký tự): Từ khoá tìm kiếm.
     ///
     /// **Response khi thành công (HTTP 200):**
     /// <code>
@@ -91,15 +90,19 @@ public class FriendsController(IMediator mediator) : BaseController
     ///   "success": true,
     ///   "message": "...",
     ///   "code": null,
-    ///   "data": {
-    ///     "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "username": "alice",
-    ///     "avatarUrl": null,
-    ///     "friendshipStatus": 0
-    ///   },
+    ///   "data": [
+    ///     {
+    ///       "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///       "username": "hao123",
+    ///       "avatarUrl": null,
+    ///       "friendshipStatus": 0
+    ///     }
+    ///   ],
     ///   "errors": null
     /// }
     /// </code>
+    ///
+    /// <c>data</c> là mảng rỗng <c>[]</c> khi không có kết quả phù hợp.
     ///
     /// **Giá trị <c>friendshipStatus</c>:**
     /// - <c>0 = None</c>: Chưa có quan hệ — dùng <c>userId</c> làm <c>receiverId</c> để gọi <c>POST /api/v1/friend-requests</c>.
@@ -110,7 +113,6 @@ public class FriendsController(IMediator mediator) : BaseController
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).
     /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc ngắn hơn 3 ký tự (HTTP 400).
-    /// - <c>USER_NOT_FOUND</c>: Không tìm thấy người dùng với số điện thoại này (HTTP 404).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion

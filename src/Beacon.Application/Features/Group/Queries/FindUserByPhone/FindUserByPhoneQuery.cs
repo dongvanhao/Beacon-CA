@@ -4,4 +4,4 @@ using MediatR;
 
 namespace Beacon.Application.Features.Group.Queries.FindUserByPhone;
 
-public record FindUserByPhoneQuery(string Search) : IRequest<Result<UserSearchDto>>;
+public record FindUserByPhoneQuery(string Search, int Limit = 10) : IRequest<Result<List<UserSearchDto>>>;

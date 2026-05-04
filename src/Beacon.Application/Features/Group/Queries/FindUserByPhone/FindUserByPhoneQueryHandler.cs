@@ -3,7 +3,6 @@ using Beacon.Application.Features.Group.Dtos;
 using Beacon.Domain.Enums.Group;
 using Beacon.Domain.IRepository;
 using Beacon.Domain.IRepository.Group;
-using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using MediatR;
 
@@ -15,23 +14,26 @@ public class FindUserByPhoneQueryHandler(
     IFriendRequestRepository friendRequestRepo,
     ICurrentUserService currentUser,
     IStorageService storage)
-    : IRequestHandler<FindUserByPhoneQuery, Result<UserSearchDto>>
+    : IRequestHandler<FindUserByPhoneQuery, Result<List<UserSearchDto>>>
 {
-    public async Task<Result<UserSearchDto>> Handle(FindUserByPhoneQuery query, CancellationToken ct)
+    public async Task<Result<List<UserSearchDto>>> Handle(FindUserByPhoneQuery query, CancellationToken ct)
     {
-        var target = await userRepo.GetByPhoneAsync(query.Search, ct);
+        var users = await userRepo.SearchByNameOrPhoneAsync(
+            query.Search, currentUser.UserId, query.Limit, ct);
 
-        if (target is null || target.Id == currentUser.UserId)
-            return Result<UserSearchDto>.Failure(
-                Error.NotFound(ErrorCodes.Identity.USER_NOT_FOUND, "Không tìm thấy người dùng."));
+        var results = new List<UserSearchDto>(users.Count);
+        foreach (var user in users)
+        {
+            var status = await ResolveStatusAsync(user.Id, ct);
 
-        var status = await ResolveStatusAsync(target.Id, ct);
+            string? avatarUrl = null;
+            if (user.AvatarMediaObject is not null)
+                avatarUrl = await storage.GeneratePresignedGetUrlAsync(user.AvatarMediaObject.ObjectKey, ct);
 
-        string? avatarUrl = null;
-        if (target.AvatarMediaObject is not null)
-            avatarUrl = await storage.GeneratePresignedGetUrlAsync(target.AvatarMediaObject.ObjectKey, ct);
+            results.Add(new UserSearchDto(user.Id, user.Username, avatarUrl, status));
+        }
 
-        return Result<UserSearchDto>.Success(new UserSearchDto(target.Id, target.Username, avatarUrl, status));
+        return Result<List<UserSearchDto>>.Success(results);
     }
 
     private async Task<FriendshipStatus> ResolveStatusAsync(Guid targetId, CancellationToken ct)
