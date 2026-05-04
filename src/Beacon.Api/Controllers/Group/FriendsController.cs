@@ -74,46 +74,36 @@ public class FriendsController(IMediator mediator) : BaseController
         => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit), ct));
 
     #region
-    /// <summary>Tìm kiếm người dùng theo tên hoặc số điện thoại.</summary>
+    /// <summary>Tìm kiếm người dùng theo tên, email hoặc số điện thoại.</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Tìm kiếm theo tên (username, họ, tên) hoặc số điện thoại (exact match).
+    /// Tìm kiếm theo <c>username</c>, <c>họ</c>, <c>tên</c>, <c>email</c> (contains) hoặc <c>số điện thoại</c> (exact match).
     /// Không trả về chính user đang đăng nhập. Tối đa 10 kết quả.
     ///
-    /// **Query params:**
-    /// - <c>search</c> (string, bắt buộc, tối thiểu 3 ký tự): Từ khoá tìm kiếm.
+    /// Các giá trị <c>code</c>:
+    /// - <c>null</c>: Thành công. <c>data</c> là mảng, rỗng khi không có kết quả.
+    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc ngắn hơn 3 ký tự (HTTP 400).
     ///
-    /// **Response khi thành công (HTTP 200):**
+    /// Cấu trúc <c>data</c> khi thành công:
     /// <code>
-    /// {
-    ///   "success": true,
-    ///   "message": "...",
-    ///   "code": null,
-    ///   "data": [
-    ///     {
-    ///       "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///       "username": "hao123",
-    ///       "avatarUrl": null,
-    ///       "friendshipStatus": 0
-    ///     }
-    ///   ],
-    ///   "errors": null
-    /// }
+    /// [
+    ///   {
+    ///     "userId": "guid",
+    ///     "username": "hao123",
+    ///     "avatarUrl": "https://...",
+    ///     "friendshipStatus": 0
+    ///   }
+    /// ]
     /// </code>
     ///
-    /// <c>data</c> là mảng rỗng <c>[]</c> khi không có kết quả phù hợp.
-    ///
-    /// **Giá trị <c>friendshipStatus</c>:**
-    /// - <c>0 = None</c>: Chưa có quan hệ — dùng <c>userId</c> làm <c>receiverId</c> để gọi <c>POST /api/v1/friend-requests</c>.
+    /// Giá trị <c>friendshipStatus</c>:
+    /// - <c>0 = None</c>: Chưa có quan hệ — gọi <c>POST /api/v1/friend-requests</c> với <c>receiverId</c>.
     /// - <c>1 = Friends</c>: Đã là bạn bè.
-    /// - <c>2 = PendingSent</c>: Bạn đã gửi lời mời, đang chờ đối phương chấp nhận.
-    /// - <c>3 = PendingReceived</c>: Đối phương đã gửi lời mời cho bạn — gọi <c>POST /api/v1/friend-requests/{id}/accept</c>.
+    /// - <c>2 = PendingSent</c>: Bạn đã gửi lời mời, đang chờ chấp nhận.
+    /// - <c>3 = PendingReceived</c>: Đối phương đã gửi lời mời — gọi <c>POST /api/v1/friend-requests/{id}/accept</c>.
     ///
-    /// **Các giá trị <c>code</c>:**
-    /// - <c>null</c>: Thành công (HTTP 200).
-    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc ngắn hơn 3 ký tự (HTTP 400).
-    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
     #endregion
     [HttpGet("search")]
