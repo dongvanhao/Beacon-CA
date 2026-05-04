@@ -35,6 +35,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<FriendMapper>();
         services.AddSingleton<MessageMapper>();
         services.AddSingleton<MessageGroupMapper>();
+        services.AddSingleton<MessageGroupDetailMapper>();
 
         return services;
     }

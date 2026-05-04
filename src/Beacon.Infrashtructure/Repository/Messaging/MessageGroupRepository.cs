@@ -13,6 +13,13 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                 .Include(g => g.Members)
                 .FirstOrDefaultAsync(g => g.Id == id, ct);
 
+        public Task<MessageGroup?> GetByIdWithMembersAsync(Guid id, CancellationToken ct)
+            => db.MessageGroups
+                .Include(g => g.Members)
+                    .ThenInclude(m => m.User)
+                        .ThenInclude(u => u.AvatarMediaObject)
+                .FirstOrDefaultAsync(g => g.Id == id, ct);
+
         public Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct)
             => db.MessageGroupMembers
                 .AnyAsync(m => m.GroupId == groupId && m.UserId == userId, ct);
