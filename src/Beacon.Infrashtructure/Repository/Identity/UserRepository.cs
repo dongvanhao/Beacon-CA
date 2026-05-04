@@ -27,6 +27,21 @@ public class UserRepository(AppDbContext context) : IUserRepository
             .Include(u => u.AvatarMediaObject)
             .FirstOrDefaultAsync(u => u.PhoneNumber != null && u.PhoneNumber == phoneNumber, ct);
 
+    public async Task<List<User>> SearchByNameOrPhoneAsync(string keyword, Guid excludeUserId, int limit, CancellationToken ct = default)
+    {
+        var lower = keyword.ToLowerInvariant();
+        return await context.Users
+            .Include(u => u.AvatarMediaObject)
+            .Where(u => u.Id != excludeUserId && (
+                u.Username.ToLower().Contains(lower) ||
+                u.GivenName.ToLower().Contains(lower) ||
+                u.FamilyName.ToLower().Contains(lower) ||
+                u.Email.ToLower().Contains(lower) ||
+                (u.PhoneNumber != null && u.PhoneNumber == keyword)))
+            .Take(limit)
+            .ToListAsync(ct);
+    }
+
     public async Task<bool> ExistsByPhoneAsync(string phoneNumber, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.PhoneNumber != null && u.PhoneNumber == phoneNumber, ct);
 
