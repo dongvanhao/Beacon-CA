@@ -45,6 +45,6 @@ public class SendFriendRequestCommandHandler(
         await requestRepo.AddAsync(request, ct);
         await requestRepo.SaveChangesAsync(ct);
 
-        return Result<FriendRequestDto>.Success(mapper.ToDto(request, currentUser.Username, null));
+        return Result<FriendRequestDto>.Success(mapper.ToDto(request, currentUser.FamilyName, currentUser.GivenName, null));
     }
 }

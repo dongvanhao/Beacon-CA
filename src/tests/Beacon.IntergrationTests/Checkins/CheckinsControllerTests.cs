@@ -125,11 +125,16 @@ public class CheckinsControllerTests : IClassFixture<BeaconWebApplicationFactory
         return (user.Id, db);
     }
 
+    private static readonly TimeZoneInfo VnTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
+    private static DateOnly TodayVn =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VnTz));
+
     private static async Task SeedCheckedInRecordAsync(AppDbContext db, Guid userId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var deadline = DateTime.UtcNow.Date.AddHours(23).AddMinutes(59);
-        var record = DailySafetyRecord.Create(userId, today, deadline);
+        var record = DailySafetyRecord.Create(userId, TodayVn, deadline);
         record.MarkCheckedIn(DateTime.UtcNow.AddHours(-1));
         db.Set<DailySafetyRecord>().Add(record);
         await db.SaveChangesAsync();
@@ -137,9 +142,8 @@ public class CheckinsControllerTests : IClassFixture<BeaconWebApplicationFactory
 
     private static async Task SeedPendingRecordWithPastDeadlineAsync(AppDbContext db, Guid userId)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var pastDeadline = DateTime.UtcNow.AddHours(-2);
-        var record = DailySafetyRecord.Create(userId, today, pastDeadline);
+        var record = DailySafetyRecord.Create(userId, TodayVn, pastDeadline);
         db.Set<DailySafetyRecord>().Add(record);
         await db.SaveChangesAsync();
     }

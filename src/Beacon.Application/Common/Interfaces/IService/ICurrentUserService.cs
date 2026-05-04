@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +11,8 @@ namespace Beacon.Application.Common.Interfaces.IService
         Guid UserId { get; }
         Guid DeviceId { get; }
         string Username { get; }
+        string FamilyName { get; }
+        string GivenName { get; }
         bool IsAuthenticated { get; }
     }
 }

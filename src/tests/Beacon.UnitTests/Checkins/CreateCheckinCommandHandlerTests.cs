@@ -55,7 +55,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var record = MakePendingRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
 
         // Act
@@ -78,7 +78,7 @@ public class CreateCheckinCommandHandlerTests
         var record = MakePendingRecord();
         var media = CreateFakeMedia();
 
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
         _mediaRepo.Setup(r => r.GetByIdAsync(mediaId, default)).ReturnsAsync(media);
 
@@ -99,7 +99,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var setting = SafetySetting.CreateDefault(UserId, new TimeOnly(21, 0));
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync((DailySafetyRecord?)null);
         _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync(setting);
 
@@ -117,7 +117,7 @@ public class CreateCheckinCommandHandlerTests
     public async Task Handle_WhenNoRecord_AndNoSafetySetting_UsesDefaultDeadline()
     {
         // Arrange
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync((DailySafetyRecord?)null);
         _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync((SafetySetting?)null);
 
@@ -136,7 +136,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var record = MakeCheckedInRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
 
         // Act
@@ -156,7 +156,7 @@ public class CreateCheckinCommandHandlerTests
         // Arrange
         var mediaId = Guid.NewGuid();
         var record = MakePendingRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, DateOnly.FromDateTime(DateTime.UtcNow), default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
         _mediaRepo.Setup(r => r.GetByIdAsync(mediaId, default)).ReturnsAsync((MediaObject?)null);
 
@@ -173,11 +173,16 @@ public class CreateCheckinCommandHandlerTests
 
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
+    private static readonly TimeZoneInfo VnTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
+    private static DateOnly TodayVn =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VnTz));
+
     private static DailySafetyRecord MakePendingRecord()
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
         var deadline = DateTime.UtcNow.Date.AddHours(23).AddMinutes(59);
-        return DailySafetyRecord.Create(UserId, today, deadline);
+        return DailySafetyRecord.Create(UserId, TodayVn, deadline);
     }
 
     private static DailySafetyRecord MakeCheckedInRecord()

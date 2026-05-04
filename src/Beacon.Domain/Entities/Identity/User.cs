@@ -2,6 +2,7 @@ using Beacon.Domain.Common;
 using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Storage;
+using Beacon.Shared.Helpers;
 
 namespace Beacon.Domain.Entities.Identity
 {
@@ -15,6 +16,9 @@ namespace Beacon.Domain.Entities.Identity
         // Name structure
         public string FamilyName { get; private set; } = default!;
         public string GivenName { get; private set; } = default!;
+
+        /// <summary>Chuỗi đã bỏ dấu dùng cho full-text search: "nguyen hao" từ "Nguyễn Hảo".</summary>
+        public string SearchIndex { get; private set; } = string.Empty;
 
         // Contact
         public string? PhoneNumber { get; private set; }
@@ -46,7 +50,7 @@ namespace Beacon.Domain.Entities.Identity
             string givenName,
             string? phoneNumber = null)
         {
-            return new User
+            var user = new User
             {
                 Username = username.ToLowerInvariant(),
                 Email = email.ToLowerInvariant(),
@@ -55,6 +59,8 @@ namespace Beacon.Domain.Entities.Identity
                 GivenName = givenName,
                 PhoneNumber = phoneNumber?.Trim()
             };
+            user.UpdateSearchIndex();
+            return user;
         }
 
         public void UpdateProfile(string familyName, string givenName, string? phoneNumber, string email)
@@ -66,7 +72,12 @@ namespace Beacon.Domain.Entities.Identity
             GivenName   = givenName;
             PhoneNumber = phoneNumber?.Trim();
             Email       = email.Trim().ToLowerInvariant();
+            UpdateSearchIndex();
         }
+
+        /// <summary>Cập nhật SearchIndex từ FamilyName và GivenName hiện tại.</summary>
+        public void UpdateSearchIndex()
+            => SearchIndex = StringNormalizer.RemoveDiacritics($"{FamilyName} {GivenName}");
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
 

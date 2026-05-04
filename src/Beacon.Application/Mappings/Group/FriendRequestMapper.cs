@@ -5,6 +5,6 @@ namespace Beacon.Application.Mappings.Group;
 
 public sealed class FriendRequestMapper
 {
-    public FriendRequestDto ToDto(FriendRequest r, string senderUsername, string? senderAvatarUrl)
-        => new(r.Id, r.SenderId, senderUsername, senderAvatarUrl, r.CreatedAtUtc);
+    public FriendRequestDto ToDto(FriendRequest r, string senderFamilyName, string senderGivenName, string? senderAvatarUrl)
+        => new(r.Id, r.SenderId, senderFamilyName, senderGivenName, senderAvatarUrl, r.CreatedAtUtc);
 }

@@ -4,7 +4,8 @@ namespace Beacon.Application.Features.Group.Dtos;
 
 public record FriendDto(
     Guid UserId,
-    string Username,
+    string FamilyName,
+    string GivenName,
     string? AvatarUrl,
     FriendType Type,
     DateTime CreatedAtUtc,

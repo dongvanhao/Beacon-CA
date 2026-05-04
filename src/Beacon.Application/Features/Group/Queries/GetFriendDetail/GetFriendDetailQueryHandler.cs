@@ -23,6 +23,7 @@ public class GetFriendDetailQueryHandler(
             return Result<FriendDto>.Failure(
                 Error.NotFound(ErrorCodes.Friend.FRIEND_NOT_FOUND, "Không tìm thấy thông tin bạn bè."));
 
-        return Result<FriendDto>.Success(mapper.ToDto(friend, userId, friend.GetOtherUser(userId).Username, null));
+        var other = friend.GetOtherUser(userId);
+        return Result<FriendDto>.Success(mapper.ToDto(friend, userId, other.FamilyName, other.GivenName, null));
     }
 }

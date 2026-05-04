@@ -39,6 +39,12 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(x => x.SearchIndex)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        builder.HasIndex(x => x.SearchIndex);
+
         builder.Property(x => x.PhoneNumber)
             .HasMaxLength(20);
 

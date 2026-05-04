@@ -36,7 +36,8 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     ///   "data": {
     ///     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///     "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "senderUsername": "alice",
+    ///     "senderFamilyName": "Nguyễn",
+    ///     "senderGivenName": "Alice",
     ///     "senderAvatarUrl": null,
     ///     "createdAtUtc": "2026-05-04T10:00:00Z"
     ///   },
@@ -159,7 +160,8 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     ///       {
     ///         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "senderUsername": "bob",
+    ///         "senderFamilyName": "Trần",
+    ///         "senderGivenName": "Bob",
     ///         "senderAvatarUrl": null,
     ///         "createdAtUtc": "2026-05-04T09:00:00Z"
     ///       }
@@ -216,7 +218,8 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     ///       {
     ///         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "senderUsername": "alice",
+    ///         "senderFamilyName": "Nguyễn",
+    ///         "senderGivenName": "Alice",
     ///         "senderAvatarUrl": null,
     ///         "createdAtUtc": "2026-05-04T08:00:00Z"
     ///       }
@@ -233,7 +236,7 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     ///
     /// **Giải thích các trường:**
     /// - <c>id</c>: Id của lời mời — có thể dùng để hiển thị trạng thái "đang chờ".
-    /// - <c>senderUsername</c>: Là username của chính user hiện tại.
+    /// - <c>senderFamilyName</c> / <c>senderGivenName</c>: Họ và tên của chính user hiện tại.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).

@@ -20,9 +20,8 @@ public class ListSentFriendRequestsQueryHandler(
         var limit = Math.Clamp(query.Limit, 1, 100);
         var paged = await requestRepo.ListSentAsync(currentUser.UserId, query.Cursor, limit, ct);
 
-        var senderUsername = currentUser.Username;
         var dtos = paged.Data.Select(r =>
-            mapper.ToDto(r, senderUsername, null)).ToList();
+            mapper.ToDto(r, r.Sender.FamilyName, r.Sender.GivenName, null)).ToList();
 
         return Result<CursorPagedResult<FriendRequestDto>>.Success(new CursorPagedResult<FriendRequestDto>
         {

@@ -33,6 +33,6 @@ public class SendMessageCommandHandler(
         await messageRepo.AddAsync(message, ct);
         await messageRepo.SaveChangesAsync(ct);
 
-        return Result<MessageDto>.Success(mapper.ToDto(message, currentUser.Username));
+        return Result<MessageDto>.Success(mapper.ToDto(message, currentUser.FamilyName, currentUser.GivenName));
     }
 }
