@@ -1,12 +1,16 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.IRepository;
 using Beacon.Domain.IRepository.Checkins;
+using Beacon.Domain.IRepository.Group;
+using Beacon.Domain.IRepository.Messaging;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Infrashtructure.Presistence;
 using Beacon.Infrashtructure.Repository.Checkins;
+using Beacon.Infrashtructure.Repository.Group;
 using Beacon.Infrashtructure.Repository.Identity;
+using Beacon.Infrashtructure.Repository.Messaging;
 using Beacon.Infrashtructure.Repository.Safety;
 using Beacon.Infrashtructure.Repository.Settings;
 using Beacon.Infrashtructure.Repository.Storage;
@@ -38,6 +42,11 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ISafetySettingRepository, SafetySettingRepository>();
         services.AddScoped<ICheckinRepository, CheckinRepository>();
         services.AddScoped<IDailySafetyRecordRepository, DailySafetyRecordRepository>();
+
+        services.AddScoped<IFriendRepository, FriendRepository>();
+        services.AddScoped<IFriendRequestRepository, FriendRequestRepository>();
+        services.AddScoped<IMessageGroupRepository, MessageGroupRepository>();
+        services.AddScoped<IMessageRepository, MessageRepository>();
 
         services.AddScoped<IJwtService, JwtService>();
 

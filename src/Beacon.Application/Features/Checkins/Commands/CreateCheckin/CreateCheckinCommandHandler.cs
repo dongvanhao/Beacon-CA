@@ -21,9 +21,12 @@ public class CreateCheckinCommandHandler(
     CheckinMapper mapper)
     : IRequestHandler<CreateCheckinCommand, Result<CheckinDto>>
 {
+    private static readonly TimeZoneInfo VietnamTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
     public async Task<Result<CheckinDto>> Handle(CreateCheckinCommand cmd, CancellationToken ct)
     {
-        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTz));
 
         var record = await dailySafetyRecordRepo.GetByUserIdAndDateAsync(cmd.UserId, today, ct);
 
@@ -48,7 +51,7 @@ public class CreateCheckinCommandHandler(
                     Error.NotFound(ErrorCodes.Storage.MEDIA_NOT_FOUND, "Không tìm thấy media."));
         }
 
-        var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Manual, req.Note, req.Latitude, req.Longitude);
+        var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Manual, today, req.Note, req.Latitude, req.Longitude);
 
         if (req.MediaId.HasValue)
             checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
@@ -65,6 +68,7 @@ public class CreateCheckinCommandHandler(
     {
         var setting = await safetySettingRepo.GetByUserIdAsync(userId, ct);
         var deadlineTime = setting?.DailyDeadlineLocalTime ?? new TimeOnly(23, 59);
-        return today.ToDateTime(deadlineTime, DateTimeKind.Utc);
+        var deadlineVn = today.ToDateTime(deadlineTime, DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(deadlineVn, VietnamTz);
     }
 }

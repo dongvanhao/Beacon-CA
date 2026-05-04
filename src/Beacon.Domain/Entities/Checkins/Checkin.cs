@@ -31,15 +31,14 @@ namespace Beacon.Domain.Entities.Checkins
         protected Checkin() { }
 
         public static Checkin Create(Guid userId, Guid dailySafetyRecordId, CheckinType type,
-            string? note = null, decimal? latitude = null, decimal? longitude = null)
+            DateOnly checkinDate, string? note = null, decimal? latitude = null, decimal? longitude = null)
         {
-            var now = DateTime.UtcNow;
             return new()
             {
                 UserId = userId,
                 DailySafetyRecordId = dailySafetyRecordId,
-                CheckinDate = DateOnly.FromDateTime(now),
-                CheckedInAtUtc = now,
+                CheckinDate = checkinDate,
+                CheckedInAtUtc = DateTime.UtcNow,
                 Type = type,
                 Note = note,
                 Latitude = latitude,
