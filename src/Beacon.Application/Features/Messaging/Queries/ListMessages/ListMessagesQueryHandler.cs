@@ -26,7 +26,7 @@ public class ListMessagesQueryHandler(
         var limit = Math.Clamp(query.Limit, 1, 100);
         var paged = await messageRepo.ListByGroupAsync(query.GroupId, query.Cursor, limit, ct);
 
-        var dtos = paged.Data.Select(m => mapper.ToDto(m, m.Sender.Username)).ToList();
+        var dtos = paged.Data.Select(m => mapper.ToDto(m, m.Sender.FamilyName, m.Sender.GivenName)).ToList();
 
         return Result<CursorPagedResult<MessageDto>>.Success(new CursorPagedResult<MessageDto>
         {

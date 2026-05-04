@@ -49,9 +49,13 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                         .OrderByDescending(m => m.CreatedAtUtc)
                         .Select(m => (DateTime?)m.CreatedAtUtc)
                         .FirstOrDefault(),
-                    LastMessageSenderUsername = g.Messages
+                    LastMessageSenderFamilyName = g.Messages
                         .OrderByDescending(m => m.CreatedAtUtc)
-                        .Select(m => m.Sender.Username)
+                        .Select(m => m.Sender.FamilyName)
+                        .FirstOrDefault(),
+                    LastMessageSenderGivenName = g.Messages
+                        .OrderByDescending(m => m.CreatedAtUtc)
+                        .Select(m => m.Sender.GivenName)
                         .FirstOrDefault()
                 });
 
@@ -69,7 +73,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
             var items = rawItems
                 .Select(x => new MessageGroupSummary(
                     x.Id, x.IsPrivate, x.CreatedAtUtc,
-                    x.LastMessageContent, x.LastMessageAtUtc, x.LastMessageSenderUsername))
+                    x.LastMessageContent, x.LastMessageAtUtc,
+                    x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName))
                 .ToList();
 
             return new CursorPagedResult<MessageGroupSummary>

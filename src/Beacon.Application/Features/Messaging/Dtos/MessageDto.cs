@@ -4,6 +4,7 @@ public record MessageDto(
     Guid Id,
     Guid GroupId,
     Guid SenderId,
-    string SenderUsername,
+    string SenderFamilyName,
+    string SenderGivenName,
     string Content,
     DateTime CreatedAtUtc);

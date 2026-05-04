@@ -12,7 +12,6 @@ public sealed class MessageGroupDetailMapper
     public MessageGroupMemberDto ToMemberDto(MessageGroupMember member, string? avatarUrl)
         => new(
             UserId: member.UserId,
-            Username: member.User.Username,
             FamilyName: member.User.FamilyName,
             GivenName: member.User.GivenName,
             AvatarUrl: avatarUrl);

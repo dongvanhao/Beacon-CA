@@ -47,7 +47,8 @@ public class FindUserByPhoneQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(2);
-        result.Value![0].Username.Should().Be("alice");
+        result.Value![0].FamilyName.Should().Be("Alice");
+        result.Value![0].GivenName.Should().Be("Nguyen");
         result.Value[0].FriendshipStatus.Should().Be(FriendshipStatus.None);
     }
 

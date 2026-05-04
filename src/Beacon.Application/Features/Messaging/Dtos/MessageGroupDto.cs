@@ -6,4 +6,5 @@ public record MessageGroupDto(
     DateTime CreatedAtUtc,
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,
-    string? LastMessageSenderUsername);
+    string? LastMessageSenderFamilyName,
+    string? LastMessageSenderGivenName);

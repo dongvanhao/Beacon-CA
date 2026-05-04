@@ -5,10 +5,11 @@ namespace Beacon.Application.Mappings.Group;
 
 public sealed class FriendMapper
 {
-    public FriendDto ToDto(Friend f, Guid currentUserId, string username, string? avatarUrl)
+    public FriendDto ToDto(Friend f, Guid currentUserId, string familyName, string givenName, string? avatarUrl)
         => new(
             UserId: currentUserId == f.UserId1 ? f.UserId2 : f.UserId1,
-            Username: username,
+            FamilyName: familyName,
+            GivenName: givenName,
             AvatarUrl: avatarUrl,
             Type: f.Type,
             CreatedAtUtc: f.CreatedAtUtc,

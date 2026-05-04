@@ -1,6 +1,7 @@
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Infrashtructure.Presistence;
+using Beacon.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Beacon.Infrashtructure.Repository.Identity;
@@ -29,15 +30,22 @@ public class UserRepository(AppDbContext context) : IUserRepository
 
     public async Task<List<User>> SearchByNameOrPhoneAsync(string keyword, Guid excludeUserId, int limit, CancellationToken ct = default)
     {
-        var lower = keyword.ToLowerInvariant();
+        // Normalize keyword: bỏ dấu để hỗ trợ tìm kiếm có dấu / không dấu như nhau
+        var normalizedKeyword = StringNormalizer.RemoveDiacritics(keyword);
+
+        // Bỏ thêm khoảng trắng để hỗ trợ tìm "DongHao" khớp với SearchIndex "dong hao"
+        var normalizedNoSpace = normalizedKeyword.Replace(" ", "");
+
+        var lowerKeyword = keyword.Trim().ToLowerInvariant();
+
         return await context.Users
             .Include(u => u.AvatarMediaObject)
             .Where(u => u.Id != excludeUserId && (
-                u.Username.ToLower().Contains(lower) ||
-                u.GivenName.ToLower().Contains(lower) ||
-                u.FamilyName.ToLower().Contains(lower) ||
-                u.Email.ToLower().Contains(lower) ||
-                (u.PhoneNumber != null && u.PhoneNumber == keyword)))
+                u.SearchIndex.Contains(normalizedKeyword) ||                    // "Dong Hao" → "dong hao" ✓
+                u.SearchIndex.Replace(" ", "").Contains(normalizedNoSpace) ||   // "DongHao"  → "donghao" ✓
+                u.Username.ToLower().Contains(lowerKeyword) ||                  // username
+                u.Email.ToLower().Contains(lowerKeyword) ||                     // email
+                (u.PhoneNumber != null && u.PhoneNumber == keyword.Trim())))    // phone (exact)
             .Take(limit)
             .ToListAsync(ct);
     }

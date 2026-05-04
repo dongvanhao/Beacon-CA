@@ -41,7 +41,8 @@ public class FriendsController(IMediator mediator) : BaseController
     ///     "data": [
     ///       {
     ///         "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "username": "alice",
+    ///         "familyName": "Nguyễn",
+    ///         "givenName": "Alice",
     ///         "avatarUrl": null,
     ///         "type": 2,
     ///         "createdAtUtc": "2026-05-01T08:00:00Z",
@@ -78,19 +79,25 @@ public class FriendsController(IMediator mediator) : BaseController
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Tìm kiếm theo <c>username</c>, <c>họ</c>, <c>tên</c>, <c>email</c> (contains) hoặc <c>số điện thoại</c> (exact match).
+    /// **Tìm kiếm hỗ trợ (không phân biệt dấu và hoa/thường):**
+    /// - <c>Họ tên</c> (contains): "nguyen hao" khớp "Nguyễn Hảo".
+    /// - <c>Họ + Tên liền nhau</c>: "NguyenHao" hoặc "nguyenhao" đều khớp "Nguyễn Hảo".
+    /// - <c>Email</c> (contains).
+    /// - <c>Số điện thoại</c> (exact match).
+    ///
     /// Không trả về chính user đang đăng nhập. Tối đa 10 kết quả.
     ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công. <c>data</c> là mảng, rỗng khi không có kết quả.
-    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc ngắn hơn 3 ký tự (HTTP 400).
+    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc vượt quá 100 ký tự (HTTP 400).
     ///
     /// Cấu trúc <c>data</c> khi thành công:
     /// <code>
     /// [
     ///   {
     ///     "userId": "guid",
-    ///     "username": "hao123",
+    ///     "familyName": "Nguyễn",
+    ///     "givenName": "Hảo",
     ///     "avatarUrl": "https://...",
     ///     "friendshipStatus": 0
     ///   }
@@ -126,7 +133,8 @@ public class FriendsController(IMediator mediator) : BaseController
     ///   "code": null,
     ///   "data": {
     ///     "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "username": "alice",
+    ///     "familyName": "Nguyễn",
+    ///     "givenName": "Alice",
     ///     "avatarUrl": null,
     ///     "type": 2,
     ///     "createdAtUtc": "2026-05-01T08:00:00Z",

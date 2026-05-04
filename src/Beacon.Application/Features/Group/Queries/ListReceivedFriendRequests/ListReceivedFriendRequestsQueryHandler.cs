@@ -21,7 +21,7 @@ public class ListReceivedFriendRequestsQueryHandler(
         var paged = await requestRepo.ListReceivedAsync(currentUser.UserId, query.Cursor, limit, ct);
 
         var dtos = paged.Data.Select(r =>
-            mapper.ToDto(r, r.Sender.Username, null)).ToList();
+            mapper.ToDto(r, r.Sender.FamilyName, r.Sender.GivenName, null)).ToList();
 
         return Result<CursorPagedResult<FriendRequestDto>>.Success(new CursorPagedResult<FriendRequestDto>
         {

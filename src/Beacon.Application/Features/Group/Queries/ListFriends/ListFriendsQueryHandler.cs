@@ -22,7 +22,11 @@ public class ListFriendsQueryHandler(
         var paged = await friendRepo.ListByUserAsync(userId, query.Cursor, limit, ct);
 
         var dtos = paged.Data
-            .Select(f => mapper.ToDto(f, userId, f.GetOtherUser(userId).Username, null))
+            .Select(f =>
+            {
+                var other = f.GetOtherUser(userId);
+                return mapper.ToDto(f, userId, other.FamilyName, other.GivenName, null);
+            })
             .ToList();
 
         return Result<CursorPagedResult<FriendDto>>.Success(new CursorPagedResult<FriendDto>

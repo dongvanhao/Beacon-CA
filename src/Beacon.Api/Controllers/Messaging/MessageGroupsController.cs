@@ -46,7 +46,8 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///         "createdAtUtc": "2026-05-01T08:00:00Z",
     ///         "lastMessageContent": "Hẹn gặp nhé!",
     ///         "lastMessageAtUtc": "2026-05-04T10:30:00Z",
-    ///         "lastMessageSenderUsername": "alice"
+    ///         "lastMessageSenderFamilyName": "Nguyễn",
+    ///         "lastMessageSenderGivenName": "Alice"
     ///       }
     ///     ],
     ///     "meta": {
@@ -60,7 +61,7 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     /// </code>
     ///
     /// **Lưu ý:**
-    /// - <c>lastMessageContent</c>, <c>lastMessageAtUtc</c>, <c>lastMessageSenderUsername</c> là <c>null</c> nếu group chưa có tin nhắn nào.
+    /// - <c>lastMessageContent</c>, <c>lastMessageAtUtc</c>, <c>lastMessageSenderFamilyName</c>, <c>lastMessageSenderGivenName</c> là <c>null</c> nếu group chưa có tin nhắn nào.
     /// - <c>messageGroupId</c> trong danh sách bạn bè (GET /api/v1/friends) chính là <c>groupId</c> dùng ở đây.
     ///
     /// **Các giá trị <c>code</c>:**
@@ -98,7 +99,6 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///     "members": [
     ///       {
     ///         "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "username": "alice",
     ///         "familyName": "Nguyen",
     ///         "givenName": "Alice",
     ///         "avatarUrl": null
@@ -151,7 +151,8 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///     "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///     "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "senderUsername": "alice",
+    ///     "senderFamilyName": "Nguyễn",
+    ///     "senderGivenName": "Alice",
     ///     "content": "Nội dung tin nhắn",
     ///     "createdAtUtc": "2026-05-04T10:30:00Z"
     ///   },
@@ -205,7 +206,8 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "senderUsername": "alice",
+    ///         "senderFamilyName": "Nguyễn",
+    ///         "senderGivenName": "Alice",
     ///         "content": "Hẹn gặp nhé!",
     ///         "createdAtUtc": "2026-05-04T10:30:00Z"
     ///       }

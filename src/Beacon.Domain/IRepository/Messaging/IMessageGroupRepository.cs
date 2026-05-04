@@ -9,7 +9,8 @@ namespace Beacon.Domain.IRepository.Messaging
         DateTime CreatedAtUtc,
         string? LastMessageContent,
         DateTime? LastMessageAtUtc,
-        string? LastMessageSenderUsername);
+        string? LastMessageSenderFamilyName,
+        string? LastMessageSenderGivenName);
 
     public interface IMessageGroupRepository
     {

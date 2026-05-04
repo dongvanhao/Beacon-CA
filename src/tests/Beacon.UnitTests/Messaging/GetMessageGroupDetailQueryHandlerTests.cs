@@ -78,8 +78,8 @@ public class GetMessageGroupDetailQueryHandlerTests
         result.Value!.GroupId.Should().Be(groupId);
         result.Value.IsPrivate.Should().BeTrue();
         result.Value.Members.Should().HaveCount(2);
-        result.Value.Members.Should().Contain(m => m.Username == "me");
-        result.Value.Members.Should().Contain(m => m.Username == "friend");
+        result.Value.Members.Should().Contain(m => m.FamilyName == "Tran");
+        result.Value.Members.Should().Contain(m => m.FamilyName == "Nguyen");
     }
 
     [Fact]

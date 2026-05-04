@@ -28,6 +28,8 @@ public class JwtService(IConfiguration configuration) : IJwtService
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
+            new Claim(ClaimTypes.Surname, user.FamilyName),
+            new Claim(ClaimTypes.GivenName, user.GivenName),
             new Claim("device_id", deviceId.ToString()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };

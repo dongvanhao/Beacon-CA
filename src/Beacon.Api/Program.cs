@@ -43,6 +43,30 @@ if (!app.Environment.IsEnvironment("Testing"))
             delaySec *= 2;
         }
     }
+
+    // Re-normalize SearchIndex cho toàn bộ user bằng C# StringNormalizer.
+    // Cần thiết vì SQL migration không thể xử lý đúng ký tự Đ/đ (encoding issue).
+    // Chạy mỗi startup nhưng rất nhanh (chỉ update row thực sự thay đổi).
+    try
+    {
+        var users = db.Users.ToList();
+        var updated = 0;
+        foreach (var user in users)
+        {
+            var before = user.SearchIndex;
+            user.UpdateSearchIndex();
+            if (user.SearchIndex != before) updated++;
+        }
+        if (updated > 0)
+        {
+            db.SaveChanges();
+            logger.LogInformation("Re-normalized SearchIndex for {Count} user(s).", updated);
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogWarning("SearchIndex seeder failed (non-critical): {Error}", ex.Message);
+    }
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();

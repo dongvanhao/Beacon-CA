@@ -30,7 +30,7 @@ public class FindUserByPhoneQueryHandler(
             if (user.AvatarMediaObject is not null)
                 avatarUrl = await storage.GeneratePresignedGetUrlAsync(user.AvatarMediaObject.ObjectKey, ct);
 
-            results.Add(new UserSearchDto(user.Id, user.Username, avatarUrl, status));
+            results.Add(new UserSearchDto(user.Id, user.FamilyName, user.GivenName, avatarUrl, status));
         }
 
         return Result<List<UserSearchDto>>.Success(results);
