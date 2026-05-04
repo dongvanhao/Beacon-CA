@@ -1,5 +1,6 @@
 using Beacon.Application.Features.Messaging.Commands.SendMessage;
 using Beacon.Application.Features.Messaging.Dtos;
+using Beacon.Application.Features.Messaging.Queries.GetMessageGroupDetail;
 using Beacon.Application.Features.Messaging.Queries.ListMessages;
 using Beacon.Application.Features.Messaging.Queries.ListMyMessageGroups;
 using MediatR;
@@ -71,6 +72,59 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     public async Task<IActionResult> ListGroups(
         [FromQuery] DateTime? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
         => HandleResult(await mediator.Send(new ListMyMessageGroupsQuery(cursor, limit), ct));
+
+    #region
+    /// <summary>Xem thông tin chi tiết nhóm chat kèm danh sách thành viên.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Trả về metadata của nhóm và toàn bộ danh sách thành viên.
+    /// Chỉ thành viên của nhóm mới được xem.
+    ///
+    /// **Path param:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm. Lấy từ <c>groupId</c> trong danh sách hội thoại
+    ///   hoặc <c>messageGroupId</c> trong danh sách bạn bè.
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "...",
+    ///   "code": null,
+    ///   "data": {
+    ///     "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///     "isPrivate": true,
+    ///     "createdAtUtc": "2026-05-01T08:00:00Z",
+    ///     "members": [
+    ///       {
+    ///         "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "username": "alice",
+    ///         "familyName": "Nguyen",
+    ///         "givenName": "Alice",
+    ///         "avatarUrl": null
+    ///       }
+    ///     ]
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// **Giải thích các trường:**
+    /// - <c>isPrivate</c>: <c>true</c> nếu là chat 1-1 (giữa 2 bạn bè), <c>false</c> nếu là nhóm nhiều người.
+    /// - <c>members</c>: Toàn bộ thành viên của nhóm, bao gồm cả user hiện tại.
+    /// - <c>familyName</c> / <c>givenName</c>: Họ và tên của thành viên, có thể <c>null</c> nếu chưa cập nhật.
+    /// - <c>avatarUrl</c>: URL ảnh đại diện, <c>null</c> nếu chưa có.
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200).
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải thành viên nhóm (HTTP 403).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpGet("{groupId:guid}")]
+    public async Task<IActionResult> GetDetail(Guid groupId, CancellationToken ct)
+        => HandleResult(await mediator.Send(new GetMessageGroupDetailQuery(groupId), ct));
 
     #region
     /// <summary>Gửi tin nhắn vào nhóm.</summary>

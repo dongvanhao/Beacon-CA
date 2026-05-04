@@ -8,6 +8,7 @@ namespace Beacon.Domain.IRepository.Group
         Task<Friend?> GetByUsersAsync(Guid userId1, Guid userId2, CancellationToken ct);
         Task<bool> AreFriendsAsync(Guid userA, Guid userB, CancellationToken ct);
         Task<CursorPagedResult<Friend>> ListByUserAsync(Guid userId, DateTime? cursor, int limit, CancellationToken ct);
+        Task<CursorPagedResult<Friend>> SearchByUserAsync(Guid userId, string search, DateTime? cursor, int limit, CancellationToken ct);
         Task AddAsync(Friend friend, CancellationToken ct);
         Task DeleteAsync(Friend friend, CancellationToken ct);
         Task SaveChangesAsync(CancellationToken ct);

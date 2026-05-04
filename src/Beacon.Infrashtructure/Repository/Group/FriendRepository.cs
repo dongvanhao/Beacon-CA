@@ -54,6 +54,47 @@ namespace Beacon.Infrashtructure.Repository.Group
             };
         }
 
+        public async Task<CursorPagedResult<Friend>> SearchByUserAsync(
+            Guid userId, string search, DateTime? cursor, int limit, CancellationToken ct)
+        {
+            var pattern = $"%{search}%";
+            var query = db.Friends
+                .AsNoTracking()
+                .Include(f => f.User1).ThenInclude(u => u!.AvatarMediaObject)
+                .Include(f => f.User2).ThenInclude(u => u!.AvatarMediaObject)
+                .Where(f =>
+                    (f.UserId1 == userId || f.UserId2 == userId)
+                    && (
+                        (f.UserId1 == userId
+                            && f.User2.PhoneNumber != null
+                            && EF.Functions.Like(f.User2.PhoneNumber, pattern))
+                        ||
+                        (f.UserId2 == userId
+                            && f.User1.PhoneNumber != null
+                            && EF.Functions.Like(f.User1.PhoneNumber, pattern))
+                    ))
+                .OrderByDescending(f => f.CreatedAtUtc);
+
+            var filteredQuery = cursor.HasValue
+                ? query.Where(f => f.CreatedAtUtc < cursor.Value).OrderByDescending(f => f.CreatedAtUtc)
+                : query;
+
+            var items = await filteredQuery.Take(limit + 1).ToListAsync(ct);
+            var hasMore = items.Count > limit;
+            if (hasMore) items.RemoveAt(items.Count - 1);
+
+            return new CursorPagedResult<Friend>
+            {
+                Data = items,
+                Meta = new CursorMeta
+                {
+                    NextCursor = hasMore ? items[^1].CreatedAtUtc : null,
+                    Limit = limit,
+                    HasMore = hasMore
+                }
+            };
+        }
+
         public async Task AddAsync(Friend friend, CancellationToken ct)
             => await db.Friends.AddAsync(friend, ct);
 
