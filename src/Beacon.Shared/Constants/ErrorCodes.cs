@@ -67,6 +67,23 @@ namespace Beacon.Shared.Constants
         /// Error codes cho health check endpoints (/health, /health/live, /health/ready, /health/db, /health/minio).
         /// Mỗi code map 1-1 với 1 loại lỗi cụ thể để team có thể filter alert/log.
         /// </summary>
+        public static class Friend
+        {
+            public const string SELF_FRIEND_REQUEST        = "SELF_FRIEND_REQUEST";
+            public const string FRIEND_REQUEST_DUPLICATE   = "FRIEND_REQUEST_DUPLICATE";
+            public const string ALREADY_FRIENDS            = "ALREADY_FRIENDS";
+            public const string FRIEND_REQUEST_NOT_FOUND   = "FRIEND_REQUEST_NOT_FOUND";
+            public const string FRIEND_REQUEST_NOT_PENDING = "FRIEND_REQUEST_NOT_PENDING";
+            public const string FRIEND_REQUEST_FORBIDDEN   = "FRIEND_REQUEST_FORBIDDEN";
+            public const string FRIEND_NOT_FOUND           = "FRIEND_NOT_FOUND";
+        }
+
+        public static class Messaging
+        {
+            public const string MESSAGE_GROUP_NOT_FOUND = "MESSAGE_GROUP_NOT_FOUND";
+            public const string MESSAGE_GROUP_FORBIDDEN = "MESSAGE_GROUP_FORBIDDEN";
+        }
+
         public static class HealthCheck
         {
             /// <summary>Có từ 2 services trở lên bị fail trong cùng một lần check.</summary>

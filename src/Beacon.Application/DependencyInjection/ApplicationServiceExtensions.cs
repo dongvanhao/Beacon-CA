@@ -1,6 +1,8 @@
 using Beacon.Application.Common.Behaviors;
 using Beacon.Application.Mappings.Checkins;
+using Beacon.Application.Mappings.Group;
 using Beacon.Application.Mappings.Identity;
+using Beacon.Application.Mappings.Messaging;
 using Beacon.Application.Mappings.Settings;
 using Beacon.Application.Mappings.Storage;
 using FluentValidation;
@@ -28,6 +30,11 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<SafetySettingMapper>();
         services.AddSingleton<CheckinMapper>();
         services.AddSingleton<CheckinStatusMapper>();
+
+        services.AddSingleton<FriendRequestMapper>();
+        services.AddSingleton<FriendMapper>();
+        services.AddSingleton<MessageMapper>();
+        services.AddSingleton<MessageGroupMapper>();
 
         return services;
     }

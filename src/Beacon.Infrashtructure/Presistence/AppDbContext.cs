@@ -1,6 +1,8 @@
 using Beacon.Domain.Common;
 using Beacon.Domain.Entities.Checkins;
+using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Entities.Identity;
+using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Entities.Notification;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Setting;
@@ -40,6 +42,12 @@ namespace Beacon.Infrashtructure.Presistence
 
         public DbSet<Checkin> Checkins => Set<Checkin>();
         public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
+
+        public DbSet<Friend> Friends => Set<Friend>();
+        public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+        public DbSet<MessageGroup> MessageGroups => Set<MessageGroup>();
+        public DbSet<MessageGroupMember> MessageGroupMembers => Set<MessageGroupMember>();
+        public DbSet<Message> Messages => Set<Message>();
 
         // public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
         // public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
@@ -89,6 +97,15 @@ namespace Beacon.Infrashtructure.Presistence
             // Checkins module
             modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinConfiguration());
             modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinMediaConfiguration());
+
+            // Group module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Group.FriendConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Group.FriendRequestConfiguration());
+
+            // Messaging module
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageGroupConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageGroupMemberConfiguration());
+            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageConfiguration());
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
