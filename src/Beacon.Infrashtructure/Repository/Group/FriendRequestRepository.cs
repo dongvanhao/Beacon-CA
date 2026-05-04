@@ -18,6 +18,12 @@ namespace Beacon.Infrashtructure.Repository.Group
                 ((r.SenderId == userA && r.ReceiverId == userB) ||
                  (r.SenderId == userB && r.ReceiverId == userA)), ct);
 
+        public Task<FriendRequest?> GetPendingBetweenAsync(Guid userA, Guid userB, CancellationToken ct)
+            => db.FriendRequests.FirstOrDefaultAsync(r =>
+                r.Status == FriendRequestStatus.Pending &&
+                ((r.SenderId == userA && r.ReceiverId == userB) ||
+                 (r.SenderId == userB && r.ReceiverId == userA)), ct);
+
         public async Task<CursorPagedResult<FriendRequest>> ListReceivedAsync(
             Guid receiverId, DateTime? cursor, int limit, CancellationToken ct)
         {

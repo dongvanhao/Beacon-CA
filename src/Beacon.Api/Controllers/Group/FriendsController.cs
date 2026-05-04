@@ -1,9 +1,9 @@
 using Beacon.Application.Features.Group.Commands.RemoveFriend;
 using Beacon.Application.Features.Group.Commands.UpdateFriendType;
 using Beacon.Application.Features.Group.Dtos;
+using Beacon.Application.Features.Group.Queries.FindUserByPhone;
 using Beacon.Application.Features.Group.Queries.GetFriendDetail;
 using Beacon.Application.Features.Group.Queries.ListFriends;
-using Beacon.Application.Features.Group.Queries.SearchFriends;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -74,17 +74,16 @@ public class FriendsController(IMediator mediator) : BaseController
         => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit), ct));
 
     #region
-    /// <summary>Tìm kiếm bạn bè theo số điện thoại.</summary>
+    /// <summary>Tìm người dùng theo số điện thoại để gửi lời mời kết bạn.</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Tìm trong danh sách bạn bè của user hiện tại theo số điện thoại (partial match).
-    /// Kết quả sắp xếp theo thời gian kết bạn mới nhất trước.
+    /// Tìm kiếm chính xác theo số điện thoại trong toàn bộ hệ thống.
+    /// Trả về thông tin người dùng kèm trạng thái quan hệ với user hiện tại.
+    /// Không trả kết quả nếu số điện thoại là của chính user đang đăng nhập.
     ///
     /// **Query params:**
-    /// - <c>search</c> (string, bắt buộc, tối thiểu 3 ký tự): Chuỗi tìm kiếm khớp một phần với số điện thoại.
-    /// - <c>cursor</c> (string ISO-8601 UTC, tuỳ chọn): Load kết quả cũ hơn mốc này.
-    /// - <c>limit</c> (int, tuỳ chọn, mặc định 20, tối đa 100): Số bản ghi mỗi trang.
+    /// - <c>search</c> (string, bắt buộc, tối thiểu 3 ký tự): Từ khoá tìm kiếm — hiện tại khớp theo số điện thoại (exact match).
     ///
     /// **Response khi thành công (HTTP 200):**
     /// <code>
@@ -93,44 +92,31 @@ public class FriendsController(IMediator mediator) : BaseController
     ///   "message": "...",
     ///   "code": null,
     ///   "data": {
-    ///     "data": [
-    ///       {
-    ///         "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "username": "alice",
-    ///         "avatarUrl": null,
-    ///         "type": 2,
-    ///         "createdAtUtc": "2026-05-01T08:00:00Z",
-    ///         "messageGroupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
-    ///       }
-    ///     ],
-    ///     "meta": {
-    ///       "nextCursor": "2026-05-01T08:00:00Z",
-    ///       "limit": 20,
-    ///       "hasMore": false
-    ///     }
+    ///     "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///     "username": "alice",
+    ///     "avatarUrl": null,
+    ///     "friendshipStatus": 0
     ///   },
     ///   "errors": null
     /// }
     /// </code>
     ///
-    /// **Giải thích các trường:**
-    /// - <c>userId</c>: Id của người bạn (không phải của user hiện tại).
-    /// - <c>type</c>: Loại bạn bè — <c>0</c> = Family, <c>1</c> = CloseFriend, <c>2</c> = Normal, <c>3</c> = Custom.
-    /// - <c>messageGroupId</c>: Id nhóm chat riêng tư với người bạn này. Dùng để gọi GET /api/v1/message-groups/{groupId}/messages.
+    /// **Giá trị <c>friendshipStatus</c>:**
+    /// - <c>0 = None</c>: Chưa có quan hệ — dùng <c>userId</c> làm <c>receiverId</c> để gọi <c>POST /api/v1/friend-requests</c>.
+    /// - <c>1 = Friends</c>: Đã là bạn bè.
+    /// - <c>2 = PendingSent</c>: Bạn đã gửi lời mời, đang chờ đối phương chấp nhận.
+    /// - <c>3 = PendingReceived</c>: Đối phương đã gửi lời mời cho bạn — gọi <c>POST /api/v1/friend-requests/{id}/accept</c>.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).
     /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc ngắn hơn 3 ký tự (HTTP 400).
+    /// - <c>USER_NOT_FOUND</c>: Không tìm thấy người dùng với số điện thoại này (HTTP 404).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion
     [HttpGet("search")]
-    public async Task<IActionResult> Search(
-        [FromQuery] string search,
-        [FromQuery] DateTime? cursor,
-        [FromQuery] int limit = 20,
-        CancellationToken ct = default)
-        => HandleResult(await mediator.Send(new SearchFriendsQuery(search, cursor, limit), ct));
+    public async Task<IActionResult> Search([FromQuery] string search, CancellationToken ct)
+        => HandleResult(await mediator.Send(new FindUserByPhoneQuery(search), ct));
 
     #region
     /// <summary>Lấy thông tin chi tiết một người bạn.</summary>
