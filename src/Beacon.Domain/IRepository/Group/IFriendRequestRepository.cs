@@ -7,6 +7,7 @@ namespace Beacon.Domain.IRepository.Group
     {
         Task<FriendRequest?> GetByIdAsync(Guid id, CancellationToken ct);
         Task<bool> HasPendingBetweenAsync(Guid userA, Guid userB, CancellationToken ct);
+        Task<FriendRequest?> GetPendingBetweenAsync(Guid userA, Guid userB, CancellationToken ct);
         Task<CursorPagedResult<FriendRequest>> ListReceivedAsync(Guid receiverId, DateTime? cursor, int limit, CancellationToken ct);
         Task<CursorPagedResult<FriendRequest>> ListSentAsync(Guid senderId, DateTime? cursor, int limit, CancellationToken ct);
         Task AddAsync(FriendRequest req, CancellationToken ct);
