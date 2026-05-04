@@ -47,7 +47,9 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///         "lastMessageContent": "Hẹn gặp nhé!",
     ///         "lastMessageAtUtc": "2026-05-04T10:30:00Z",
     ///         "lastMessageSenderFamilyName": "Nguyễn",
-    ///         "lastMessageSenderGivenName": "Alice"
+    ///         "lastMessageSenderGivenName": "Alice",
+    ///         "peerFamilyName": "Trần",
+    ///         "peerGivenName": "Bob"
     ///       }
     ///     ],
     ///     "meta": {
@@ -59,6 +61,12 @@ public class MessageGroupsController(IMediator mediator) : BaseController
     ///   "errors": null
     /// }
     /// </code>
+    ///
+    /// **Giải thích trường <c>peerFamilyName</c> / <c>peerGivenName</c>:**
+    /// - Đây là họ và tên của **người bạn đang chat cùng** trong cuộc hội thoại 1-1 (<c>isPrivate = true</c>).
+    /// - Ví dụ: UserA gọi API → thấy tên của UserB. UserB gọi API → thấy tên của UserA.
+    /// - Dùng 2 trường này để hiển thị tên cuộc hội thoại trên danh sách chat.
+    /// - Với group nhiều người (<c>isPrivate = false</c>): cả hai trường đều là <c>null</c>.
     ///
     /// **Lưu ý:**
     /// - <c>lastMessageContent</c>, <c>lastMessageAtUtc</c>, <c>lastMessageSenderFamilyName</c>, <c>lastMessageSenderGivenName</c> là <c>null</c> nếu group chưa có tin nhắn nào.

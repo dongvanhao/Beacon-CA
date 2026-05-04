@@ -56,7 +56,19 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                     LastMessageSenderGivenName = g.Messages
                         .OrderByDescending(m => m.CreatedAtUtc)
                         .Select(m => m.Sender.GivenName)
-                        .FirstOrDefault()
+                        .FirstOrDefault(),
+                    PeerFamilyName = g.IsPrivate
+                        ? g.Members
+                            .Where(m => m.UserId != userId)
+                            .Select(m => m.User.FamilyName)
+                            .FirstOrDefault()
+                        : null,
+                    PeerGivenName = g.IsPrivate
+                        ? g.Members
+                            .Where(m => m.UserId != userId)
+                            .Select(m => m.User.GivenName)
+                            .FirstOrDefault()
+                        : null
                 });
 
             if (cursor.HasValue)
@@ -74,7 +86,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                 .Select(x => new MessageGroupSummary(
                     x.Id, x.IsPrivate, x.CreatedAtUtc,
                     x.LastMessageContent, x.LastMessageAtUtc,
-                    x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName))
+                    x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName,
+                    x.PeerFamilyName, x.PeerGivenName))
                 .ToList();
 
             return new CursorPagedResult<MessageGroupSummary>
