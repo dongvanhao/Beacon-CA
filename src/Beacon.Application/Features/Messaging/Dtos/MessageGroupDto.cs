@@ -7,4 +7,6 @@ public record MessageGroupDto(
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,
     string? LastMessageSenderFamilyName,
-    string? LastMessageSenderGivenName);
+    string? LastMessageSenderGivenName,
+    string? PeerFamilyName,
+    string? PeerGivenName);
