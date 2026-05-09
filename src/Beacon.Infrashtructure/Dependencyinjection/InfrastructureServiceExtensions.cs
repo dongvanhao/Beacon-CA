@@ -2,6 +2,7 @@ using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.IRepository;
 using Beacon.Domain.IRepository.Checkins;
 using Beacon.Domain.IRepository.Group;
+using Beacon.Domain.IRepository.Identity;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
@@ -37,6 +38,7 @@ public static class InfrastructureServiceExtensions
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
+        services.AddScoped<IUserDeviceTokenRepository, UserDeviceTokenRepository>();
         services.AddScoped<IAdminRepository, AdminRepository>();
         services.AddScoped<IMediaObjectRepository, MediaObjectRepository>();
         services.AddScoped<ISafetySettingRepository, SafetySettingRepository>();

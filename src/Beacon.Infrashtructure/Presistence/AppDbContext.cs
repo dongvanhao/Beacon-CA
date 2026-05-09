@@ -21,6 +21,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
+        public DbSet<UserDeviceToken> UserDeviceTokens => Set<UserDeviceToken>();
 
         public DbSet<Admin> Admins => Set<Admin>();
         public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
