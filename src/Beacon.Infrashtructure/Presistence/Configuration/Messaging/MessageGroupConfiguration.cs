@@ -12,5 +12,13 @@ public class MessageGroupConfiguration : IEntityTypeConfiguration<MessageGroup>
         b.HasKey(g => g.Id);
         b.Property(g => g.IsPrivate).IsRequired();
         b.Property(g => g.CreatedAtUtc).IsRequired();
+        b.Property(g => g.Name).HasMaxLength(100);
+        b.Property(g => g.AvatarMediaObjectId).IsRequired(false);
+        b.HasOne(g => g.AvatarMedia).WithMany()
+         .HasForeignKey(g => g.AvatarMediaObjectId)
+         .OnDelete(DeleteBehavior.SetNull)
+         .IsRequired(false);
+        b.Property(g => g.IsDeleted).IsRequired().HasDefaultValue(false);
+        b.Property(g => g.DeletedAtUtc);
     }
 }

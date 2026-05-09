@@ -14,6 +14,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Users.FirstOrDefaultAsync(u => u.Username == username.ToLowerInvariant(), ct);
 
+    public async Task<bool> ExistsAsync(Guid userId, CancellationToken ct = default)
+        => await context.Users.AnyAsync(u => u.Id == userId, ct);
+
     public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.Username == username.ToLowerInvariant(), ct);
 

@@ -1,6 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Group.Commands.RemoveFriend;
 using Beacon.Domain.Entities.Group;
+using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Group;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Messaging;
@@ -45,24 +46,23 @@ public class RemoveFriendCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldReturnSuccess_AndDeleteFriendAndMembers()
+    public async Task Handle_ShouldReturnSuccess_AndSoftDeleteGroup()
     {
         var targetId = Guid.NewGuid();
         var groupId = Guid.NewGuid();
         var (u1, u2) = _currentUserId < targetId ? (_currentUserId, targetId) : (targetId, _currentUserId);
-        var friend = new Friend
-        {
-            UserId1 = u1,
-            UserId2 = u2,
-            MessageGroupId = groupId,
-            Type = FriendType.Normal
-        };
+        var friend = new Friend { UserId1 = u1, UserId2 = u2, Type = FriendType.Normal };
+
+        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
 
         _friendRepoMock
             .Setup(r => r.GetByUsersAsync(_currentUserId, targetId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(friend);
         _groupRepoMock
-            .Setup(r => r.RemoveMembersAsync(groupId, u1, u2, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetPrivateGroupBetweenAsync(u1, u2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(group);
+        _groupRepoMock
+            .Setup(r => r.RemoveMemberAsync(group.Id, It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
         _friendRepoMock
             .Setup(r => r.DeleteAsync(friend, It.IsAny<CancellationToken>()))
@@ -74,8 +74,36 @@ public class RemoveFriendCommandHandlerTests
         var result = await _sut.Handle(new RemoveFriendCommand(targetId), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        _groupRepoMock.Verify(r => r.RemoveMembersAsync(groupId, u1, u2, It.IsAny<CancellationToken>()), Times.Once);
+        group.IsDeleted.Should().BeTrue();
+        _groupRepoMock.Verify(r => r.RemoveMemberAsync(group.Id, u1, It.IsAny<CancellationToken>()), Times.Once);
+        _groupRepoMock.Verify(r => r.RemoveMemberAsync(group.Id, u2, It.IsAny<CancellationToken>()), Times.Once);
         _friendRepoMock.Verify(r => r.DeleteAsync(friend, It.IsAny<CancellationToken>()), Times.Once);
         _friendRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldReturnSuccess_EvenWhenGroupNotFound()
+    {
+        var targetId = Guid.NewGuid();
+        var (u1, u2) = _currentUserId < targetId ? (_currentUserId, targetId) : (targetId, _currentUserId);
+        var friend = new Friend { UserId1 = u1, UserId2 = u2, Type = FriendType.Normal };
+
+        _friendRepoMock
+            .Setup(r => r.GetByUsersAsync(_currentUserId, targetId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(friend);
+        _groupRepoMock
+            .Setup(r => r.GetPrivateGroupBetweenAsync(u1, u2, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((MessageGroup?)null);
+        _friendRepoMock
+            .Setup(r => r.DeleteAsync(friend, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+        _friendRepoMock
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.Handle(new RemoveFriendCommand(targetId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        _groupRepoMock.Verify(r => r.RemoveMemberAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

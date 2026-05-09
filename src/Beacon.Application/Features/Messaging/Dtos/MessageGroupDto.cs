@@ -8,5 +8,5 @@ public record MessageGroupDto(
     DateTime? LastMessageAtUtc,
     string? LastMessageSenderFamilyName,
     string? LastMessageSenderGivenName,
-    string? PeerFamilyName,
-    string? PeerGivenName);
+    string? DisplayName,
+    string? DisplayAvatarUrl);

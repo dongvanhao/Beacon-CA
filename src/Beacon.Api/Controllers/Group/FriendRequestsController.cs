@@ -1,4 +1,5 @@
 using Beacon.Application.Features.Group.Commands.AcceptFriendRequest;
+using Beacon.Application.Features.Group.Commands.CancelFriendRequest;
 using Beacon.Application.Features.Group.Commands.DeclineFriendRequest;
 using Beacon.Application.Features.Group.Commands.SendFriendRequest;
 using Beacon.Application.Features.Group.Dtos;
@@ -49,6 +50,7 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     /// - <c>null</c>: Thành công (HTTP 201).
     /// - <c>VALIDATION_ERROR</c>: <c>receiverId</c> rỗng hoặc không hợp lệ (HTTP 400).
     /// - <c>SELF_FRIEND_REQUEST</c>: Không thể gửi lời mời cho chính mình (HTTP 400).
+    /// - <c>USER_NOT_FOUND</c>: <c>receiverId</c> không tồn tại trong hệ thống (HTTP 404).
     /// - <c>FRIEND_REQUEST_DUPLICATE</c>: Đã có lời mời đang chờ xử lý giữa hai người (HTTP 409).
     /// - <c>ALREADY_FRIENDS</c>: Hai người đã là bạn bè (HTTP 409).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
@@ -178,7 +180,9 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     ///
     /// **Giải thích các trường:**
     /// - <c>id</c>: Id của lời mời — dùng để gọi POST /accept hoặc POST /decline.
-    /// - <c>senderId</c>: Id của người gửi lời mời.
+    /// - <c>senderId</c>: Id của người gửi lời mời (người kia, không phải user hiện tại).
+    /// - <c>senderFamilyName</c> / <c>senderGivenName</c>: Họ và tên người gửi — dùng để hiển thị card lời mời.
+    /// - <c>senderAvatarUrl</c>: Signed URL avatar người gửi, <c>null</c> nếu chưa đặt.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).
@@ -235,8 +239,10 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     /// </code>
     ///
     /// **Giải thích các trường:**
-    /// - <c>id</c>: Id của lời mời — có thể dùng để hiển thị trạng thái "đang chờ".
+    /// - <c>id</c>: Id của lời mời — dùng để hiển thị trạng thái "đang chờ" hoặc truyền vào DELETE /{id} để hủy.
+    /// - <c>senderId</c>: Id của chính user hiện tại (người gửi).
     /// - <c>senderFamilyName</c> / <c>senderGivenName</c>: Họ và tên của chính user hiện tại.
+    /// - <c>senderAvatarUrl</c>: Avatar của user hiện tại, <c>null</c> nếu chưa đặt.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).
@@ -247,4 +253,31 @@ public class FriendRequestsController(IMediator mediator) : BaseController
     public async Task<IActionResult> ListSent(
         [FromQuery] DateTime? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
         => HandleResult(await mediator.Send(new ListSentFriendRequestsQuery(cursor, limit), ct));
+
+    #region
+    /// <summary>Hủy lời mời kết bạn đã gửi.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ người **gửi** lời mời mới có thể hủy.
+    ///
+    /// **Path param:**
+    /// - <c>id</c> (guid, bắt buộc): Id của lời mời kết bạn. Lấy từ <c>data[].id</c> trong GET /api/v1/friend-requests/sent.
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>
+    /// { "success": true, "message": "...", "code": null, "data": null, "errors": null }
+    /// </code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>FRIEND_REQUEST_NOT_FOUND</c>: Không tìm thấy lời mời (HTTP 404).
+    /// - <c>FRIEND_REQUEST_FORBIDDEN</c>: User hiện tại không phải người gửi (HTTP 403).
+    /// - <c>FRIEND_REQUEST_NOT_PENDING</c>: Lời mời không còn ở trạng thái chờ (HTTP 409).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Cancel(Guid id, CancellationToken ct)
+        => HandleResult(await mediator.Send(new CancelFriendRequestCommand(id), ct));
 }

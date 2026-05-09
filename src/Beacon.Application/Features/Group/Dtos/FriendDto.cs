@@ -9,4 +9,4 @@ public record FriendDto(
     string? AvatarUrl,
     FriendType Type,
     DateTime CreatedAtUtc,
-    Guid MessageGroupId);
+    Guid? MessageGroupId);

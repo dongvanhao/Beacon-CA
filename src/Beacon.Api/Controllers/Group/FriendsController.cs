@@ -1,7 +1,7 @@
 using Beacon.Application.Features.Group.Commands.RemoveFriend;
 using Beacon.Application.Features.Group.Commands.UpdateFriendType;
 using Beacon.Application.Features.Group.Dtos;
-using Beacon.Application.Features.Group.Queries.FindUserByPhone;
+using Beacon.Application.Features.Group.Queries.SearchUsers;
 using Beacon.Application.Features.Group.Queries.GetFriendDetail;
 using Beacon.Application.Features.Group.Queries.ListFriends;
 using MediatR;
@@ -62,7 +62,8 @@ public class FriendsController(IMediator mediator) : BaseController
     /// **Giải thích các trường:**
     /// - <c>userId</c>: Id của người bạn (không phải của user hiện tại).
     /// - <c>type</c>: Loại bạn bè — <c>0</c> = Family, <c>1</c> = CloseFriend, <c>2</c> = Normal, <c>3</c> = Custom.
-    /// - <c>messageGroupId</c>: Id nhóm chat riêng tư với người bạn này. Dùng để gọi GET /api/v1/message-groups/{groupId}/messages.
+    /// - <c>avatarUrl</c>: Signed URL ảnh đại diện của người bạn, <c>null</c> nếu chưa đặt.
+    /// - <c>messageGroupId</c>: Id nhóm chat riêng tư với người bạn này (<c>null</c> trong trường hợp bất thường). Dùng làm <c>groupId</c> khi gọi GET /api/v1/message-groups/{groupId}/messages.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).
@@ -79,43 +80,55 @@ public class FriendsController(IMediator mediator) : BaseController
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
+    /// **Query param:**
+    /// - <c>search</c> (string, bắt buộc, tối đa 100 ký tự): Từ khoá tìm kiếm.
+    ///
     /// **Tìm kiếm hỗ trợ (không phân biệt dấu và hoa/thường):**
-    /// - <c>Họ tên</c> (contains): "nguyen hao" khớp "Nguyễn Hảo".
-    /// - <c>Họ + Tên liền nhau</c>: "NguyenHao" hoặc "nguyenhao" đều khớp "Nguyễn Hảo".
-    /// - <c>Email</c> (contains).
-    /// - <c>Số điện thoại</c> (exact match).
+    /// - Họ tên (contains): "nguyen hao" khớp "Nguyễn Hảo".
+    /// - Họ + Tên liền nhau: "NguyenHao" hoặc "nguyenhao" đều khớp "Nguyễn Hảo".
+    /// - Email (contains).
+    /// - Số điện thoại (exact match).
     ///
-    /// Không trả về chính user đang đăng nhập. Tối đa 10 kết quả.
+    /// Không trả về chính user đang đăng nhập. Tối đa 10 kết quả. Không phân trang.
     ///
-    /// Các giá trị <c>code</c>:
-    /// - <c>null</c>: Thành công. <c>data</c> là mảng, rỗng khi không có kết quả.
-    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc vượt quá 100 ký tự (HTTP 400).
-    ///
-    /// Cấu trúc <c>data</c> khi thành công:
+    /// **Response khi thành công (HTTP 200):**
     /// <code>
-    /// [
-    ///   {
-    ///     "userId": "guid",
-    ///     "familyName": "Nguyễn",
-    ///     "givenName": "Hảo",
-    ///     "avatarUrl": "https://...",
-    ///     "friendshipStatus": 0
-    ///   }
-    /// ]
+    /// {
+    ///   "success": true,
+    ///   "message": "...",
+    ///   "code": null,
+    ///   "data": [
+    ///     {
+    ///       "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///       "familyName": "Nguyễn",
+    ///       "givenName": "Hảo",
+    ///       "avatarUrl": "https://cdn.example.com/...",
+    ///       "friendshipStatus": 0
+    ///     }
+    ///   ],
+    ///   "errors": null
+    /// }
     /// </code>
     ///
-    /// Giá trị <c>friendshipStatus</c>:
-    /// - <c>0 = None</c>: Chưa có quan hệ — gọi <c>POST /api/v1/friend-requests</c> với <c>receiverId</c>.
-    /// - <c>1 = Friends</c>: Đã là bạn bè.
-    /// - <c>2 = PendingSent</c>: Bạn đã gửi lời mời, đang chờ chấp nhận.
-    /// - <c>3 = PendingReceived</c>: Đối phương đã gửi lời mời — gọi <c>POST /api/v1/friend-requests/{id}/accept</c>.
+    /// **Giải thích các trường:**
+    /// - <c>data</c>: Mảng kết quả, rỗng <c>[]</c> khi không tìm thấy — không bao giờ null.
+    /// - <c>userId</c>: Id của người dùng — dùng làm <c>receiverId</c> khi gọi POST /api/v1/friend-requests.
+    /// - <c>avatarUrl</c>: Signed URL avatar, <c>null</c> nếu chưa đặt.
+    /// - <c>friendshipStatus</c>:
+    ///   - <c>0 = None</c>: Chưa có quan hệ — có thể gửi lời mời kết bạn.
+    ///   - <c>1 = Friends</c>: Đã là bạn bè.
+    ///   - <c>2 = PendingSent</c>: Bạn đã gửi lời mời, đang chờ chấp nhận.
+    ///   - <c>3 = PendingReceived</c>: Đối phương đã gửi lời mời cho bạn — lấy <c>id</c> từ GET /api/v1/friend-requests/received rồi gọi POST /{id}/accept.
     ///
-    /// Format: <c>{ success, message, code, data, errors }</c>
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200).
+    /// - <c>VALIDATION_ERROR</c>: <c>search</c> trống hoặc vượt quá 100 ký tự (HTTP 400).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion
     [HttpGet("search")]
     public async Task<IActionResult> Search([FromQuery] string search, CancellationToken ct)
-        => HandleResult(await mediator.Send(new FindUserByPhoneQuery(search), ct));
+        => HandleResult(await mediator.Send(new SearchUsersQuery(search), ct));
 
     #region
     /// <summary>Lấy thông tin chi tiết một người bạn.</summary>
@@ -145,8 +158,11 @@ public class FriendsController(IMediator mediator) : BaseController
     /// </code>
     ///
     /// **Giải thích các trường:**
+    /// - <c>familyName</c> / <c>givenName</c>: Họ và tên của người bạn.
+    /// - <c>avatarUrl</c>: Signed URL avatar của người bạn, <c>null</c> nếu chưa đặt.
     /// - <c>type</c>: <c>0</c> = Family, <c>1</c> = CloseFriend, <c>2</c> = Normal, <c>3</c> = Custom.
-    /// - <c>messageGroupId</c>: Dùng để mở chat với người bạn này.
+    /// - <c>createdAtUtc</c>: Thời điểm hai người trở thành bạn bè.
+    /// - <c>messageGroupId</c>: Id nhóm chat riêng tư với người bạn này — dùng làm <c>groupId</c> khi gọi GET /api/v1/message-groups/{groupId}/messages.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).

@@ -43,12 +43,15 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ICheckinRepository, CheckinRepository>();
         services.AddScoped<IDailySafetyRecordRepository, DailySafetyRecordRepository>();
 
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IFriendRepository, FriendRepository>();
         services.AddScoped<IFriendRequestRepository, FriendRequestRepository>();
         services.AddScoped<IMessageGroupRepository, MessageGroupRepository>();
         services.AddScoped<IMessageRepository, MessageRepository>();
+        services.AddScoped<IMessageGroupMemberSettingRepository, MessageGroupMemberSettingRepository>();
 
         services.AddScoped<IJwtService, JwtService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         AddMinio(services, configuration);
 

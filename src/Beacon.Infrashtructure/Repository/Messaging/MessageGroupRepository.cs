@@ -15,14 +15,29 @@ namespace Beacon.Infrashtructure.Repository.Messaging
 
         public Task<MessageGroup?> GetByIdWithMembersAsync(Guid id, CancellationToken ct)
             => db.MessageGroups
+                .Include(g => g.AvatarMedia)
                 .Include(g => g.Members)
                     .ThenInclude(m => m.User)
                         .ThenInclude(u => u.AvatarMediaObject)
                 .FirstOrDefaultAsync(g => g.Id == id, ct);
 
+        public Task<MessageGroup?> GetPrivateGroupBetweenAsync(Guid userId1, Guid userId2, CancellationToken ct)
+            => db.MessageGroups
+                .Include(g => g.Members)
+                .Where(g => g.IsPrivate
+                    && g.Members.Any(m => m.UserId == userId1)
+                    && g.Members.Any(m => m.UserId == userId2))
+                .FirstOrDefaultAsync(ct);
+
         public Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct)
             => db.MessageGroupMembers
                 .AnyAsync(m => m.GroupId == groupId && m.UserId == userId, ct);
+
+        public Task<List<Guid>> GetGroupIdsByUserAsync(Guid userId, CancellationToken ct)
+            => db.MessageGroupMembers
+                .Where(m => m.UserId == userId)
+                .Select(m => m.GroupId)
+                .ToListAsync(ct);
 
         public async Task<CursorPagedResult<MessageGroupSummary>> ListByUserAsync(
             Guid userId, DateTime? cursor, int limit, CancellationToken ct)
@@ -41,6 +56,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                     g.Id,
                     g.IsPrivate,
                     g.CreatedAtUtc,
+                    g.Name,
+                    AvatarObjectKey = g.AvatarMedia != null ? g.AvatarMedia.ObjectKey : null,
                     LastMessageContent = g.Messages
                         .OrderByDescending(m => m.CreatedAtUtc)
                         .Select(m => m.Content)
@@ -57,16 +74,11 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                         .OrderByDescending(m => m.CreatedAtUtc)
                         .Select(m => m.Sender.GivenName)
                         .FirstOrDefault(),
-                    PeerFamilyName = g.IsPrivate
+                    // Tên hiển thị: custom name nếu có, fallback = "FamilyName GivenName" của peer (chat 1-1)
+                    PeerDisplayName = g.IsPrivate
                         ? g.Members
                             .Where(m => m.UserId != userId)
-                            .Select(m => m.User.FamilyName)
-                            .FirstOrDefault()
-                        : null,
-                    PeerGivenName = g.IsPrivate
-                        ? g.Members
-                            .Where(m => m.UserId != userId)
-                            .Select(m => m.User.GivenName)
+                            .Select(m => (m.User.FamilyName + " " + m.User.GivenName).Trim())
                             .FirstOrDefault()
                         : null
                 });
@@ -87,7 +99,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
                     x.Id, x.IsPrivate, x.CreatedAtUtc,
                     x.LastMessageContent, x.LastMessageAtUtc,
                     x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName,
-                    x.PeerFamilyName, x.PeerGivenName))
+                    DisplayName: x.Name ?? x.PeerDisplayName,
+                    AvatarObjectKey: x.AvatarObjectKey))
                 .ToList();
 
             return new CursorPagedResult<MessageGroupSummary>
@@ -107,12 +120,12 @@ namespace Beacon.Infrashtructure.Repository.Messaging
         public async Task AddAsync(MessageGroup group, CancellationToken ct)
             => await db.MessageGroups.AddAsync(group, ct);
 
-        public async Task RemoveMembersAsync(Guid groupId, Guid userId1, Guid userId2, CancellationToken ct)
+        public async Task RemoveMemberAsync(Guid groupId, Guid userId, CancellationToken ct)
         {
-            var members = await db.MessageGroupMembers
-                .Where(m => m.GroupId == groupId && (m.UserId == userId1 || m.UserId == userId2))
-                .ToListAsync(ct);
-            db.MessageGroupMembers.RemoveRange(members);
+            var member = await db.MessageGroupMembers
+                .FirstOrDefaultAsync(m => m.GroupId == groupId && m.UserId == userId, ct);
+            if (member is not null)
+                db.MessageGroupMembers.Remove(member);
         }
 
         public Task SaveChangesAsync(CancellationToken ct)

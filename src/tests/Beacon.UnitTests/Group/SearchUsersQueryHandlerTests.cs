@@ -1,5 +1,5 @@
 using Beacon.Application.Common.Interfaces.IService;
-using Beacon.Application.Features.Group.Queries.FindUserByPhone;
+using Beacon.Application.Features.Group.Queries.SearchUsers;
 using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Enums.Group;
@@ -10,22 +10,22 @@ using Moq;
 
 namespace Beacon.UnitTests.Group;
 
-public class FindUserByPhoneQueryHandlerTests
+public class SearchUsersQueryHandlerTests
 {
     private readonly Mock<IUserRepository> _userRepoMock = new();
     private readonly Mock<IFriendRepository> _friendRepoMock = new();
     private readonly Mock<IFriendRequestRepository> _friendRequestRepoMock = new();
     private readonly Mock<ICurrentUserService> _currentUserMock = new();
     private readonly Mock<IStorageService> _storageMock = new();
-    private readonly FindUserByPhoneQueryHandler _sut;
+    private readonly SearchUsersQueryHandler _sut;
 
     private readonly Guid _currentUserId = Guid.NewGuid();
 
-    public FindUserByPhoneQueryHandlerTests()
+    public SearchUsersQueryHandlerTests()
     {
         _currentUserMock.Setup(s => s.UserId).Returns(_currentUserId);
 
-        _sut = new FindUserByPhoneQueryHandler(
+        _sut = new SearchUsersQueryHandler(
             _userRepoMock.Object,
             _friendRepoMock.Object,
             _friendRequestRepoMock.Object,
@@ -43,7 +43,7 @@ public class FindUserByPhoneQueryHandlerTests
         SetupNoFriendship(alice.Id);
         SetupNoFriendship(bob.Id);
 
-        var result = await _sut.Handle(new FindUserByPhoneQuery("alice"), CancellationToken.None);
+        var result = await _sut.Handle(new SearchUsersQuery("alice"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().HaveCount(2);
@@ -57,7 +57,7 @@ public class FindUserByPhoneQueryHandlerTests
     {
         SetupSearch([]);
 
-        var result = await _sut.Handle(new FindUserByPhoneQuery("xyz_notfound"), CancellationToken.None);
+        var result = await _sut.Handle(new SearchUsersQuery("xyz_notfound"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value.Should().BeEmpty();
@@ -69,11 +69,10 @@ public class FindUserByPhoneQueryHandlerTests
         var target = User.Create("bob", "bob@test.com", "hash", "Bob", "Tran", "0987654321");
 
         SetupSearch([target]);
-        _friendRepoMock
-            .Setup(r => r.AreFriendsAsync(_currentUserId, target.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        SetupFriendIds([target.Id]);
+        SetupNoPendingRequests([target.Id]);
 
-        var result = await _sut.Handle(new FindUserByPhoneQuery("bob"), CancellationToken.None);
+        var result = await _sut.Handle(new SearchUsersQuery("bob"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value![0].FriendshipStatus.Should().Be(FriendshipStatus.Friends);
@@ -83,23 +82,13 @@ public class FindUserByPhoneQueryHandlerTests
     public async Task Handle_WhenCurrentUserSentRequest_ReturnsPendingSentStatus()
     {
         var target = User.Create("carol", "carol@test.com", "hash", "Carol", "Le", "0911111111");
-        var pendingReq = new FriendRequest
-        {
-            SenderId   = _currentUserId,
-            ReceiverId = target.Id,
-            Status     = FriendRequestStatus.Pending,
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var pendingReq = FriendRequest.Create(_currentUserId, target.Id);
 
         SetupSearch([target]);
-        _friendRepoMock
-            .Setup(r => r.AreFriendsAsync(_currentUserId, target.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        _friendRequestRepoMock
-            .Setup(r => r.GetPendingBetweenAsync(_currentUserId, target.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(pendingReq);
+        SetupFriendIds([]);
+        SetupPendingRequests(new Dictionary<Guid, FriendRequest> { [target.Id] = pendingReq });
 
-        var result = await _sut.Handle(new FindUserByPhoneQuery("carol"), CancellationToken.None);
+        var result = await _sut.Handle(new SearchUsersQuery("carol"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value![0].FriendshipStatus.Should().Be(FriendshipStatus.PendingSent);
@@ -109,23 +98,13 @@ public class FindUserByPhoneQueryHandlerTests
     public async Task Handle_WhenTargetSentRequest_ReturnsPendingReceivedStatus()
     {
         var target = User.Create("dave", "dave@test.com", "hash", "Dave", "Pham", "0922222222");
-        var pendingReq = new FriendRequest
-        {
-            SenderId   = target.Id,
-            ReceiverId = _currentUserId,
-            Status     = FriendRequestStatus.Pending,
-            CreatedAtUtc = DateTime.UtcNow
-        };
+        var pendingReq = FriendRequest.Create(target.Id, _currentUserId);
 
         SetupSearch([target]);
-        _friendRepoMock
-            .Setup(r => r.AreFriendsAsync(_currentUserId, target.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        _friendRequestRepoMock
-            .Setup(r => r.GetPendingBetweenAsync(_currentUserId, target.Id, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(pendingReq);
+        SetupFriendIds([]);
+        SetupPendingRequests(new Dictionary<Guid, FriendRequest> { [target.Id] = pendingReq });
 
-        var result = await _sut.Handle(new FindUserByPhoneQuery("dave"), CancellationToken.None);
+        var result = await _sut.Handle(new SearchUsersQuery("dave"), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         result.Value![0].FriendshipStatus.Should().Be(FriendshipStatus.PendingReceived);
@@ -139,13 +118,27 @@ public class FindUserByPhoneQueryHandlerTests
                 It.IsAny<string>(), _currentUserId, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(users);
 
+    private void SetupFriendIds(List<Guid> friendIds)
+        => _friendRepoMock
+            .Setup(r => r.GetFriendIdsAsync(
+                _currentUserId, It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new HashSet<Guid>(friendIds));
+
+    private void SetupNoPendingRequests(List<Guid> targetIds)
+        => _friendRequestRepoMock
+            .Setup(r => r.GetPendingBetweenBatchAsync(
+                _currentUserId, It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new Dictionary<Guid, FriendRequest>());
+
+    private void SetupPendingRequests(Dictionary<Guid, FriendRequest> requests)
+        => _friendRequestRepoMock
+            .Setup(r => r.GetPendingBetweenBatchAsync(
+                _currentUserId, It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(requests);
+
     private void SetupNoFriendship(Guid targetId)
     {
-        _friendRepoMock
-            .Setup(r => r.AreFriendsAsync(_currentUserId, targetId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(false);
-        _friendRequestRepoMock
-            .Setup(r => r.GetPendingBetweenAsync(_currentUserId, targetId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((FriendRequest?)null);
+        SetupFriendIds([]);
+        SetupNoPendingRequests([targetId]);
     }
 }

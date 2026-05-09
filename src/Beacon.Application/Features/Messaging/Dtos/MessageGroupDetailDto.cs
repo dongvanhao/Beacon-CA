@@ -4,4 +4,6 @@ public record MessageGroupDetailDto(
     Guid GroupId,
     bool IsPrivate,
     DateTime CreatedAtUtc,
+    string? DisplayName,
+    string? DisplayAvatarUrl,
     IReadOnlyList<MessageGroupMemberDto> Members);

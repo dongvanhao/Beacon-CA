@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddApiAuth(builder.Configuration, builder.Environment);
+builder.Services.AddApiSignalR();
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
 builder.Services.AddControllers();
@@ -77,6 +78,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthCheckEndpoints();
+app.MapSignalRHubs();
 
 app.Run();
 

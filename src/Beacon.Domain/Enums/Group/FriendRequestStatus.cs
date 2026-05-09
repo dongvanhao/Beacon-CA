@@ -4,6 +4,7 @@ namespace Beacon.Domain.Enums.Group
     {
         Pending,
         Accepted,
-        Declined
+        Declined,
+        Cancelled
     }
 }

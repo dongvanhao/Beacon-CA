@@ -19,13 +19,20 @@ public class RemoveFriendCommandHandler(
         if (friend is null)
             return Result.Failure(Error.NotFound(ErrorCodes.Friend.FRIEND_NOT_FOUND, "Không tìm thấy thông tin bạn bè."));
 
-        // Remove group members (so messages can no longer be sent)
-        await groupRepo.RemoveMembersAsync(friend.MessageGroupId, friend.UserId1, friend.UserId2, ct);
+        
+        var group = await groupRepo.GetPrivateGroupBetweenAsync(friend.UserId1, friend.UserId2, ct);
+        if (group is not null)
+        {
+            await groupRepo.RemoveMemberAsync(group.Id, friend.UserId1, ct);
+            await groupRepo.RemoveMemberAsync(group.Id, friend.UserId2, ct);
+        
+            group.Delete();
+        }
 
         // Remove the friend record
         await friendRepo.DeleteAsync(friend, ct);
 
-        // Single SaveChangesAsync — flushes both RemoveRange and Remove
+        // Single SaveChangesAsync — flushes all tracked changes atomically
         await friendRepo.SaveChangesAsync(ct);
 
         return Result.Success();

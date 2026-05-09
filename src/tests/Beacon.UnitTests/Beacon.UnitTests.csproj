@@ -20,6 +20,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Beacon.Api\Beacon.Api.csproj" />
     <ProjectReference Include="..\..\Beacon.Application\Beacon.Application.csproj" />
     <ProjectReference Include="..\..\Beacon.Domain\Beacon.Domain.csproj" />
     <ProjectReference Include="..\..\Beacon.Shared\Beacon.Shared.csproj" />

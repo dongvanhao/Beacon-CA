@@ -14,9 +14,6 @@ public class FriendConfiguration : IEntityTypeConfiguration<Friend>
         b.Property(f => f.Type).IsRequired().HasConversion<int>();
         b.Property(f => f.CreatedAtUtc).IsRequired();
 
-        b.HasOne(f => f.MessageGroup).WithMany()
-         .HasForeignKey(f => f.MessageGroupId).OnDelete(DeleteBehavior.Restrict);
-
         b.HasOne(f => f.User1).WithMany()
          .HasForeignKey(f => f.UserId1).OnDelete(DeleteBehavior.Restrict);
 

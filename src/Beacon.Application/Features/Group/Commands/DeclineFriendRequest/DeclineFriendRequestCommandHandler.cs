@@ -18,13 +18,13 @@ public class DeclineFriendRequestCommandHandler(
         if (request is null)
             return Result.Failure(Error.NotFound(ErrorCodes.Friend.FRIEND_REQUEST_NOT_FOUND, "Lời mời kết bạn không tồn tại."));
 
-        if (request.ReceiverId != currentUser.UserId)
+        if (request.ReceiverUserId != currentUser.UserId)
             return Result.Failure(Error.Forbidden(ErrorCodes.Friend.FRIEND_REQUEST_FORBIDDEN, "Bạn không có quyền thực hiện hành động này."));
 
         if (request.Status != FriendRequestStatus.Pending)
             return Result.Failure(Error.Conflict(ErrorCodes.Friend.FRIEND_REQUEST_NOT_PENDING, "Lời mời kết bạn không ở trạng thái chờ."));
 
-        request.Status = FriendRequestStatus.Declined;
+        request.Decline();
         await requestRepo.SaveChangesAsync(ct);
 
         return Result.Success();
