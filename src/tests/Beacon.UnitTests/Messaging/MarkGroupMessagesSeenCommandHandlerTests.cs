@@ -47,7 +47,7 @@ public class MarkGroupMessagesSeenCommandHandlerTests
     public async Task Handle_ShouldReturnForbidden_WhenUserIsNotGroupMember()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         // no members
 
         _groupRepoMock
@@ -67,7 +67,7 @@ public class MarkGroupMessagesSeenCommandHandlerTests
     public async Task Handle_ShouldReturnNotFound_WhenMessageDoesNotExistInGroup()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _userId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
         _groupRepoMock
@@ -94,7 +94,7 @@ public class MarkGroupMessagesSeenCommandHandlerTests
         var otherMember = Guid.NewGuid();
 
         var myMember = new MessageGroupMember { GroupId = groupId, UserId = _userId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow };
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(myMember);
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = otherMember, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
@@ -118,7 +118,6 @@ public class MarkGroupMessagesSeenCommandHandlerTests
         _notifierMock.Verify(
             n => n.NotifyMessageSeenAsync(
                 groupId,
-                It.Is<IEnumerable<Guid>>(ids => ids.Contains(otherMember) && !ids.Contains(_userId)),
                 _userId,
                 lastSeenMessageId,
                 It.IsAny<CancellationToken>()),

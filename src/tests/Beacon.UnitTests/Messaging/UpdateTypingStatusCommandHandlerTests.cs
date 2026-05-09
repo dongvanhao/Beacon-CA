@@ -45,7 +45,7 @@ public class UpdateTypingStatusCommandHandlerTests
     public async Task Handle_ShouldReturnForbidden_WhenUserIsNotGroupMember()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         // no members — user is not in group
 
         _groupRepoMock
@@ -66,7 +66,7 @@ public class UpdateTypingStatusCommandHandlerTests
     {
         var groupId = Guid.NewGuid();
         var otherMember = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _userId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = otherMember, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
@@ -82,7 +82,6 @@ public class UpdateTypingStatusCommandHandlerTests
         _notifierMock.Verify(
             n => n.NotifyTypingAsync(
                 groupId,
-                It.Is<IEnumerable<Guid>>(ids => ids.Contains(otherMember) && !ids.Contains(_userId)),
                 _userId,
                 true,
                 It.IsAny<CancellationToken>()),
@@ -93,7 +92,7 @@ public class UpdateTypingStatusCommandHandlerTests
     public async Task Handle_ShouldCallNotifyTypingAsync_WhenUserStopsTyping()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _userId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
         _groupRepoMock
@@ -108,7 +107,6 @@ public class UpdateTypingStatusCommandHandlerTests
         _notifierMock.Verify(
             n => n.NotifyTypingAsync(
                 groupId,
-                It.IsAny<IEnumerable<Guid>>(),
                 _userId,
                 false,
                 It.IsAny<CancellationToken>()),
@@ -119,7 +117,7 @@ public class UpdateTypingStatusCommandHandlerTests
     public async Task Handle_ShouldNotCallSaveChangesAsync()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _userId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
         _groupRepoMock

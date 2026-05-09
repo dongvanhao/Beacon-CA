@@ -22,11 +22,7 @@ public class UpdateTypingStatusCommandHandler(
             return Result.Failure(
                 Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không phải thành viên của nhóm này."));
 
-        var otherMemberIds = group.Members
-            .Where(m => m.UserId != command.UserId)
-            .Select(m => m.UserId);
-
-        await notifier.NotifyTypingAsync(command.GroupId, otherMemberIds, command.UserId, command.IsTyping, ct);
+        await notifier.NotifyTypingAsync(command.GroupId, command.UserId, command.IsTyping, ct);
 
         return Result.Success();
     }

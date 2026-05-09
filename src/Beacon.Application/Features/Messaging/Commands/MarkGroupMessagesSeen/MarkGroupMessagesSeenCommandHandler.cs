@@ -31,11 +31,7 @@ public class MarkGroupMessagesSeenCommandHandler(
         member.LastSeenMessageId = command.LastSeenMessageId;
         await groupRepo.SaveChangesAsync(ct);
 
-        var otherMemberIds = group.Members
-            .Where(m => m.UserId != command.UserId)
-            .Select(m => m.UserId);
-
-        await notifier.NotifyMessageSeenAsync(command.GroupId, otherMemberIds, command.UserId, command.LastSeenMessageId, ct);
+        await notifier.NotifyMessageSeenAsync(command.GroupId, command.UserId, command.LastSeenMessageId, ct);
 
         return Result.Success();
     }

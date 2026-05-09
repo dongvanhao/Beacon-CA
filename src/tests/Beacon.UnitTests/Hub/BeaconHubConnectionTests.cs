@@ -1,6 +1,7 @@
 using Beacon.Api.Hubs;
 using Beacon.Application.Common.Interfaces.IHubs;
 using FluentAssertions;
+using MediatR;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -13,6 +14,7 @@ public class BeaconHubConnectionTests
     private readonly Mock<HubCallerContext> _contextMock = new();
     private readonly Mock<ILogger<BeaconHub>> _loggerMock = new();
     private readonly Mock<IHubCallerClients<IBeaconHub>> _clientsMock = new();
+    private readonly Mock<IMediator> _mediatorMock = new();
     private readonly BeaconHub _sut;
 
     private const string ConnectionId = "test-conn-id";
@@ -24,7 +26,7 @@ public class BeaconHubConnectionTests
             .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
-        _sut = new BeaconHub(_loggerMock.Object)
+        _sut = new BeaconHub(_mediatorMock.Object, _loggerMock.Object)
         {
             Context = _contextMock.Object,
             Groups = _groupsMock.Object,

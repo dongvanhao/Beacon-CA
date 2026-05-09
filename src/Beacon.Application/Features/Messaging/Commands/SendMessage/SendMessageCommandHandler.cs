@@ -44,10 +44,7 @@ public class SendMessageCommandHandler(
 
         var dto = mapper.ToDto(message, currentUser.FamilyName, currentUser.GivenName);
 
-        var memberIds = group.Members
-            .Where(m => m.UserId != currentUser.UserId)
-            .Select(m => m.UserId);
-        await notifier.NotifyNewMessageAsync(command.GroupId, memberIds, dto, ct);
+        await notifier.NotifyNewMessageAsync(command.GroupId, dto, ct);
 
         return Result<MessageDto>.Success(dto);
     }

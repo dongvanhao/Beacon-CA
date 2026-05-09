@@ -56,7 +56,7 @@ public class SendMessageCommandHandlerTests
     public async Task Handle_ShouldReturnForbidden_WhenNotMember()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
         // no members — current user is not in the group
 
         _groupRepoMock
@@ -74,7 +74,7 @@ public class SendMessageCommandHandlerTests
     public async Task Handle_ShouldReturnSuccess_WhenMember()
     {
         var groupId = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember
         {
             GroupId = groupId,
@@ -108,7 +108,7 @@ public class SendMessageCommandHandlerTests
     {
         var groupId = Guid.NewGuid();
         var clientId = "client-uuid-123";
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember
         {
             GroupId = groupId,
@@ -134,7 +134,7 @@ public class SendMessageCommandHandlerTests
         _messageRepoMock.Verify(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()), Times.Never);
         // idempotency path — no notification push
         _notifierMock.Verify(
-            n => n.NotifyNewMessageAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>(), It.IsAny<object>(), It.IsAny<CancellationToken>()),
+            n => n.NotifyNewMessageAsync(It.IsAny<Guid>(), It.IsAny<object>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
@@ -143,7 +143,7 @@ public class SendMessageCommandHandlerTests
     {
         var groupId = Guid.NewGuid();
         var otherMember = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _currentUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = otherMember, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
 
@@ -157,19 +157,18 @@ public class SendMessageCommandHandlerTests
         _notifierMock.Verify(
             n => n.NotifyNewMessageAsync(
                 groupId,
-                It.Is<IEnumerable<Guid>>(ids => ids.Contains(otherMember) && !ids.Contains(_currentUserId)),
                 It.IsAny<object>(),
                 It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
     [Fact]
-    public async Task Handle_ShouldNotPushToSender_OnlyToOtherMembers()
+    public async Task Handle_ShouldBroadcastToGroupRoom_WhenMessageSentToMultiMemberGroup()
     {
         var groupId = Guid.NewGuid();
         var member2 = Guid.NewGuid();
         var member3 = Guid.NewGuid();
-        var group = new MessageGroup { IsPrivate = false, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _currentUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = member2, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
         group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = member3, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
@@ -178,17 +177,11 @@ public class SendMessageCommandHandlerTests
         _messageRepoMock.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
         _messageRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
 
-        IEnumerable<Guid>? capturedIds = null;
-        _notifierMock
-            .Setup(n => n.NotifyNewMessageAsync(It.IsAny<Guid>(), It.IsAny<IEnumerable<Guid>>(), It.IsAny<object>(), It.IsAny<CancellationToken>()))
-            .Callback<Guid, IEnumerable<Guid>, object, CancellationToken>((_, ids, _, _) => capturedIds = ids.ToList())
-            .Returns(Task.CompletedTask);
+        var result = await _sut.Handle(new SendMessageCommand(groupId, "Hello group!", null), CancellationToken.None);
 
-        await _sut.Handle(new SendMessageCommand(groupId, "Hello group!", null), CancellationToken.None);
-
-        capturedIds.Should().NotBeNull();
-        capturedIds.Should().Contain(member2);
-        capturedIds.Should().Contain(member3);
-        capturedIds.Should().NotContain(_currentUserId);
+        result.IsSuccess.Should().BeTrue();
+        _notifierMock.Verify(
+            n => n.NotifyNewMessageAsync(groupId, It.IsAny<object>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }
