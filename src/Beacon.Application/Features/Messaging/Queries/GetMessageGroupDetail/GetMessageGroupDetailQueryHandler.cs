@@ -1,6 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Application.Mappings.Messaging;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -49,7 +50,24 @@ public class GetMessageGroupDetailQueryHandler(
             return mapper.ToMemberDto(m, avatarUrl);
         }).ToList();
 
+        // Resolve tên và ảnh hiển thị:
+        // - Ưu tiên tên/ảnh tuỳ chỉnh của group.
+        // - Chat 1-1 (IsPrivate): fallback sang tên + avatar của người kia.
+        string? displayName = group.Name;
+        string? displayAvatarUrl = group.AvatarMedia is not null
+            ? await storage.GeneratePresignedGetUrlAsync(group.AvatarMedia.ObjectKey, ct)
+            : null;
+
+        if (group.Type == MessageGroupType.Direct && (displayName is null || displayAvatarUrl is null))
+        {
+            var peer = memberDtos.FirstOrDefault(m => m.UserId != userId);
+            displayName ??= peer is not null
+                ? $"{peer.FamilyName} {peer.GivenName}".Trim()
+                : null;
+            displayAvatarUrl ??= peer?.AvatarUrl;
+        }
+
         return Result<MessageGroupDetailDto>.Success(
-            mapper.ToDetailDto(group, memberDtos));
+            mapper.ToDetailDto(group, displayName, displayAvatarUrl, memberDtos));
     }
 }

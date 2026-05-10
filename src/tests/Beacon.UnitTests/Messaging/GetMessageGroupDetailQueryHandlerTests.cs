@@ -5,6 +5,7 @@ using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Entities.Storage;
 using Beacon.Domain.Enums;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -38,7 +39,7 @@ public class GetMessageGroupDetailQueryHandlerTests
     {
         var group = new MessageGroup
         {
-            IsPrivate = true,
+            Type = MessageGroupType.Direct,
             CreatedAtUtc = DateTime.UtcNow
         };
         group.GetType().GetProperty("Id")!.SetValue(group, groupId);
@@ -76,7 +77,7 @@ public class GetMessageGroupDetailQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.GroupId.Should().Be(groupId);
-        result.Value.IsPrivate.Should().BeTrue();
+        result.Value.Type.Should().Be(MessageGroupType.Direct);
         result.Value.Members.Should().HaveCount(2);
         result.Value.Members.Should().Contain(m => m.FamilyName == "Tran");
         result.Value.Members.Should().Contain(m => m.FamilyName == "Nguyen");

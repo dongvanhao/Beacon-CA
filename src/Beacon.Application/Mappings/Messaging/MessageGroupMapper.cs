@@ -5,9 +5,9 @@ namespace Beacon.Application.Mappings.Messaging;
 
 public sealed class MessageGroupMapper
 {
-    public MessageGroupDto ToDto(MessageGroupSummary s)
-        => new(s.GroupId, s.IsPrivate, s.CreatedAtUtc,
+    public MessageGroupDto ToDto(MessageGroupSummary s, string? resolvedAvatarUrl = null)
+        => new(s.GroupId, s.Type, s.CreatedAtUtc,
                s.LastMessageContent, s.LastMessageAtUtc,
                s.LastMessageSenderFamilyName, s.LastMessageSenderGivenName,
-               s.PeerFamilyName, s.PeerGivenName);
+               s.DisplayName, resolvedAvatarUrl);
 }

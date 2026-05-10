@@ -117,9 +117,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("MessageGroupId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
@@ -130,8 +127,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("MessageGroupId");
 
                     b.HasIndex("UserId2");
 
@@ -150,20 +145,89 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("ReceiverId")
+                    b.Property<Guid>("InitiatorId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("SenderId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
+                    b.Property<Guid>("UserId1")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId2")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("SenderId");
+                    b.HasIndex("UserId2");
+
+                    b.HasIndex("UserId1", "UserId2")
+                        .IsUnique()
+                        .HasDatabaseName("UX_FriendRequests_Pair_Pending")
+                        .HasFilter("[Status] = 0");
+
+                    b.HasIndex("InitiatorId", "Status", "CreatedAtUtc")
+                        .HasDatabaseName("IX_FriendRequests_Initiator_Status_CreatedAt");
+
+                    b.HasIndex("UserId1", "UserId2", "Status")
+                        .HasDatabaseName("IX_FriendRequests_Peers_Status");
 
                     b.ToTable("FriendRequests", (string)null);
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Group.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(1024)
+                        .HasColumnType("nvarchar(1024)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Data")
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ReadAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ReceiverUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiverUserId", "CreatedAtUtc")
+                        .HasDatabaseName("IX_Notifications_ReceiverUserId_CreatedAtUtc");
+
+                    b.HasIndex("ReceiverUserId", "IsRead")
+                        .HasDatabaseName("IX_Notifications_ReceiverUserId_IsRead");
+
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.Admin", b =>
@@ -517,11 +581,73 @@ namespace Beacon.Infrashtructure.Migrations
                     b.ToTable("UserDevices", (string)null);
                 });
 
+            modelBuilder.Entity("Beacon.Domain.Entities.Identity.UserDeviceToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AppVersion")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DeviceId")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("DeviceName")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("LastUsedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Platform")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("RevokedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique()
+                        .HasDatabaseName("UX_UserDeviceTokens_Token");
+
+                    b.HasIndex("UserId", "IsActive")
+                        .HasDatabaseName("IX_UserDeviceTokens_UserId_IsActive");
+
+                    b.ToTable("UserDeviceTokens", (string)null);
+                });
+
             modelBuilder.Entity("Beacon.Domain.Entities.Messaging.Message", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ClientMessageId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -531,17 +657,45 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EditedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<Guid?>("ReplyToMessageId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SenderId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<long>("SequenceNumber")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SequenceNumber"));
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ReplyToMessageId");
 
                     b.HasIndex("SenderId");
 
+                    b.HasIndex("GroupId", "ClientMessageId")
+                        .IsUnique()
+                        .HasFilter("[ClientMessageId] IS NOT NULL");
+
                     b.HasIndex("GroupId", "CreatedAtUtc");
+
+                    b.HasIndex("GroupId", "SequenceNumber");
 
                     b.ToTable("Messages", (string)null);
                 });
@@ -552,13 +706,43 @@ namespace Beacon.Infrashtructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AvatarMediaObjectId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<bool>("IsPrivate")
-                        .HasColumnType("bit");
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DirectKey")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Direct");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AvatarMediaObjectId");
+
+                    b.HasIndex("DirectKey")
+                        .IsUnique()
+                        .HasDatabaseName("UX_MessageGroups_DirectKey")
+                        .HasFilter("[DirectKey] IS NOT NULL");
 
                     b.ToTable("MessageGroups", (string)null);
                 });
@@ -571,11 +755,57 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("InvitedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("JoinedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastSeenMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Role")
+                        .HasColumnType("int");
+
                     b.HasKey("GroupId", "UserId");
+
+                    b.HasIndex("InvitedByUserId");
 
                     b.HasIndex("UserId");
 
                     b.ToTable("MessageGroupMembers", (string)null);
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Messaging.MessageGroupMemberSetting", b =>
+                {
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CustomAvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CustomName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsMuted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastReadAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastReadMessageId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("GroupId", "UserId");
+
+                    b.HasIndex("LastReadMessageId");
+
+                    b.ToTable("MessageGroupMemberSettings", (string)null);
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Notification.NotificationDelivery", b =>
@@ -968,12 +1198,6 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Group.Friend", b =>
                 {
-                    b.HasOne("Beacon.Domain.Entities.Messaging.MessageGroup", "MessageGroup")
-                        .WithMany()
-                        .HasForeignKey("MessageGroupId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User1")
                         .WithMany()
                         .HasForeignKey("UserId1")
@@ -986,8 +1210,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("MessageGroup");
-
                     b.Navigation("User1");
 
                     b.Navigation("User2");
@@ -995,13 +1217,34 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Group.FriendRequest", b =>
                 {
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", "Sender")
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", "Initiator")
                         .WithMany()
-                        .HasForeignKey("SenderId")
+                        .HasForeignKey("InitiatorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Sender");
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId1")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId2")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Initiator");
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Group.Notification", b =>
+                {
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReceiverUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.AdminRole", b =>
@@ -1092,6 +1335,17 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Beacon.Domain.Entities.Identity.UserDeviceToken", b =>
+                {
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Beacon.Domain.Entities.Messaging.Message", b =>
                 {
                     b.HasOne("Beacon.Domain.Entities.Messaging.MessageGroup", "Group")
@@ -1099,6 +1353,10 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Messaging.Message", null)
+                        .WithMany()
+                        .HasForeignKey("ReplyToMessageId");
 
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "Sender")
                         .WithMany()
@@ -1111,6 +1369,16 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Navigation("Sender");
                 });
 
+            modelBuilder.Entity("Beacon.Domain.Entities.Messaging.MessageGroup", b =>
+                {
+                    b.HasOne("Beacon.Domain.Entities.Storage.MediaObject", "AvatarMedia")
+                        .WithMany()
+                        .HasForeignKey("AvatarMediaObjectId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("AvatarMedia");
+                });
+
             modelBuilder.Entity("Beacon.Domain.Entities.Messaging.MessageGroupMember", b =>
                 {
                     b.HasOne("Beacon.Domain.Entities.Messaging.MessageGroup", "Group")
@@ -1118,6 +1386,11 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("InvitedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
                         .WithMany()
@@ -1128,6 +1401,19 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Navigation("Group");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Messaging.MessageGroupMemberSetting", b =>
+                {
+                    b.HasOne("Beacon.Domain.Entities.Messaging.MessageGroup", null)
+                        .WithMany()
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Messaging.Message", null)
+                        .WithMany()
+                        .HasForeignKey("LastReadMessageId");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Notification.NotificationDelivery", b =>

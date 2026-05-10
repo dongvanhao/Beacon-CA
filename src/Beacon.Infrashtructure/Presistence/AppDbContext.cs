@@ -21,6 +21,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<User> Users => Set<User>();
         public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
         public DbSet<UserDevice> UserDevices => Set<UserDevice>();
+        public DbSet<UserDeviceToken> UserDeviceTokens => Set<UserDeviceToken>();
 
         public DbSet<Admin> Admins => Set<Admin>();
         public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
@@ -43,10 +44,12 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<Checkin> Checkins => Set<Checkin>();
         public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
 
+        public DbSet<Notification> Notifications => Set<Notification>();
         public DbSet<Friend> Friends => Set<Friend>();
         public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
         public DbSet<MessageGroup> MessageGroups => Set<MessageGroup>();
         public DbSet<MessageGroupMember> MessageGroupMembers => Set<MessageGroupMember>();
+        public DbSet<MessageGroupMemberSetting> MessageGroupMemberSettings => Set<MessageGroupMemberSetting>();
         public DbSet<Message> Messages => Set<Message>();
 
         // public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
@@ -72,44 +75,17 @@ namespace Beacon.Infrashtructure.Presistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Thay vì quét toàn bộ, chỉ apply map của các bảng Identity đang bật:
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.UserConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RefreshTokenConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.UserDeviceConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.AdminConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RefreshTokenAdminConfiguration());
-            
-            // Các bảng RBAC của Admin
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RoleConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.AdminRoleConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.PermissionConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Identity.RolePermissionConfiguration());
-
-            // Storage module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Storage.MediaObjectConfiguration());
-
-            // Settings module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Setting.SafetySettingConfiguration());
-
-            // Safety module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrastructure.Persistence.Configurations.Safety.DailySafetyRecordConfiguration());
-
-            // Checkins module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Checkins.CheckinMediaConfiguration());
-
-            // Group module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Group.FriendConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Group.FriendRequestConfiguration());
-
-            // Messaging module
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageGroupConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageGroupMemberConfiguration());
-            modelBuilder.ApplyConfiguration(new Beacon.Infrashtructure.Presistence.Configuration.Messaging.MessageConfiguration());
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
-            // modelBuilder.Entity<EmergencyContact>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<MessageGroup>().HasQueryFilter(x => !x.IsDeleted);
+
+            // Dependent entities phải có filter tương ứng với required-end đã có filter,
+            // tránh EF10622 warning và kết quả bất ngờ khi parent bị soft-delete.
+            modelBuilder.Entity<Message>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<MessageGroupMember>().HasQueryFilter(m => !m.Group.IsDeleted);
+            modelBuilder.Entity<CheckinMedia>().HasQueryFilter(cm => !cm.MediaObject.IsDeleted);
 
             base.OnModelCreating(modelBuilder);
         }

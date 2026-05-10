@@ -78,10 +78,19 @@ namespace Beacon.Shared.Constants
             public const string FRIEND_NOT_FOUND           = "FRIEND_NOT_FOUND";
         }
 
+        public static class Notification
+        {
+            public const string NOTIFICATION_NOT_FOUND = "NOTIFICATION_NOT_FOUND";
+            public const string NOTIFICATION_FORBIDDEN  = "NOTIFICATION_FORBIDDEN";
+        }
+
         public static class Messaging
         {
             public const string MESSAGE_GROUP_NOT_FOUND = "MESSAGE_GROUP_NOT_FOUND";
             public const string MESSAGE_GROUP_FORBIDDEN = "MESSAGE_GROUP_FORBIDDEN";
+            public const string GROUP_MEMBER_ALREADY_EXISTS = "GROUP_MEMBER_ALREADY_EXISTS";
+            public const string GROUP_MEMBER_NOT_FOUND = "GROUP_MEMBER_NOT_FOUND";
+            public const string MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND";
         }
 
         public static class HealthCheck

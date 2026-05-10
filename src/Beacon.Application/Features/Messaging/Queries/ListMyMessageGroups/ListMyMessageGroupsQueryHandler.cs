@@ -11,6 +11,7 @@ namespace Beacon.Application.Features.Messaging.Queries.ListMyMessageGroups;
 public class ListMyMessageGroupsQueryHandler(
     IMessageGroupRepository groupRepo,
     ICurrentUserService currentUser,
+    IStorageService storage,
     MessageGroupMapper mapper)
     : IRequestHandler<ListMyMessageGroupsQuery, Result<CursorPagedResult<MessageGroupDto>>>
 {
@@ -20,7 +21,28 @@ public class ListMyMessageGroupsQueryHandler(
         var limit = Math.Clamp(query.Limit, 1, 100);
         var paged = await groupRepo.ListByUserAsync(currentUser.UserId, query.Cursor, limit, ct);
 
-        var dtos = paged.Data.Select(mapper.ToDto).ToList();
+        // Batch-resolve presigned URLs for groups with custom avatars
+        var objectKeys = paged.Data
+            .Where(s => s.AvatarObjectKey is not null)
+            .Select(s => s.AvatarObjectKey!)
+            .Distinct()
+            .ToList();
+
+        var urlMap = new Dictionary<string, string>();
+        if (objectKeys.Count > 0)
+        {
+            var urlResults = await Task.WhenAll(
+                objectKeys.Select(async key => (key, url: await storage.GeneratePresignedGetUrlAsync(key, ct))));
+            foreach (var (key, url) in urlResults)
+                urlMap[key] = url;
+        }
+
+        var dtos = paged.Data.Select(s =>
+        {
+            string? avatarUrl = s.AvatarObjectKey is not null && urlMap.TryGetValue(s.AvatarObjectKey, out var url)
+                ? url : null;
+            return mapper.ToDto(s, avatarUrl);
+        }).ToList();
 
         return Result<CursorPagedResult<MessageGroupDto>>.Success(new CursorPagedResult<MessageGroupDto>
         {

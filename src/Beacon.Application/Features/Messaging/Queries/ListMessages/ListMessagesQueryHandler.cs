@@ -14,13 +14,13 @@ public class ListMessagesQueryHandler(
     IMessageRepository messageRepo,
     ICurrentUserService currentUser,
     MessageMapper mapper)
-    : IRequestHandler<ListMessagesQuery, Result<CursorPagedResult<MessageDto>>>
+    : IRequestHandler<ListMessagesQuery, Result<CursorPagedResult<MessageDto, long>>>
 {
-    public async Task<Result<CursorPagedResult<MessageDto>>> Handle(
+    public async Task<Result<CursorPagedResult<MessageDto, long>>> Handle(
         ListMessagesQuery query, CancellationToken ct)
     {
         if (!await groupRepo.IsMemberAsync(query.GroupId, currentUser.UserId, ct))
-            return Result<CursorPagedResult<MessageDto>>.Failure(
+            return Result<CursorPagedResult<MessageDto, long>>.Failure(
                 Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không phải thành viên của nhóm này."));
 
         var limit = Math.Clamp(query.Limit, 1, 100);
@@ -28,7 +28,7 @@ public class ListMessagesQueryHandler(
 
         var dtos = paged.Data.Select(m => mapper.ToDto(m, m.Sender.FamilyName, m.Sender.GivenName)).ToList();
 
-        return Result<CursorPagedResult<MessageDto>>.Success(new CursorPagedResult<MessageDto>
+        return Result<CursorPagedResult<MessageDto, long>>.Success(new CursorPagedResult<MessageDto, long>
         {
             Data = dtos,
             Meta = paged.Meta
