@@ -53,6 +53,10 @@ services:
       MinIO__PublicEndpoint: "http://${HOST_IP}:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER}"
       MinIO__SecretKey: "${MINIO_ROOT_PASSWORD}"
+      # Firebase FCM — để trống sẽ skip FCM (notification vẫn hoạt động qua SignalR)
+      Firebase__CredentialJson: "${FIREBASE_CREDENTIAL_JSON}"
+    volumes:
+      - dataprotection_keys:/root/.aspnet/DataProtection-Keys
     ports:
       - "5000:8080"
     depends_on:
@@ -64,3 +68,4 @@ services:
 volumes:
   sqlserver_data:
   minio_data:
+  dataprotection_keys:

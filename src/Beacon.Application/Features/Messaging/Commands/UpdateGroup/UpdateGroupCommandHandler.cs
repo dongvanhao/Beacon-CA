@@ -18,7 +18,7 @@ public class UpdateGroupCommandHandler(
         if (group is null || group.IsDeleted)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        if (group.IsPrivate)
+        if (group.Type == MessageGroupType.Direct)
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Không thể đổi tên/avatar chat 1-1 qua endpoint này."));
 
         var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);

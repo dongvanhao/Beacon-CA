@@ -1,4 +1,5 @@
 using Beacon.Domain.Entities.Group;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Infrashtructure.Presistence;
 using Beacon.Shared.Common.Pagination;
@@ -150,7 +151,7 @@ namespace Beacon.Infrashtructure.Repository.Group
 
             // One query: all (GroupId, UserId) pairs for private groups that contain any relevant user
             var memberships = await db.MessageGroupMembers
-                .Join(db.MessageGroups.Where(g => g.IsPrivate),
+                .Join(db.MessageGroups.Where(g => g.Type == MessageGroupType.Direct),
                     m => m.GroupId,
                     g => g.Id,
                     (m, _) => new { m.GroupId, m.UserId })

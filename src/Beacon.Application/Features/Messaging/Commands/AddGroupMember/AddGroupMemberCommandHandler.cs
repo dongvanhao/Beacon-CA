@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.Entities.Messaging;
+using Beacon.Domain.Enums.Group;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository;
 using Beacon.Domain.IRepository.Messaging;
@@ -12,7 +13,8 @@ namespace Beacon.Application.Features.Messaging.Commands.AddGroupMember;
 public class AddGroupMemberCommandHandler(
     IMessageGroupRepository groupRepo,
     IUserRepository userRepo,
-    ICurrentUserService currentUser)
+    ICurrentUserService currentUser,
+    INotificationService notificationService)
     : IRequestHandler<AddGroupMemberCommand, Result>
 {
     public async Task<Result> Handle(AddGroupMemberCommand command, CancellationToken ct)
@@ -21,7 +23,7 @@ public class AddGroupMemberCommandHandler(
         if (group is null || group.IsDeleted)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        if (group.IsPrivate)
+        if (group.Type == MessageGroupType.Direct)
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Không thể thêm thành viên vào chat 1-1."));
 
         var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);
@@ -43,6 +45,15 @@ public class AddGroupMemberCommandHandler(
             InvitedByUserId = currentUser.UserId
         });
         await groupRepo.SaveChangesAsync(ct);
+
+        var inviterName = $"{currentUser.GivenName} {currentUser.FamilyName}".Trim();
+        var groupName = group.Name ?? "nhóm chat";
+        await notificationService.CreateAndDeliverAsync(
+            command.TargetUserId,
+            NotificationType.GroupInvite,
+            "Được mời vào nhóm",
+            $"{inviterName} đã mời bạn vào {groupName}",
+            ct: ct);
 
         return Result.Success();
     }

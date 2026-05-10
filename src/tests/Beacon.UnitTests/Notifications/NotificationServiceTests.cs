@@ -2,6 +2,7 @@ using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Enums.Group;
 using Beacon.Domain.IRepository.Group;
+using Beacon.Domain.IRepository.Identity;
 using Beacon.Infrashtructure.Services;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,8 @@ public class NotificationServiceTests
 {
     private readonly Mock<INotificationRepository> _notifRepoMock = new();
     private readonly Mock<IRealtimeNotifier> _notifierMock = new();
+    private readonly Mock<IFcmService> _fcmServiceMock = new();
+    private readonly Mock<IUserDeviceTokenRepository> _tokenRepoMock = new();
     private readonly Mock<ILogger<NotificationService>> _loggerMock = new();
     private readonly NotificationService _sut;
 
@@ -27,8 +30,18 @@ public class NotificationServiceTests
         _notifierMock
             .Setup(n => n.NotifyUserAsync(It.IsAny<Guid>(), It.IsAny<NotificationPayload>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _fcmServiceMock
+            .Setup(f => f.SendToUserAndGetInvalidTokensAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<string>());
 
-        _sut = new NotificationService(_notifRepoMock.Object, _notifierMock.Object, _loggerMock.Object);
+        _sut = new NotificationService(
+            _notifRepoMock.Object,
+            _notifierMock.Object,
+            _fcmServiceMock.Object,
+            _tokenRepoMock.Object,
+            _loggerMock.Object);
     }
 
     [Fact]

@@ -1,8 +1,10 @@
+using Beacon.Domain.Enums.Messaging;
+
 namespace Beacon.Application.Features.Messaging.Dtos;
 
 public record MessageGroupDto(
     Guid GroupId,
-    bool IsPrivate,
+    MessageGroupType Type,
     DateTime CreatedAtUtc,
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,

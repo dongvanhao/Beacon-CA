@@ -1,4 +1,5 @@
 using Beacon.Application.Common.Interfaces.IService;
+using Beacon.Domain.Enums.Group;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
@@ -9,7 +10,8 @@ namespace Beacon.Application.Features.Messaging.Commands.RemoveGroupMember;
 
 public class RemoveGroupMemberCommandHandler(
     IMessageGroupRepository groupRepo,
-    ICurrentUserService currentUser)
+    ICurrentUserService currentUser,
+    INotificationService notificationService)
     : IRequestHandler<RemoveGroupMemberCommand, Result>
 {
     public async Task<Result> Handle(RemoveGroupMemberCommand command, CancellationToken ct)
@@ -30,6 +32,14 @@ public class RemoveGroupMemberCommandHandler(
 
         await groupRepo.RemoveMemberAsync(command.GroupId, command.TargetUserId, ct);
         await groupRepo.SaveChangesAsync(ct);
+
+        var groupName = group.Name ?? "nhóm chat";
+        await notificationService.CreateAndDeliverAsync(
+            command.TargetUserId,
+            NotificationType.GroupRemoved,
+            "Đã bị xóa khỏi nhóm",
+            $"Bạn đã bị xóa khỏi {groupName}",
+            ct: ct);
 
         return Result.Success();
     }

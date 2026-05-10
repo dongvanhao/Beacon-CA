@@ -3,6 +3,7 @@ using Beacon.Application.Features.Group.Commands.RemoveFriend;
 using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Group;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
@@ -53,7 +54,7 @@ public class RemoveFriendCommandHandlerTests
         var (u1, u2) = _currentUserId < targetId ? (_currentUserId, targetId) : (targetId, _currentUserId);
         var friend = new Friend { UserId1 = u1, UserId2 = u2, Type = FriendType.Normal };
 
-        var group = new MessageGroup { IsPrivate = true, CreatedAtUtc = DateTime.UtcNow };
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
 
         _friendRepoMock
             .Setup(r => r.GetByUsersAsync(_currentUserId, targetId, It.IsAny<CancellationToken>()))

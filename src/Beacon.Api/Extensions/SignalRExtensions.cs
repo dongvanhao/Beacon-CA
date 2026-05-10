@@ -1,14 +1,24 @@
 using Beacon.Api.Hubs;
 using Beacon.Api.Services;
 using Beacon.Application.Common.Interfaces.IService;
+using StackExchange.Redis;
 
 namespace Beacon.Api.Extensions;
 
 public static class SignalRExtensions
 {
-    public static IServiceCollection AddApiSignalR(this IServiceCollection services)
+    public static IServiceCollection AddApiSignalR(
+        this IServiceCollection services,
+        IConfiguration configuration)
     {
-        services.AddSignalR();
+        var redisConnection = configuration.GetConnectionString("Redis");
+
+        var signalR = services.AddSignalR();
+
+        if (!string.IsNullOrWhiteSpace(redisConnection))
+            signalR.AddStackExchangeRedis(redisConnection, opts =>
+                opts.Configuration.ChannelPrefix = RedisChannel.Literal("beacon"));
+
         services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
         return services;
     }

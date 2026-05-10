@@ -8,7 +8,7 @@ public sealed class MessageGroupDetailMapper
     public MessageGroupDetailDto ToDetailDto(
         MessageGroup group, string? displayName, string? displayAvatarUrl,
         IReadOnlyList<MessageGroupMemberDto> members)
-        => new(group.Id, group.IsPrivate, group.CreatedAtUtc, displayName, displayAvatarUrl, members);
+        => new(group.Id, group.Type, group.CreatedAtUtc, displayName, displayAvatarUrl, members);
 
     public MessageGroupMemberDto ToMemberDto(MessageGroupMember member, string? avatarUrl)
         => new(

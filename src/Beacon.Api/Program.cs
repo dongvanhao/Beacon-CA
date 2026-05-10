@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddApiAuth(builder.Configuration, builder.Environment);
-builder.Services.AddApiSignalR();
+builder.Services.AddApiSignalR(builder.Configuration);
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
 builder.Services.AddControllers();
@@ -47,22 +47,31 @@ if (!app.Environment.IsEnvironment("Testing"))
 
     // Re-normalize SearchIndex cho toàn bộ user bằng C# StringNormalizer.
     // Cần thiết vì SQL migration không thể xử lý đúng ký tự Đ/đ (encoding issue).
-    // Chạy mỗi startup nhưng rất nhanh (chỉ update row thực sự thay đổi).
+    // Batch 500 để tránh OOM khi prod có nhiều user.
     try
     {
-        var users = db.Users.ToList();
-        var updated = 0;
-        foreach (var user in users)
+        const int batchSize = 500;
+        var skip = 0;
+        var totalUpdated = 0;
+        List<Beacon.Domain.Entities.Identity.User> batch;
+
+        do
         {
-            var before = user.SearchIndex;
-            user.UpdateSearchIndex();
-            if (user.SearchIndex != before) updated++;
-        }
-        if (updated > 0)
-        {
-            db.SaveChanges();
-            logger.LogInformation("Re-normalized SearchIndex for {Count} user(s).", updated);
-        }
+            batch = db.Users.OrderBy(u => u.Id).Skip(skip).Take(batchSize).ToList();
+            var updated = 0;
+            foreach (var user in batch)
+            {
+                var before = user.SearchIndex;
+                user.UpdateSearchIndex();
+                if (user.SearchIndex != before) updated++;
+            }
+            if (updated > 0) db.SaveChanges();
+            totalUpdated += updated;
+            skip += batchSize;
+        } while (batch.Count == batchSize);
+
+        if (totalUpdated > 0)
+            logger.LogInformation("Re-normalized SearchIndex for {Count} user(s).", totalUpdated);
     }
     catch (Exception ex)
     {

@@ -20,7 +20,7 @@ public class CreateGroupCommandHandler(
     {
         var group = new MessageGroup
         {
-            IsPrivate = false,
+            Type = MessageGroupType.Group,
             Name = command.Name,
             AvatarMediaObjectId = command.AvatarMediaObjectId,
             CreatedAtUtc = DateTime.UtcNow

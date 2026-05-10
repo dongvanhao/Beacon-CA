@@ -81,6 +81,12 @@ namespace Beacon.Infrashtructure.Presistence
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MessageGroup>().HasQueryFilter(x => !x.IsDeleted);
 
+            // Dependent entities phải có filter tương ứng với required-end đã có filter,
+            // tránh EF10622 warning và kết quả bất ngờ khi parent bị soft-delete.
+            modelBuilder.Entity<Message>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<MessageGroupMember>().HasQueryFilter(m => !m.Group.IsDeleted);
+            modelBuilder.Entity<CheckinMedia>().HasQueryFilter(cm => !cm.MediaObject.IsDeleted);
+
             base.OnModelCreating(modelBuilder);
         }
     }
