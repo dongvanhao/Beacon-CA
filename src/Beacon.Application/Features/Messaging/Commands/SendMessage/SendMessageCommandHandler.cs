@@ -6,6 +6,7 @@ using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Beacon.Application.Features.Messaging.Commands.SendMessage;
 
@@ -14,6 +15,9 @@ public class SendMessageCommandHandler(
     IMessageRepository messageRepo,
     ICurrentUserService currentUser,
     IRealtimeNotifier notifier,
+    IFcmService fcmService,
+    IMessageGroupPresenceTracker presenceTracker,
+    ILogger<SendMessageCommandHandler> logger,
     MessageMapper mapper)
     : IRequestHandler<SendMessageCommand, Result<MessageDto>>
 {
@@ -53,10 +57,43 @@ public class SendMessageCommandHandler(
 
         await notifier.NotifyNewMessageAsync(command.GroupId, dto, recipientUserIds, ct);
 
+        var fcmRecipientUserIds = recipientUserIds
+            .Where(id => id != currentUser.UserId)
+            .Where(id => !presenceTracker.IsUserInGroup(id, command.GroupId))
+            .Distinct()
+            .ToArray();
+
         foreach (var member in group.Members)
         {
             var unreadCount = await messageRepo.CountUnreadAsync(command.GroupId, member.LastSeenMessageId, ct);
             await notifier.NotifyUnreadMessageCountAsync(member.UserId, command.GroupId, unreadCount, ct);
+        }
+
+        if (fcmRecipientUserIds.Length > 0)
+        {
+            var senderName = $"{currentUser.GivenName} {currentUser.FamilyName}".Trim();
+            var title = string.IsNullOrWhiteSpace(senderName) ? "Tin nhắn mới" : senderName;
+            var body = string.IsNullOrWhiteSpace(command.Content) ? "Bạn có tin nhắn mới" : command.Content;
+
+            var fcmData = new Dictionary<string, string>
+            {
+                ["type"] = "MESSAGE_NEW",
+                ["messageGroupId"] = command.GroupId.ToString(),
+                ["messageId"] = message.Id.ToString(),
+                ["senderUserId"] = currentUser.UserId.ToString()
+            };
+
+            foreach (var userId in fcmRecipientUserIds)
+            {
+                try
+                {
+                    await fcmService.SendToUserAsync(userId, title, body, fcmData, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "FCM delivery failed for user {UserId}", userId);
+                }
+            }
         }
 
         return Result<MessageDto>.Success(dto);

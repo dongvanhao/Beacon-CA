@@ -64,7 +64,7 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
                 x.Group.DirectKey,
                 x.Group.CreatedAtUtc,
                 x.Group.Name,
-                AvatarObjectKey = x.Group.AvatarMedia != null ? x.Group.AvatarMedia.ObjectKey : null,
+                GroupAvatarObjectKey = x.Group.AvatarMedia != null ? x.Group.AvatarMedia.ObjectKey : null,
                 LastMessageId = x.Group.Messages
                     .OrderByDescending(m => m.SequenceNumber)
                     .Select(m => (Guid?)m.Id)
@@ -98,6 +98,18 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
                         .Where(m => m.UserId != userId)
                         .Select(m => (m.User.FamilyName + " " + m.User.GivenName).Trim())
                         .FirstOrDefault()
+                    : null,
+                PeerUserId = x.Group.Type == MessageGroupType.Direct
+                    ? x.Group.Members
+                        .Where(m => m.UserId != userId)
+                        .Select(m => (Guid?)m.UserId)
+                        .FirstOrDefault()
+                    : null,
+                PeerAvatarObjectKey = x.Group.Type == MessageGroupType.Direct
+                    ? x.Group.Members
+                        .Where(m => m.UserId != userId)
+                        .Select(m => m.User.AvatarMediaObject != null ? m.User.AvatarMediaObject.ObjectKey : null)
+                        .FirstOrDefault()
                     : null
             });
 
@@ -112,17 +124,47 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
         var hasMore = rawItems.Count > limit;
         if (hasMore) rawItems.RemoveAt(rawItems.Count - 1);
 
+        var groupIdsNeedingFallbackName = rawItems
+            .Where(x => x.Type == MessageGroupType.Group && string.IsNullOrWhiteSpace(x.Name))
+            .Select(x => x.Id)
+            .Distinct()
+            .ToList();
+
+        var fallbackNameMap = new Dictionary<Guid, string>();
+        if (groupIdsNeedingFallbackName.Count > 0)
+        {
+            var memberNames = await db.MessageGroupMembers
+                .AsNoTracking()
+                .Where(m => groupIdsNeedingFallbackName.Contains(m.GroupId))
+                .OrderBy(m => m.JoinedAtUtc)
+                .Select(m => new
+                {
+                    m.GroupId,
+                    Name = (m.User.FamilyName + " " + m.User.GivenName).Trim()
+                })
+                .ToListAsync(ct);
+
+            fallbackNameMap = memberNames
+                .GroupBy(x => x.GroupId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => string.Join(", ", g.Select(x => x.Name).Where(n => n != string.Empty).Take(3)));
+        }
+
         var items = rawItems
             .Select(x => new MessageGroupSummary(
-                x.Id, x.Type, x.DirectKey, x.CreatedAtUtc,
+                x.Id, x.Type, x.DirectKey, x.PeerUserId, x.CreatedAtUtc,
                 x.LastMessageId,
                 x.LastMessageContent, x.LastMessageAtUtc,
                 x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName,
                 x.LastSeenMessageId,
                 IsSeenLatest: x.LastMessageId is null || x.LastSeenMessageId == x.LastMessageId,
                 x.UnreadCount,
-                DisplayName: x.Name ?? x.PeerDisplayName,
-                AvatarObjectKey: x.AvatarObjectKey))
+                DisplayName: ResolveDisplayName(x.Type, x.Name, x.PeerDisplayName,
+                    fallbackNameMap.GetValueOrDefault(x.Id)),
+                AvatarObjectKey: x.Type == MessageGroupType.Direct
+                    ? x.PeerAvatarObjectKey
+                    : x.GroupAvatarObjectKey))
             .ToList();
 
         return new CursorPagedResult<MessageGroupSummary>
@@ -152,4 +194,19 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
 
     public Task SaveChangesAsync(CancellationToken ct)
         => db.SaveChangesAsync(ct);
+
+    private static string ResolveDisplayName(
+        MessageGroupType type,
+        string? groupName,
+        string? peerDisplayName,
+        string? groupFallbackName)
+    {
+        if (type == MessageGroupType.Direct)
+            return !string.IsNullOrWhiteSpace(peerDisplayName) ? peerDisplayName : "Người dùng";
+
+        if (!string.IsNullOrWhiteSpace(groupName))
+            return groupName;
+
+        return !string.IsNullOrWhiteSpace(groupFallbackName) ? groupFallbackName : "Nhóm chat";
+    }
 }

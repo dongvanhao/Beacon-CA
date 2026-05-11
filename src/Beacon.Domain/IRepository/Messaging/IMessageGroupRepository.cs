@@ -8,6 +8,7 @@ public record MessageGroupSummary(
     Guid GroupId,
     MessageGroupType Type,
     string? DirectKey,
+    Guid? PeerUserId,
     DateTime CreatedAtUtc,
     Guid? LastMessageId,
     string? LastMessageContent,

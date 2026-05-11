@@ -57,6 +57,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IJwtService, JwtService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IFcmService, FcmService>();
+        services.AddScoped<IUserPresenceService, UserPresenceService>();
 
         AddFirebase(configuration);
         services.AddHostedService<FirebaseInitializer>();

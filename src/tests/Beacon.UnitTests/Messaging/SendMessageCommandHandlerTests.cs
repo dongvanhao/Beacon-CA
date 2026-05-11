@@ -4,6 +4,7 @@ using Beacon.Application.Mappings.Messaging;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
+using Microsoft.Extensions.Logging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using FluentAssertions;
@@ -17,6 +18,9 @@ public class SendMessageCommandHandlerTests
     private readonly Mock<IMessageRepository> _messageRepoMock = new();
     private readonly Mock<ICurrentUserService> _currentUserMock = new();
     private readonly Mock<IRealtimeNotifier> _notifierMock = new();
+    private readonly Mock<IFcmService> _fcmServiceMock = new();
+    private readonly Mock<IMessageGroupPresenceTracker> _presenceTrackerMock = new();
+    private readonly Mock<ILogger<SendMessageCommandHandler>> _loggerMock = new();
     private readonly MessageMapper _mapper = new();
     private readonly SendMessageCommandHandler _sut;
 
@@ -29,11 +33,24 @@ public class SendMessageCommandHandlerTests
         _currentUserMock.Setup(s => s.FamilyName).Returns("Le");
         _currentUserMock.Setup(s => s.GivenName).Returns("Sender");
 
+        _presenceTrackerMock
+            .Setup(p => p.IsUserInGroup(It.IsAny<Guid>(), It.IsAny<Guid>()))
+            .Returns(false);
+
+        _fcmServiceMock
+            .Setup(f => f.SendToUserAsync(
+                It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _sut = new SendMessageCommandHandler(
             _groupRepoMock.Object,
             _messageRepoMock.Object,
             _currentUserMock.Object,
             _notifierMock.Object,
+            _fcmServiceMock.Object,
+            _presenceTrackerMock.Object,
+            _loggerMock.Object,
             _mapper);
     }
 
@@ -209,5 +226,58 @@ public class SendMessageCommandHandlerTests
                     ids.Contains(member3)),
                 It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldSendFcm_ToOfflineMembers_Only()
+    {
+        var groupId = Guid.NewGuid();
+        var inRoomUserId = Guid.NewGuid();
+        var offlineUserId = Guid.NewGuid();
+
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
+        group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = _currentUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
+        group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = inRoomUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
+        group.Members.Add(new MessageGroupMember { GroupId = groupId, UserId = offlineUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
+
+        _groupRepoMock.Setup(r => r.GetByIdAsync(groupId, It.IsAny<CancellationToken>())).ReturnsAsync(group);
+        _messageRepoMock.Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+        _messageRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        _presenceTrackerMock
+            .Setup(p => p.IsUserInGroup(inRoomUserId, groupId))
+            .Returns(true);
+
+        var fcmSignal = new TaskCompletionSource<bool>();
+        _fcmServiceMock
+            .Setup(f => f.SendToUserAsync(
+                offlineUserId, It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
+            .Callback(() => fcmSignal.TrySetResult(true))
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.Handle(new SendMessageCommand(groupId, "Hi!", null), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+
+        await fcmSignal.Task.WaitAsync(TimeSpan.FromSeconds(5));
+
+        _fcmServiceMock.Verify(
+            f => f.SendToUserAsync(
+                offlineUserId, It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _fcmServiceMock.Verify(
+            f => f.SendToUserAsync(
+                inRoomUserId, It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        _fcmServiceMock.Verify(
+            f => f.SendToUserAsync(
+                _currentUserId, It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

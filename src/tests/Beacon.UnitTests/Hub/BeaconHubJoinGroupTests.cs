@@ -1,5 +1,6 @@
 using Beacon.Api.Hubs;
 using Beacon.Application.Common.Interfaces.IHubs;
+using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Application.Features.Messaging.Queries.CheckGroupMembership;
 using Beacon.Shared.Constants;
@@ -19,6 +20,9 @@ public class BeaconHubJoinGroupTests
     private readonly Mock<ILogger<BeaconHub>> _loggerMock = new();
     private readonly Mock<IHubCallerClients<IBeaconHub>> _clientsMock = new();
     private readonly Mock<IMediator> _mediatorMock = new();
+    private readonly Mock<IMessageGroupPresenceTracker> _presenceTrackerMock = new();
+    private readonly Mock<IUserOnlineTracker> _onlineTrackerMock = new();
+    private readonly Mock<IUserPresenceService> _presenceServiceMock = new();
     private readonly Mock<IBeaconHub> _callerClientMock = new();
     private readonly Mock<IBeaconHub> _othersInGroupClientMock = new();
     private readonly BeaconHub _sut;
@@ -48,7 +52,12 @@ public class BeaconHubJoinGroupTests
             .Setup(c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
 
-        _sut = new BeaconHub(_mediatorMock.Object, _loggerMock.Object)
+        _sut = new BeaconHub(
+            _mediatorMock.Object,
+            _loggerMock.Object,
+            _presenceTrackerMock.Object,
+            _onlineTrackerMock.Object,
+            _presenceServiceMock.Object)
         {
             Context = _contextMock.Object,
             Groups = _groupsMock.Object,
@@ -76,6 +85,10 @@ public class BeaconHubJoinGroupTests
 
         _groupsMock.Verify(
             g => g.AddToGroupAsync(ConnectionId, $"message_group:{groupId}", It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        _presenceTrackerMock.Verify(
+            p => p.TrackJoin(_userId, groupId, ConnectionId),
             Times.Once);
     }
 
@@ -139,6 +152,10 @@ public class BeaconHubJoinGroupTests
         _groupsMock.Verify(
             g => g.RemoveFromGroupAsync(ConnectionId, $"message_group:{groupId}", It.IsAny<CancellationToken>()),
             Times.Once);
+
+        _presenceTrackerMock.Verify(
+            p => p.TrackLeave(_userId, groupId, ConnectionId),
+            Times.Once);
     }
 
     [Fact]
@@ -156,6 +173,10 @@ public class BeaconHubJoinGroupTests
 
         _groupsMock.Verify(
             g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        _presenceTrackerMock.Verify(
+            p => p.TrackLeave(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>()),
             Times.Never);
     }
 

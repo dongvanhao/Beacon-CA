@@ -10,6 +10,9 @@ public class SignalRRealtimeNotifier(IHubContext<BeaconHub, IBeaconHub> hubConte
     public Task NotifyUserAsync(Guid userId, NotificationPayload payload, CancellationToken ct = default)
         => hubContext.Clients.Group($"user:{userId}").ReceiveNotification(payload);
 
+    public Task NotifyUserPresenceAsync(Guid userId, UserPresencePayload payload, CancellationToken ct = default)
+        => hubContext.Clients.Group($"user:{userId}").ReceiveUserPresence(payload);
+
     public Task NotifyNewMessageAsync(Guid groupId, object messageDto, CancellationToken ct = default)
         => hubContext.Clients.Group($"message_group:{groupId}").ReceiveNewMessage(messageDto);
 

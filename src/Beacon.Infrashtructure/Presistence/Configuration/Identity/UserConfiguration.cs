@@ -52,6 +52,8 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(x => x.LastActiveAtUtc);
+
 
         builder.HasOne(x => x.AvatarMediaObject)
             .WithMany()

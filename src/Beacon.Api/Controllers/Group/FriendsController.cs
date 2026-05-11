@@ -4,6 +4,7 @@ using Beacon.Application.Features.Group.Dtos;
 using Beacon.Application.Features.Group.Queries.SearchUsers;
 using Beacon.Application.Features.Group.Queries.GetFriendDetail;
 using Beacon.Application.Features.Group.Queries.ListFriends;
+using Beacon.Application.Features.Group.Queries.ListFriendPresence;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -74,6 +75,66 @@ public class FriendsController(IMediator mediator) : BaseController
     public async Task<IActionResult> List(
         [FromQuery] DateTime? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
         => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit), ct));
+
+    #region
+    /// <summary>Trạng thái online của bạn bè.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Trả về danh sách bạn bè kèm trạng thái online và thời điểm hoạt động gần nhất.
+    ///
+    /// **Pagination (cursor-based):**
+    /// - Lần đầu: gọi không có <c>cursor</c>.
+    /// - Lần tiếp: lấy <c>meta.nextCursor</c> từ response trước, truyền vào <c>cursor</c>.
+    /// - Dừng khi <c>meta.hasMore = false</c>.
+    ///
+    /// **Query params:**
+    /// - <c>cursor</c> (string ISO-8601 UTC, tuỳ chọn): Load bạn bè kết bạn cũ hơn mốc này.
+    /// - <c>limit</c> (int, tuỳ chọn, mặc định 20, tối đa 100): Số bản ghi mỗi trang.
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "...",
+    ///   "code": null,
+    ///   "data": {
+    ///     "data": [
+    ///       {
+    ///         "userId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "familyName": "Nguyễn",
+    ///         "givenName": "Alice",
+    ///         "avatarUrl": null,
+    ///         "isOnline": true,
+    ///         "lastActiveAtUtc": "2026-05-01T08:00:00Z"
+    ///       }
+    ///     ],
+    ///     "meta": {
+    ///       "nextCursor": "2026-05-01T08:00:00Z",
+    ///       "limit": 20,
+    ///       "hasMore": false
+    ///     }
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// **Giải thích các trường:**
+    /// - <c>isOnline</c>: <c>true</c> nếu user đang kết nối socket.
+    /// - <c>lastActiveAtUtc</c>: Thời điểm hoạt động gần nhất (UTC).
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200).
+    /// - <c>VALIDATION_ERROR</c>: <c>limit</c> nằm ngoài 1–100 (HTTP 400).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    ///
+    /// Format: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpGet("presence")]
+    public async Task<IActionResult> ListPresence(
+        [FromQuery] DateTime? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
+        => HandleResult(await mediator.Send(new ListFriendPresenceQuery(cursor, limit), ct));
 
     #region
     /// <summary>Tìm kiếm người dùng theo tên, email hoặc số điện thoại.</summary>

@@ -4,6 +4,8 @@ public interface IRealtimeNotifier
 {
     Task NotifyUserAsync(Guid userId, NotificationPayload payload, CancellationToken ct = default);
 
+    Task NotifyUserPresenceAsync(Guid userId, UserPresencePayload payload, CancellationToken ct = default);
+
     Task NotifyNewMessageAsync(Guid groupId, object messageDto, CancellationToken ct = default);
 
     Task NotifyNewMessageAsync(

@@ -50,24 +50,43 @@ public class GetMessageGroupDetailQueryHandler(
             return mapper.ToMemberDto(m, avatarUrl);
         }).ToList();
 
-        // Resolve tên và ảnh hiển thị:
-        // - Ưu tiên tên/ảnh tuỳ chỉnh của group.
-        // - Chat 1-1 (IsPrivate): fallback sang tên + avatar của người kia.
-        string? displayName = group.Name;
-        string? displayAvatarUrl = group.AvatarMedia is not null
-            ? await storage.GeneratePresignedGetUrlAsync(group.AvatarMedia.ObjectKey, ct)
-            : null;
+        // Resolve display fields so FE does not need conversation naming logic.
+        var peer = memberDtos.FirstOrDefault(m => m.UserId != userId);
+        string? displayName;
+        string? displayAvatarUrl;
 
-        if (group.Type == MessageGroupType.Direct && (displayName is null || displayAvatarUrl is null))
+        if (group.Type == MessageGroupType.Direct)
         {
-            var peer = memberDtos.FirstOrDefault(m => m.UserId != userId);
-            displayName ??= peer is not null
+            displayName = peer is not null
                 ? $"{peer.FamilyName} {peer.GivenName}".Trim()
+                : "Người dùng";
+            if (string.IsNullOrWhiteSpace(displayName))
+                displayName = "Người dùng";
+
+            displayAvatarUrl = peer?.AvatarUrl;
+        }
+        else
+        {
+            displayName = !string.IsNullOrWhiteSpace(group.Name)
+                ? group.Name
+                : BuildGroupFallbackName(memberDtos);
+
+            displayAvatarUrl = group.AvatarMedia is not null
+                ? await storage.GeneratePresignedGetUrlAsync(group.AvatarMedia.ObjectKey, ct)
                 : null;
-            displayAvatarUrl ??= peer?.AvatarUrl;
         }
 
         return Result<MessageGroupDetailDto>.Success(
             mapper.ToDetailDto(group, displayName, displayAvatarUrl, memberDtos));
+    }
+
+    private static string BuildGroupFallbackName(IReadOnlyCollection<MessageGroupMemberDto> members)
+    {
+        var fallbackName = string.Join(", ", members
+            .Select(m => $"{m.FamilyName} {m.GivenName}".Trim())
+            .Where(name => name != string.Empty)
+            .Take(3));
+
+        return fallbackName != string.Empty ? fallbackName : "Nhóm chat";
     }
 }

@@ -19,6 +19,8 @@ public static class SignalRExtensions
             signalR.AddStackExchangeRedis(redisConnection, opts =>
                 opts.Configuration.ChannelPrefix = RedisChannel.Literal("beacon"));
 
+        services.AddSingleton<IMessageGroupPresenceTracker, InMemoryMessageGroupPresenceTracker>();
+        services.AddSingleton<IUserOnlineTracker, InMemoryUserOnlineTracker>();
         services.AddScoped<IRealtimeNotifier, SignalRRealtimeNotifier>();
         return services;
     }

@@ -32,6 +32,7 @@ namespace Beacon.Domain.Entities.Identity
         public MediaObject? AvatarMediaObject { get; private set; }
 
         public DateTime? LastLoginAtUtc { get; private set; }
+        public DateTime? LastActiveAtUtc { get; private set; }
 
         // Relations
         public ICollection<RefreshToken> RefreshTokens { get; private set; } = new List<RefreshToken>();
@@ -80,6 +81,8 @@ namespace Beacon.Domain.Entities.Identity
             => SearchIndex = StringNormalizer.RemoveDiacritics($"{FamilyName} {GivenName}");
 
         public void RecordLogin() => LastLoginAtUtc = DateTime.UtcNow;
+
+        public void RecordActivity() => LastActiveAtUtc = DateTime.UtcNow;
 
         public void UpdatePassword(string newPasswordHash) => PasswordHash = newPasswordHash;
 

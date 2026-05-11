@@ -53,7 +53,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///     "data": [
     ///       {
     ///         "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "isPrivate": true,
+    ///         "type": 0,
+    ///         "peerUserId": "bbbbbbbb-0000-0000-0000-000000000002",
     ///         "createdAtUtc": "2026-05-01T08:00:00Z",
     ///         "lastMessageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "lastMessageContent": "Hẹn gặp nhé!",
@@ -78,8 +79,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// </code>
     ///
     /// **Giải thích các trường:**
-    /// - <c>displayName</c>: Tên hiển thị đã resolve — tên tuỳ chỉnh của group (nếu đặt), fallback = "Họ Tên" của peer với chat 1-1, <c>null</c> nếu group nhiều người chưa đặt tên.
-    /// - <c>displayAvatarUrl</c>: URL ảnh tuỳ chỉnh của group (nếu đặt). Chat 1-1: để lấy avatar peer (signed URL) hãy dùng <c>GET /{groupId}</c>.
+    /// - <c>displayName</c>: Tên hiển thị đã resolve. DIRECT = tên user còn lại; GROUP = tên group, fallback bằng tên một số thành viên, cuối cùng là "Nhóm chat".
+    /// - <c>displayAvatarUrl</c>: Ảnh hiển thị đã resolve. DIRECT = avatar user còn lại; GROUP = avatar group, fallback <c>null</c>.
     /// - <c>isPrivate</c>: <c>true</c> nếu là chat 1-1 (giữa 2 bạn bè), <c>false</c> nếu là nhóm nhiều người.
     /// - <c>lastMessageId</c>: Id của tin nhắn mới nhất trong group, <c>null</c> nếu group chưa có tin nhắn.
     /// - <c>lastSeenMessageId</c>: Id tin nhắn cuối cùng user hiện tại đã mark seen trong group.
@@ -121,7 +122,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///   "code": null,
     ///   "data": {
     ///     "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "isPrivate": true,
+    ///     "type": 0,
     ///     "createdAtUtc": "2026-05-01T08:00:00Z",
     ///     "displayName": "Trần Bob",
     ///     "displayAvatarUrl": null,
@@ -149,8 +150,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// </code>
     ///
     /// **Giải thích các trường:**
-    /// - <c>displayName</c>: Tên hiển thị đã resolve — tên tuỳ chỉnh của group (nếu có), fallback = "Họ Tên" của peer với chat 1-1.
-    /// - <c>displayAvatarUrl</c>: Ảnh hiển thị đã resolve — ảnh tuỳ chỉnh của group (nếu có), fallback = avatar peer với chat 1-1 (signed URL từ storage).
+    /// - <c>displayName</c>: Tên hiển thị đã resolve. DIRECT = tên user còn lại; GROUP = tên group, fallback bằng tên một số thành viên, cuối cùng là "Nhóm chat".
+    /// - <c>displayAvatarUrl</c>: Ảnh hiển thị đã resolve. DIRECT = avatar user còn lại; GROUP = avatar group, fallback <c>null</c>.
     /// - <c>isPrivate</c>: <c>true</c> nếu là chat 1-1 (giữa 2 bạn bè), <c>false</c> nếu là nhóm nhiều người.
     /// - <c>members</c>: Toàn bộ thành viên của nhóm, **bao gồm cả user hiện tại**.
     /// - <c>familyName</c> / <c>givenName</c>: Họ và tên của thành viên.
@@ -159,7 +160,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>lastSeenMessageId</c>: Id tin nhắn cuối cùng thành viên đó đã đọc trong group, <c>null</c> nếu chưa mark seen.
     ///
     /// **Lưu ý:** Frontend nên dùng <c>displayName</c> / <c>displayAvatarUrl</c> để render header chat.
-    /// Với chat 1-1, <c>displayAvatarUrl</c> ở đây đã resolve avatar peer (signed URL) — khác với <c>GET /</c> (ListGroups) chỉ trả custom URL.
+    /// Với chat 1-1, cả API list và detail đều trả <c>displayName</c>/<c>displayAvatarUrl</c> của user còn lại.
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200).

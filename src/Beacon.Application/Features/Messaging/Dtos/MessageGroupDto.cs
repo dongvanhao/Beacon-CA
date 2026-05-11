@@ -5,6 +5,7 @@ namespace Beacon.Application.Features.Messaging.Dtos;
 public record MessageGroupDto(
     Guid GroupId,
     MessageGroupType Type,
+    Guid? PeerUserId,
     DateTime CreatedAtUtc,
     Guid? LastMessageId,
     string? LastMessageContent,

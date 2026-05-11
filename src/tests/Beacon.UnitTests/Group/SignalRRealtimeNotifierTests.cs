@@ -20,6 +20,7 @@ public class SignalRRealtimeNotifierTests
         _hubContextMock.Setup(h => h.Clients).Returns(_clientsMock.Object);
         _clientsMock.Setup(c => c.Group(It.IsAny<string>())).Returns(_groupClientMock.Object);
         _groupClientMock.Setup(c => c.ReceiveNotification(It.IsAny<NotificationPayload>())).Returns(Task.CompletedTask);
+        _groupClientMock.Setup(c => c.ReceiveUserPresence(It.IsAny<UserPresencePayload>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveNewMessage(It.IsAny<object>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveMessageSeen(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Returns(Task.CompletedTask);
@@ -39,6 +40,18 @@ public class SignalRRealtimeNotifierTests
 
         _clientsMock.Verify(c => c.Group($"user:{userId}"), Times.Once);
         _groupClientMock.Verify(c => c.ReceiveNotification(payload), Times.Once);
+    }
+
+    [Fact]
+    public async Task NotifyUserPresenceAsync_ShouldCallGroupRoomWithCorrectPayload()
+    {
+        var userId = Guid.NewGuid();
+        var payload = new UserPresencePayload(userId, true, DateTime.UtcNow);
+
+        await _sut.NotifyUserPresenceAsync(userId, payload);
+
+        _clientsMock.Verify(c => c.Group($"user:{userId}"), Times.Once);
+        _groupClientMock.Verify(c => c.ReceiveUserPresence(payload), Times.Once);
     }
 
     [Fact]

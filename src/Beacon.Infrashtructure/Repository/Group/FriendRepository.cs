@@ -36,6 +36,15 @@ namespace Beacon.Infrashtructure.Repository.Group
             return list.ToHashSet();
         }
 
+        public async Task<List<Guid>> ListFriendIdsAsync(Guid userId, CancellationToken ct)
+        {
+            return await db.Friends
+                .AsNoTracking()
+                .Where(f => f.UserId1 == userId || f.UserId2 == userId)
+                .Select(f => f.UserId1 == userId ? f.UserId2 : f.UserId1)
+                .ToListAsync(ct);
+        }
+
         public async Task<CursorPagedResult<FriendListItem>> ListByUserAsync(
             Guid userId, DateTime? cursor, int limit, CancellationToken ct)
         {

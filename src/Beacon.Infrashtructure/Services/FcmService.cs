@@ -43,6 +43,25 @@ public class FcmService(
         }
     }
 
+    public async Task SendToUserAsync(
+        Guid userId,
+        string title,
+        string body,
+        Dictionary<string, string>? data = null,
+        CancellationToken ct = default)
+    {
+        var invalidTokens = await SendToUserAndGetInvalidTokensAsync(userId, title, body, data, ct);
+        if (invalidTokens.Count == 0) return;
+
+        foreach (var token in invalidTokens)
+        {
+            var t = await tokenRepo.GetByTokenAsync(token, ct);
+            t?.MarkInvalid();
+        }
+
+        await tokenRepo.SaveChangesAsync(ct);
+    }
+
     public async Task<IReadOnlyList<string>> SendToUserAndGetInvalidTokensAsync(
         Guid userId,
         string title,
