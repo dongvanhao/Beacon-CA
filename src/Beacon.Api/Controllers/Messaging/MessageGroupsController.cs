@@ -29,6 +29,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
     /// Trả về tất cả group chat mà user hiện tại đang là thành viên, kèm preview tin nhắn cuối.
+    /// Mỗi group có kèm trạng thái seen của user hiện tại: <c>lastMessageId</c>, <c>lastSeenMessageId</c>,
+    /// <c>isSeenLatest</c> và <c>unreadCount</c>.
     /// Sắp xếp theo hoạt động mới nhất trước (group có tin nhắn gần đây lên đầu).
     /// Group chưa có tin nhắn nào sẽ sắp xếp theo <c>createdAtUtc</c>.
     ///
@@ -53,10 +55,14 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "isPrivate": true,
     ///         "createdAtUtc": "2026-05-01T08:00:00Z",
+    ///         "lastMessageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "lastMessageContent": "Hẹn gặp nhé!",
     ///         "lastMessageAtUtc": "2026-05-04T10:30:00Z",
     ///         "lastMessageSenderFamilyName": "Nguyễn",
     ///         "lastMessageSenderGivenName": "Alice",
+    ///         "lastSeenMessageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "isSeenLatest": true,
+    ///         "unreadCount": 0,
     ///         "displayName": "Trần Bob",
     ///         "displayAvatarUrl": null
     ///       }
@@ -75,9 +81,13 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>displayName</c>: Tên hiển thị đã resolve — tên tuỳ chỉnh của group (nếu đặt), fallback = "Họ Tên" của peer với chat 1-1, <c>null</c> nếu group nhiều người chưa đặt tên.
     /// - <c>displayAvatarUrl</c>: URL ảnh tuỳ chỉnh của group (nếu đặt). Chat 1-1: để lấy avatar peer (signed URL) hãy dùng <c>GET /{groupId}</c>.
     /// - <c>isPrivate</c>: <c>true</c> nếu là chat 1-1 (giữa 2 bạn bè), <c>false</c> nếu là nhóm nhiều người.
+    /// - <c>lastMessageId</c>: Id của tin nhắn mới nhất trong group, <c>null</c> nếu group chưa có tin nhắn.
+    /// - <c>lastSeenMessageId</c>: Id tin nhắn cuối cùng user hiện tại đã mark seen trong group.
+    /// - <c>isSeenLatest</c>: <c>true</c> nếu user hiện tại đã seen tin nhắn mới nhất hoặc group chưa có tin nhắn.
+    /// - <c>unreadCount</c>: Số tin nhắn chưa đọc của user hiện tại trong group.
     ///
     /// **Lưu ý:**
-    /// - <c>lastMessageContent</c>, <c>lastMessageAtUtc</c>, <c>lastMessageSenderFamilyName</c>, <c>lastMessageSenderGivenName</c> là <c>null</c> nếu group chưa có tin nhắn nào.
+    /// - <c>lastMessageId</c>, <c>lastMessageContent</c>, <c>lastMessageAtUtc</c>, <c>lastMessageSenderFamilyName</c>, <c>lastMessageSenderGivenName</c> là <c>null</c> nếu group chưa có tin nhắn nào.
     /// - <c>messageGroupId</c> trong danh sách bạn bè (GET /api/v1/friends) chính là <c>groupId</c> dùng ở đây.
     ///
     /// **Các giá trị <c>code</c>:**
@@ -95,7 +105,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Trả về metadata của nhóm và toàn bộ danh sách thành viên.
+    /// Trả về metadata của nhóm và toàn bộ danh sách thành viên, bao gồm <c>lastSeenMessageId</c>
+    /// của từng thành viên trong nhóm.
     /// Chỉ thành viên của nhóm mới được xem.
     ///
     /// **Path param:**
@@ -120,14 +131,16 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "familyName": "Nguyễn",
     ///         "givenName": "Alice",
     ///         "avatarUrl": "https://cdn.example.com/avatars/alice.jpg",
-    ///         "role": 1
+    ///         "role": 1,
+    ///         "lastSeenMessageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
     ///       },
     ///       {
     ///         "userId": "bbbbbbbb-0000-0000-0000-000000000002",
     ///         "familyName": "Trần",
     ///         "givenName": "Bob",
     ///         "avatarUrl": null,
-    ///         "role": 0
+    ///         "role": 0,
+    ///         "lastSeenMessageId": null
     ///       }
     ///     ]
     ///   },
@@ -143,6 +156,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>familyName</c> / <c>givenName</c>: Họ và tên của thành viên.
     /// - <c>avatarUrl</c>: Signed URL ảnh đại diện của thành viên, <c>null</c> nếu chưa có.
     /// - <c>role</c>: Vai trò trong nhóm — <c>0</c> = Member, <c>1</c> = Owner. Dùng để hiển thị icon Owner và ẩn/hiện nút quản trị.
+    /// - <c>lastSeenMessageId</c>: Id tin nhắn cuối cùng thành viên đó đã đọc trong group, <c>null</c> nếu chưa mark seen.
     ///
     /// **Lưu ý:** Frontend nên dùng <c>displayName</c> / <c>displayAvatarUrl</c> để render header chat.
     /// Với chat 1-1, <c>displayAvatarUrl</c> ở đây đã resolve avatar peer (signed URL) — khác với <c>GET /</c> (ListGroups) chỉ trả custom URL.
@@ -177,6 +191,10 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// **Lưu ý <c>clientMessageId</c>:** Tuỳ chọn. Frontend tự sinh UUID cho mỗi lần gửi.
     /// Nếu request bị retry do mạng, server dedup theo <c>clientMessageId</c> và trả về tin nhắn
     /// đã tạo thay vì tạo lại. Bỏ qua hoặc truyền <c>null</c> nếu không cần idempotency.
+    /// Sau khi tạo tin nhắn, server push realtime <c>ReceiveNewMessage</c> vào room <c>message_group:{groupId}</c>
+    /// và room <c>user:{userId}</c> của toàn bộ thành viên trong group. Server cũng push
+    /// <c>ReceiveUnreadMessageCount(groupId, unreadCount)</c> vào room user của từng thành viên.
+    /// Tin nhắn mới được tự đánh dấu seen cho sender.
     ///
     /// **Response khi thành công (HTTP 201):**
     /// <code>
@@ -307,7 +325,8 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "familyName": "Nguyễn",
     ///         "givenName": "Alice",
     ///         "avatarUrl": null,
-    ///         "role": 1
+    ///         "role": 1,
+    ///         "lastSeenMessageId": null
     ///       }
     ///     ]
     ///   },
@@ -487,8 +506,12 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Fire-and-forget — không lưu DB. Broadcast sự kiện <c>message:typing</c> đến các thành viên khác qua SignalR.
+    /// Fire-and-forget — không lưu DB. Broadcast SignalR event <c>ReceiveTypingStatus(groupId, typingUserId, isTyping)</c>
+    /// đến room <c>message_group:{groupId}</c>.
     /// Gọi khi user bắt đầu gõ (<c>isTyping: true</c>) và khi dừng gõ (<c>isTyping: false</c>).
+    /// Frontend cũng có thể gửi typing trực tiếp qua SignalR bằng hub method
+    /// <c>SendTypingStatus({ messageGroupId, isTyping })</c>; hub sẽ broadcast event này đến các connection khác
+    /// trong cùng room <c>message_group:{groupId}</c>.
     ///
     /// **Path param:**
     /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
@@ -521,7 +544,12 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Cập nhật <c>lastSeenMessageId</c> của thành viên, sau đó broadcast sự kiện <c>message:seen</c> đến các thành viên khác qua SignalR.
+    /// Cập nhật <c>lastSeenMessageId</c> của thành viên, sau đó broadcast SignalR event
+    /// <c>ReceiveMessageSeen(groupId, seenByUserId, lastSeenMessageId)</c> đến room <c>message_group:{groupId}</c>.
+    /// Đồng thời emit <c>ReceiveMessageGroupSeen(groupId, lastSeenMessageId)</c> vào room cá nhân
+    /// <c>user:{userId}</c> của user vừa mark seen để FE cập nhật trạng thái seen của group.
+    /// Server cũng push <c>ReceiveUnreadMessageCount(groupId, unreadCount)</c> vào room <c>user:{userId}</c>
+    /// của user vừa mark seen.
     /// Gọi khi user nhìn thấy tin nhắn mới nhất — truyền <c>id</c> của tin nhắn cuối cùng trong viewport.
     ///
     /// **Path param:**

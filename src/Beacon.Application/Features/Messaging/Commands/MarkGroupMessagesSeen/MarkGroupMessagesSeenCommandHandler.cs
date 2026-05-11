@@ -32,6 +32,9 @@ public class MarkGroupMessagesSeenCommandHandler(
         await groupRepo.SaveChangesAsync(ct);
 
         await notifier.NotifyMessageSeenAsync(command.GroupId, command.UserId, command.LastSeenMessageId, ct);
+        await notifier.NotifyMessageGroupSeenAsync(command.UserId, command.GroupId, command.LastSeenMessageId, ct);
+        var unreadCount = await messageRepo.CountUnreadAsync(command.GroupId, command.LastSeenMessageId, ct);
+        await notifier.NotifyUnreadMessageCountAsync(command.UserId, command.GroupId, unreadCount, ct);
 
         return Result.Success();
     }

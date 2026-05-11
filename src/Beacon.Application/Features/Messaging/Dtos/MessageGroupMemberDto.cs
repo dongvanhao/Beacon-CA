@@ -7,4 +7,5 @@ public record MessageGroupMemberDto(
     string FamilyName,
     string GivenName,
     string? AvatarUrl,
-    GroupMemberRole Role);
+    GroupMemberRole Role,
+    Guid? LastSeenMessageId);

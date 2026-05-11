@@ -23,6 +23,8 @@ public class SignalRRealtimeNotifierTests
         _groupClientMock.Setup(c => c.ReceiveNewMessage(It.IsAny<object>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveMessageSeen(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Returns(Task.CompletedTask);
+        _groupClientMock.Setup(c => c.ReceiveMessageGroupSeen(It.IsAny<Guid>(), It.IsAny<Guid>())).Returns(Task.CompletedTask);
+        _groupClientMock.Setup(c => c.ReceiveUnreadMessageCount(It.IsAny<Guid>(), It.IsAny<int>())).Returns(Task.CompletedTask);
 
         _sut = new SignalRRealtimeNotifier(_hubContextMock.Object);
     }
@@ -52,6 +54,22 @@ public class SignalRRealtimeNotifierTests
     }
 
     [Fact]
+    public async Task NotifyNewMessageAsync_ShouldBroadcastToMessageGroupRoomAndUserRooms()
+    {
+        var groupId = Guid.NewGuid();
+        var user1 = Guid.NewGuid();
+        var user2 = Guid.NewGuid();
+        var messageDto = new { Content = "hello" };
+
+        await _sut.NotifyNewMessageAsync(groupId, messageDto, [user1, user2, user1]);
+
+        _clientsMock.Verify(c => c.Group($"message_group:{groupId}"), Times.Once);
+        _clientsMock.Verify(c => c.Group($"user:{user1}"), Times.Once);
+        _clientsMock.Verify(c => c.Group($"user:{user2}"), Times.Once);
+        _groupClientMock.Verify(c => c.ReceiveNewMessage(messageDto), Times.Exactly(3));
+    }
+
+    [Fact]
     public async Task NotifyTypingAsync_ShouldBroadcastToMessageGroupRoom()
     {
         var groupId = Guid.NewGuid();
@@ -74,5 +92,30 @@ public class SignalRRealtimeNotifierTests
 
         _clientsMock.Verify(c => c.Group($"message_group:{groupId}"), Times.Once);
         _groupClientMock.Verify(c => c.ReceiveMessageSeen(groupId, seenByUserId, lastSeenMessageId), Times.Once);
+    }
+
+    [Fact]
+    public async Task NotifyMessageGroupSeenAsync_ShouldBroadcastToUserRoom()
+    {
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+        var lastSeenMessageId = Guid.NewGuid();
+
+        await _sut.NotifyMessageGroupSeenAsync(userId, groupId, lastSeenMessageId);
+
+        _clientsMock.Verify(c => c.Group($"user:{userId}"), Times.Once);
+        _groupClientMock.Verify(c => c.ReceiveMessageGroupSeen(groupId, lastSeenMessageId), Times.Once);
+    }
+
+    [Fact]
+    public async Task NotifyUnreadMessageCountAsync_ShouldBroadcastToUserRoom()
+    {
+        var userId = Guid.NewGuid();
+        var groupId = Guid.NewGuid();
+
+        await _sut.NotifyUnreadMessageCountAsync(userId, groupId, 4);
+
+        _clientsMock.Verify(c => c.Group($"user:{userId}"), Times.Once);
+        _groupClientMock.Verify(c => c.ReceiveUnreadMessageCount(groupId, 4), Times.Once);
     }
 }

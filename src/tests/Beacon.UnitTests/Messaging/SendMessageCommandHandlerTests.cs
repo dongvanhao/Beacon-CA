@@ -136,6 +136,13 @@ public class SendMessageCommandHandlerTests
         _notifierMock.Verify(
             n => n.NotifyNewMessageAsync(It.IsAny<Guid>(), It.IsAny<object>(), It.IsAny<CancellationToken>()),
             Times.Never);
+        _notifierMock.Verify(
+            n => n.NotifyNewMessageAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<object>(),
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]
@@ -154,11 +161,22 @@ public class SendMessageCommandHandlerTests
         var result = await _sut.Handle(new SendMessageCommand(groupId, "Hi!", null), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
+        group.Members.Single(m => m.UserId == _currentUserId).LastSeenMessageId.Should().Be(result.Value!.Id);
         _notifierMock.Verify(
             n => n.NotifyNewMessageAsync(
                 groupId,
                 It.IsAny<object>(),
+                It.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 2 &&
+                    ids.Contains(_currentUserId) &&
+                    ids.Contains(otherMember)),
                 It.IsAny<CancellationToken>()),
+            Times.Once);
+        _notifierMock.Verify(
+            n => n.NotifyUnreadMessageCountAsync(_currentUserId, groupId, It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+        _notifierMock.Verify(
+            n => n.NotifyUnreadMessageCountAsync(otherMember, groupId, It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -181,7 +199,15 @@ public class SendMessageCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         _notifierMock.Verify(
-            n => n.NotifyNewMessageAsync(groupId, It.IsAny<object>(), It.IsAny<CancellationToken>()),
+            n => n.NotifyNewMessageAsync(
+                groupId,
+                It.IsAny<object>(),
+                It.Is<IReadOnlyCollection<Guid>>(ids =>
+                    ids.Count == 3 &&
+                    ids.Contains(_currentUserId) &&
+                    ids.Contains(member2) &&
+                    ids.Contains(member3)),
+                It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

@@ -56,33 +56,45 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
             .Join(db.MessageGroups,
                 m => m.GroupId,
                 g => g.Id,
-                (m, g) => g)
-            .Select(g => new
+                (m, g) => new { Member = m, Group = g })
+            .Select(x => new
             {
-                g.Id,
-                g.Type,
-                g.DirectKey,
-                g.CreatedAtUtc,
-                g.Name,
-                AvatarObjectKey = g.AvatarMedia != null ? g.AvatarMedia.ObjectKey : null,
-                LastMessageContent = g.Messages
-                    .OrderByDescending(m => m.CreatedAtUtc)
+                x.Group.Id,
+                x.Group.Type,
+                x.Group.DirectKey,
+                x.Group.CreatedAtUtc,
+                x.Group.Name,
+                AvatarObjectKey = x.Group.AvatarMedia != null ? x.Group.AvatarMedia.ObjectKey : null,
+                LastMessageId = x.Group.Messages
+                    .OrderByDescending(m => m.SequenceNumber)
+                    .Select(m => (Guid?)m.Id)
+                    .FirstOrDefault(),
+                LastMessageContent = x.Group.Messages
+                    .OrderByDescending(m => m.SequenceNumber)
                     .Select(m => m.Content)
                     .FirstOrDefault(),
-                LastMessageAtUtc = g.Messages
-                    .OrderByDescending(m => m.CreatedAtUtc)
+                LastMessageAtUtc = x.Group.Messages
+                    .OrderByDescending(m => m.SequenceNumber)
                     .Select(m => (DateTime?)m.CreatedAtUtc)
                     .FirstOrDefault(),
-                LastMessageSenderFamilyName = g.Messages
-                    .OrderByDescending(m => m.CreatedAtUtc)
+                LastMessageSenderFamilyName = x.Group.Messages
+                    .OrderByDescending(m => m.SequenceNumber)
                     .Select(m => m.Sender.FamilyName)
                     .FirstOrDefault(),
-                LastMessageSenderGivenName = g.Messages
-                    .OrderByDescending(m => m.CreatedAtUtc)
+                LastMessageSenderGivenName = x.Group.Messages
+                    .OrderByDescending(m => m.SequenceNumber)
                     .Select(m => m.Sender.GivenName)
                     .FirstOrDefault(),
-                PeerDisplayName = g.Type == MessageGroupType.Direct
-                    ? g.Members
+                x.Member.LastSeenMessageId,
+                UnreadCount = x.Member.LastSeenMessageId == null
+                    ? x.Group.Messages.Count()
+                    : x.Group.Messages.Count(m =>
+                        m.SequenceNumber > x.Group.Messages
+                            .Where(seen => seen.Id == x.Member.LastSeenMessageId)
+                            .Select(seen => (long?)seen.SequenceNumber)
+                            .FirstOrDefault()),
+                PeerDisplayName = x.Group.Type == MessageGroupType.Direct
+                    ? x.Group.Members
                         .Where(m => m.UserId != userId)
                         .Select(m => (m.User.FamilyName + " " + m.User.GivenName).Trim())
                         .FirstOrDefault()
@@ -103,8 +115,12 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
         var items = rawItems
             .Select(x => new MessageGroupSummary(
                 x.Id, x.Type, x.DirectKey, x.CreatedAtUtc,
+                x.LastMessageId,
                 x.LastMessageContent, x.LastMessageAtUtc,
                 x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName,
+                x.LastSeenMessageId,
+                IsSeenLatest: x.LastMessageId is null || x.LastSeenMessageId == x.LastMessageId,
+                x.UnreadCount,
                 DisplayName: x.Name ?? x.PeerDisplayName,
                 AvatarObjectKey: x.AvatarObjectKey))
             .ToList();

@@ -42,6 +42,24 @@ namespace Beacon.Infrashtructure.Repository.Messaging
         public Task<bool> ExistsInGroupAsync(Guid groupId, Guid messageId, CancellationToken ct)
             => db.Messages.AnyAsync(m => m.Id == messageId && m.GroupId == groupId, ct);
 
+        public async Task<int> CountUnreadAsync(Guid groupId, Guid? lastSeenMessageId, CancellationToken ct)
+        {
+            if (lastSeenMessageId is null)
+                return await db.Messages.CountAsync(m => m.GroupId == groupId, ct);
+
+            var lastSeenSequence = await db.Messages
+                .Where(m => m.Id == lastSeenMessageId && m.GroupId == groupId)
+                .Select(m => (long?)m.SequenceNumber)
+                .FirstOrDefaultAsync(ct);
+
+            if (lastSeenSequence is null)
+                return await db.Messages.CountAsync(m => m.GroupId == groupId, ct);
+
+            return await db.Messages.CountAsync(
+                m => m.GroupId == groupId && m.SequenceNumber > lastSeenSequence.Value,
+                ct);
+        }
+
         public async Task AddAsync(Message message, CancellationToken ct)
             => await db.Messages.AddAsync(message, ct);
 

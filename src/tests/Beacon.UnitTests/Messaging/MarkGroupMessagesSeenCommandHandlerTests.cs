@@ -107,6 +107,9 @@ public class MarkGroupMessagesSeenCommandHandlerTests
         _groupRepoMock
             .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _messageRepoMock
+            .Setup(r => r.CountUnreadAsync(groupId, lastSeenMessageId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(0);
 
         var result = await _sut.Handle(
             new MarkGroupMessagesSeenCommand(groupId, _userId, lastSeenMessageId),
@@ -121,6 +124,16 @@ public class MarkGroupMessagesSeenCommandHandlerTests
                 _userId,
                 lastSeenMessageId,
                 It.IsAny<CancellationToken>()),
+            Times.Once);
+        _notifierMock.Verify(
+            n => n.NotifyMessageGroupSeenAsync(
+                _userId,
+                groupId,
+                lastSeenMessageId,
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+        _notifierMock.Verify(
+            n => n.NotifyUnreadMessageCountAsync(_userId, groupId, 0, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 }

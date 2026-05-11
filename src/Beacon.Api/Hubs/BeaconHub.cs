@@ -53,4 +53,38 @@ public class BeaconHub(IMediator mediator, ILogger<BeaconHub> logger) : Hub<IBea
 
         return new JoinGroupResult(true, request.MessageGroupId, roomName, null);
     }
+
+    public async Task<JoinGroupResult> LeaveMessageGroup(LeaveMessageGroupRequest request)
+    {
+        var userId = Context.UserIdentifier;
+        if (userId is null)
+            return new JoinGroupResult(false, request.MessageGroupId, null, "Không xác định được người dùng.");
+
+        var roomName = $"message_group:{request.MessageGroupId}";
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
+
+        logger.LogInformation("User {UserId} left room {Room}", userId, roomName);
+
+        return new JoinGroupResult(true, request.MessageGroupId, roomName, null);
+    }
+
+    public async Task<JoinGroupResult> SendTypingStatus(TypingStatusRequest request)
+    {
+        var userId = Context.UserIdentifier;
+        if (userId is null)
+            return new JoinGroupResult(false, request.MessageGroupId, null, "Không xác định được người dùng.");
+
+        var parsedUserId = Guid.Parse(userId);
+        var result = await mediator.Send(
+            new CheckGroupMembershipQuery(parsedUserId, request.MessageGroupId));
+
+        if (!result.IsSuccess)
+            return new JoinGroupResult(false, request.MessageGroupId, null, result.Error.Message);
+
+        var roomName = $"message_group:{request.MessageGroupId}";
+        await Clients.OthersInGroup(roomName)
+            .ReceiveTypingStatus(request.MessageGroupId, parsedUserId, request.IsTyping);
+
+        return new JoinGroupResult(true, request.MessageGroupId, roomName, null);
+    }
 }

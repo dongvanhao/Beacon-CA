@@ -16,5 +16,6 @@ public sealed class MessageGroupDetailMapper
             FamilyName: member.User.FamilyName,
             GivenName: member.User.GivenName,
             AvatarUrl: avatarUrl,
-            Role: member.Role);
+            Role: member.Role,
+            LastSeenMessageId: member.LastSeenMessageId);
 }

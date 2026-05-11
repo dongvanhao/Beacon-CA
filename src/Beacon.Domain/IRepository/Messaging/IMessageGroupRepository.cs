@@ -9,10 +9,14 @@ public record MessageGroupSummary(
     MessageGroupType Type,
     string? DirectKey,
     DateTime CreatedAtUtc,
+    Guid? LastMessageId,
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,
     string? LastMessageSenderFamilyName,
     string? LastMessageSenderGivenName,
+    Guid? LastSeenMessageId,
+    bool IsSeenLatest,
+    int UnreadCount,
     string? DisplayName,
     string? AvatarObjectKey);
 

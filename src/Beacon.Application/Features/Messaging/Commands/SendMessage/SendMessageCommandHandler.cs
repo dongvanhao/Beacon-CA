@@ -38,13 +38,26 @@ public class SendMessageCommandHandler(
         }
 
         var message = Message.Create(command.GroupId, currentUser.UserId, command.Content, command.ClientMessageId);
+        var senderMember = group.Members.First(m => m.UserId == currentUser.UserId);
+        senderMember.LastSeenMessageId = message.Id;
 
         await messageRepo.AddAsync(message, ct);
         await messageRepo.SaveChangesAsync(ct);
 
         var dto = mapper.ToDto(message, currentUser.FamilyName, currentUser.GivenName);
 
-        await notifier.NotifyNewMessageAsync(command.GroupId, dto, ct);
+        var recipientUserIds = group.Members
+            .Select(m => m.UserId)
+            .Distinct()
+            .ToArray();
+
+        await notifier.NotifyNewMessageAsync(command.GroupId, dto, recipientUserIds, ct);
+
+        foreach (var member in group.Members)
+        {
+            var unreadCount = await messageRepo.CountUnreadAsync(command.GroupId, member.LastSeenMessageId, ct);
+            await notifier.NotifyUnreadMessageCountAsync(member.UserId, command.GroupId, unreadCount, ct);
+        }
 
         return Result<MessageDto>.Success(dto);
     }

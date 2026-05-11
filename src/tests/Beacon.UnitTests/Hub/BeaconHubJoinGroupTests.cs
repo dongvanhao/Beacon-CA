@@ -20,6 +20,7 @@ public class BeaconHubJoinGroupTests
     private readonly Mock<IHubCallerClients<IBeaconHub>> _clientsMock = new();
     private readonly Mock<IMediator> _mediatorMock = new();
     private readonly Mock<IBeaconHub> _callerClientMock = new();
+    private readonly Mock<IBeaconHub> _othersInGroupClientMock = new();
     private readonly BeaconHub _sut;
 
     private const string ConnectionId = "test-conn-id";
@@ -34,9 +35,17 @@ public class BeaconHubJoinGroupTests
             .Setup(g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _groupsMock
+            .Setup(g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _clientsMock.Setup(c => c.Caller).Returns(_callerClientMock.Object);
+        _clientsMock.Setup(c => c.OthersInGroup(It.IsAny<string>())).Returns(_othersInGroupClientMock.Object);
         _callerClientMock
             .Setup(c => c.ReceiveError(It.IsAny<string>(), It.IsAny<string>()))
+            .Returns(Task.CompletedTask);
+        _othersInGroupClientMock
+            .Setup(c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
 
         _sut = new BeaconHub(_mediatorMock.Object, _loggerMock.Object)
@@ -112,6 +121,89 @@ public class BeaconHubJoinGroupTests
 
         _groupsMock.Verify(
             g => g.AddToGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task LeaveMessageGroup_ShouldRemoveFromRoom_WhenUserIdentifierIsSet()
+    {
+        var groupId = Guid.NewGuid();
+
+        var result = await _sut.LeaveMessageGroup(new LeaveMessageGroupRequest(groupId));
+
+        result.Success.Should().BeTrue();
+        result.MessageGroupId.Should().Be(groupId);
+        result.Room.Should().Be($"message_group:{groupId}");
+        result.ErrorMessage.Should().BeNull();
+
+        _groupsMock.Verify(
+            g => g.RemoveFromGroupAsync(ConnectionId, $"message_group:{groupId}", It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task LeaveMessageGroup_ShouldReturnError_WhenUserIdentifierIsNull()
+    {
+        var groupId = Guid.NewGuid();
+        _contextMock.Setup(c => c.UserIdentifier).Returns((string?)null);
+
+        var result = await _sut.LeaveMessageGroup(new LeaveMessageGroupRequest(groupId));
+
+        result.Success.Should().BeFalse();
+        result.MessageGroupId.Should().Be(groupId);
+        result.Room.Should().BeNull();
+        result.ErrorMessage.Should().NotBeNullOrEmpty();
+
+        _groupsMock.Verify(
+            g => g.RemoveFromGroupAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SendTypingStatus_ShouldBroadcastToOthersInRoom_WhenUserIsMember()
+    {
+        var groupId = Guid.NewGuid();
+
+        _mediatorMock
+            .Setup(m => m.Send(
+                It.Is<CheckGroupMembershipQuery>(q => q.UserId == _userId && q.GroupId == groupId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<bool>.Success(true));
+
+        var result = await _sut.SendTypingStatus(new TypingStatusRequest(groupId, true));
+
+        result.Success.Should().BeTrue();
+        result.MessageGroupId.Should().Be(groupId);
+        result.Room.Should().Be($"message_group:{groupId}");
+        result.ErrorMessage.Should().BeNull();
+
+        _clientsMock.Verify(c => c.OthersInGroup($"message_group:{groupId}"), Times.Once);
+        _othersInGroupClientMock.Verify(
+            c => c.ReceiveTypingStatus(groupId, _userId, true),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SendTypingStatus_ShouldReturnError_WhenUserNotMember()
+    {
+        var groupId = Guid.NewGuid();
+
+        _mediatorMock
+            .Setup(m => m.Send(
+                It.Is<CheckGroupMembershipQuery>(q => q.UserId == _userId && q.GroupId == groupId),
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<bool>.Failure(
+                Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không thuộc nhóm chat này.")));
+
+        var result = await _sut.SendTypingStatus(new TypingStatusRequest(groupId, true));
+
+        result.Success.Should().BeFalse();
+        result.Room.Should().BeNull();
+        result.ErrorMessage.Should().NotBeNullOrEmpty();
+
+        _clientsMock.Verify(c => c.OthersInGroup(It.IsAny<string>()), Times.Never);
+        _othersInGroupClientMock.Verify(
+            c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>()),
             Times.Never);
     }
 }

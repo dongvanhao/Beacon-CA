@@ -8,5 +8,7 @@ public interface IBeaconHub
     Task ReceiveNewMessage(object messageDto);
     Task ReceiveTypingStatus(Guid groupId, Guid typingUserId, bool isTyping);
     Task ReceiveMessageSeen(Guid groupId, Guid seenByUserId, Guid lastSeenMessageId);
+    Task ReceiveMessageGroupSeen(Guid groupId, Guid lastSeenMessageId);
+    Task ReceiveUnreadMessageCount(Guid groupId, int unreadCount);
     Task ReceiveError(string code, string message);
 }
