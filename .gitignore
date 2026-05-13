@@ -486,6 +486,7 @@ $RECYCLE.BIN/
 # Env files
 .env
 .env.*
+!.env.example
 
 # Only ignore local/dev secrets
 appsettings.Development.json

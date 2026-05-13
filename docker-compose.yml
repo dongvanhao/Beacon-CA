@@ -48,7 +48,8 @@ services:
       # Seed SuperAdmin — chỉ dùng cho dev, override bằng secrets manager trên production
       SeedAdmin__Email: "${SEED_ADMIN_EMAIL}"
       SeedAdmin__Password: "${SEED_ADMIN_PASSWORD}"
-      # MinIO — override endpoint cho Docker network
+      # MinIO — Endpoint là internal Docker network, PublicEndpoint là host client dùng để tải ảnh.
+      # Với điện thoại thật, đặt HOST_IP trong .env thành LAN IP của máy chạy Docker, vd: 192.168.1.139.
       MinIO__Endpoint: "http://minio:9000"
       MinIO__PublicEndpoint: "http://${HOST_IP}:9000"
       MinIO__AccessKey: "${MINIO_ROOT_USER}"

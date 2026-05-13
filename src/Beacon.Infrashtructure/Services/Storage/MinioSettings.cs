@@ -15,9 +15,10 @@ public sealed class MinioSettings
     public string Endpoint { get; init; } = "http://localhost:9000";
 
     /// <summary>
-    /// Endpoint công khai dùng để rewrite host trong presigned URL trả về client.
-    /// Nếu để trống, sẽ fallback về Endpoint.
-    /// Ví dụ: "http://localhost:9000" (dev) hoặc "https://cdn.yourdomain.com" (production).
+    /// Endpoint công khai dùng để ký và trả presigned URL về client.
+    /// Bắt buộc cấu hình bằng host mà client thật truy cập được.
+    /// Ví dụ: "http://192.168.1.139:9000" (LAN), "http://10.0.2.2:9000" (Android emulator)
+    /// hoặc "https://cdn.yourdomain.com" (production).
     /// </summary>
     public string? PublicEndpoint { get; init; }
 
@@ -33,10 +34,25 @@ public sealed class MinioSettings
     public int PresignedUrlExpirySeconds { get; init; } = 900;
 
     /// <summary>
-    /// Trả về public endpoint đã chuẩn hoá (bỏ trailing slash, không có scheme cho MinIO SDK).
-    /// Ưu tiên: PublicEndpoint → Endpoint.
+    /// Trả về public endpoint đã chuẩn hoá (bỏ trailing slash).
+    /// Không fallback về Endpoint vì Endpoint có thể là host nội bộ như minio/localhost.
     /// </summary>
-    public string GetPublicEndpoint() =>
-        (string.IsNullOrWhiteSpace(PublicEndpoint) ? Endpoint : PublicEndpoint)
-            .TrimEnd('/');
+    public string GetRequiredPublicEndpoint()
+    {
+        if (string.IsNullOrWhiteSpace(PublicEndpoint))
+            throw new InvalidOperationException(
+                "MinIO:PublicEndpoint is required for media URLs returned to clients. " +
+                "Set it to a reachable public/LAN endpoint, for example http://192.168.1.139:9000.");
+
+        var endpoint = PublicEndpoint.Trim().TrimEnd('/');
+        if (!Uri.TryCreate(endpoint, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps) ||
+            string.IsNullOrWhiteSpace(uri.Host))
+        {
+            throw new InvalidOperationException(
+                "MinIO:PublicEndpoint must be an absolute HTTP/HTTPS URL, for example http://192.168.1.139:9000.");
+        }
+
+        return endpoint;
+    }
 }

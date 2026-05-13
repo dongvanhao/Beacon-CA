@@ -18,7 +18,7 @@ public class MinioStorageService : IStorageService
         _minio = minio;
         _settings = options.Value;
 
-        // Client riêng để generate presigned URL — ký bằng PublicEndpoint
+        // Client riêng để generate presigned URL - ký bằng PublicEndpoint
         // để URL trả về client có thể truy cập được từ bên ngoài Docker.
         // (Host PHẢI khớp lúc ký vì "host" nằm trong X-Amz-SignedHeaders)
         _presignedMinio = BuildPresignedClient(_settings);
@@ -49,8 +49,8 @@ public class MinioStorageService : IStorageService
             .WithObject(objectKey)
             .WithExpiry(_settings.PresignedUrlExpirySeconds);
 
-        // Dùng _presignedMinio (public endpoint) để SDK ký với host đúng ngay từ đầu.
-        // Signature sẽ chứa host=localhost:9000 → browser truy cập được.
+        // Dùng _presignedMinio để SDK ký bằng public host ngay từ đầu.
+        // Không rewrite host sau khi ký vì sẽ gây SignatureDoesNotMatch.
         return await _presignedMinio.PresignedGetObjectAsync(args);
     }
 
@@ -65,12 +65,13 @@ public class MinioStorageService : IStorageService
 
     /// <summary>
     /// Tạo MinioClient dùng riêng cho presigned URL.
-    /// Client này trỏ vào PublicEndpoint (vd: localhost:9000) thay vì internal endpoint (minio:9000),
-    /// do đó signature được tính với host công khai — URL trả về client là valid.
+    /// Client này trỏ vào PublicEndpoint thay vì internal endpoint (minio:9000),
+    /// do đó signature được tính với host công khai và URL trả về client là valid.
     /// </summary>
     private static IMinioClient BuildPresignedClient(MinioSettings settings)
     {
-        var publicEndpoint = settings.GetPublicEndpoint()
+        var publicEndpointUrl = settings.GetRequiredPublicEndpoint();
+        var publicEndpoint = publicEndpointUrl
             .Replace("https://", string.Empty, StringComparison.OrdinalIgnoreCase)
             .Replace("http://", string.Empty, StringComparison.OrdinalIgnoreCase)
             .TrimEnd('/');
@@ -80,7 +81,7 @@ public class MinioStorageService : IStorageService
             .WithCredentials(settings.AccessKey, settings.SecretKey);
 
         // UseSSL theo public endpoint (production dùng HTTPS)
-        var publicScheme = settings.GetPublicEndpoint().StartsWith("https://", StringComparison.OrdinalIgnoreCase);
+        var publicScheme = publicEndpointUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase);
         if (publicScheme) builder = builder.WithSSL();
 
         return builder.Build();
