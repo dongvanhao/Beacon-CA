@@ -40,6 +40,13 @@ public class MediaObjectConfiguration : IEntityTypeConfiguration<MediaObject>
             .IsRequired()
             .HasMaxLength(100);
 
+        builder.Property(x => x.Status)
+            .IsRequired()
+            .HasConversion<int>();
+
+        builder.Property(x => x.DurationSeconds)
+            .IsRequired(false);
+
         builder.Property(x => x.ETag)
             .HasMaxLength(255);
 

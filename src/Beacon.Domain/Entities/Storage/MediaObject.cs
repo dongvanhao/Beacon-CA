@@ -22,6 +22,9 @@ namespace Beacon.Domain.Entities.Storage
         public int? Width { get; private set; }
         public int? Height { get; private set; }
 
+        public MediaStatus Status { get; private set; } = MediaStatus.Uploading;
+        public int? DurationSeconds { get; private set; }
+
         public string? ETag { get; private set; }
         public string? ChecksumSha256 { get; private set; }
 
@@ -68,5 +71,12 @@ namespace Beacon.Domain.Entities.Storage
             Width = width;
             Height = height;
         }
+
+        public void SetStatus(MediaStatus status) => Status = status;
+
+        public void SetDuration(int? durationSeconds) => DurationSeconds = durationSeconds;
+
+        public bool IsReadyForPost()
+            => Status is MediaStatus.Ready or MediaStatus.Active;
     }
 }

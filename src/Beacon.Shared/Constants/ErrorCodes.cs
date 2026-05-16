@@ -93,6 +93,25 @@ namespace Beacon.Shared.Constants
             public const string MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND";
         }
 
+        public static class Post
+        {
+            public const string POST_NOT_FOUND         = "POST_NOT_FOUND";
+            public const string POST_ACCESS_DENIED     = "POST_ACCESS_DENIED";
+            public const string POST_UPDATE_DENIED     = "POST_UPDATE_DENIED";
+            public const string POST_DELETE_DENIED     = "POST_DELETE_DENIED";
+            public const string INVALID_VISIBILITY     = "INVALID_VISIBILITY";
+            public const string MEDIA_NOT_READY        = "MEDIA_NOT_READY";
+            public const string MEDIA_ACCESS_DENIED    = "MEDIA_ACCESS_DENIED";
+            public const string UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE";
+            public const string INVALID_VIDEO_DURATION = "INVALID_VIDEO_DURATION";
+        }
+
+        public static class Reaction
+        {
+            public const string INVALID_REACTION_ICON = "INVALID_REACTION_ICON";
+            public const string REACTION_CONFLICT     = "REACTION_CONFLICT";
+        }
+
         public static class HealthCheck
         {
             /// <summary>Có từ 2 services trở lên bị fail trong cùng một lần check.</summary>

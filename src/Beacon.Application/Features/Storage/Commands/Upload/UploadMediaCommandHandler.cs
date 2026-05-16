@@ -88,6 +88,8 @@ public class UploadMediaCommandHandler(
             height: height,
             etag: uploadResult.ETag);
 
+        media.SetStatus(MediaStatus.Ready);
+
         try
         {
             await mediaRepository.AddAsync(media, ct);

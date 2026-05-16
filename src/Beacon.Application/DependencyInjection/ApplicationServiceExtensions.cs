@@ -3,6 +3,7 @@ using Beacon.Application.Mappings.Checkins;
 using Beacon.Application.Mappings.Group;
 using Beacon.Application.Mappings.Identity;
 using Beacon.Application.Mappings.Messaging;
+using Beacon.Application.Mappings.Posts;
 using Beacon.Application.Mappings.Settings;
 using Beacon.Application.Mappings.Storage;
 using FluentValidation;
@@ -37,6 +38,8 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<MessageMapper>();
         services.AddSingleton<MessageGroupMapper>();
         services.AddSingleton<MessageGroupDetailMapper>();
+
+        services.AddSingleton<PostDtoMapper>();
 
         return services;
     }

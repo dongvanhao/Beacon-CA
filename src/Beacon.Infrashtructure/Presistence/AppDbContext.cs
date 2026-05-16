@@ -4,6 +4,7 @@ using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Entities.Notification;
+using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Setting;
 using Beacon.Domain.Entities.Storage;
@@ -40,6 +41,8 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
 
         public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
+        public DbSet<Post> Posts => Set<Post>();
+        public DbSet<PostReaction> PostReactions => Set<PostReaction>();
 
         public DbSet<Checkin> Checkins => Set<Checkin>();
         public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();
@@ -79,6 +82,7 @@ namespace Beacon.Infrashtructure.Presistence
 
             modelBuilder.Entity<UserDevice>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MediaObject>().HasQueryFilter(x => !x.IsDeleted);
+            modelBuilder.Entity<Post>().HasQueryFilter(p => p.DeletedAtUtc == null);
             modelBuilder.Entity<MessageGroup>().HasQueryFilter(x => !x.IsDeleted);
 
             // Dependent entities phải có filter tương ứng với required-end đã có filter,

@@ -67,7 +67,7 @@ public class CreateDirectMessageGroupHandlerTests
 
         var existing = new MessageGroup { Type = MessageGroupType.Direct, DirectKey = directKey };
         _groupRepoMock
-            .Setup(r => r.GetByDirectKeyAsync(directKey, It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetByDirectKeyIncludingDeletedAsync(directKey, It.IsAny<CancellationToken>()))
             .ReturnsAsync(existing);
 
         await _sut.Handle(ev, CancellationToken.None);

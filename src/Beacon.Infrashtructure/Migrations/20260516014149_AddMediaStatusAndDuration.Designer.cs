@@ -4,6 +4,7 @@ using Beacon.Infrashtructure.Presistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Beacon.Infrashtructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260516014149_AddMediaStatusAndDuration")]
+    partial class AddMediaStatusAndDuration
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -884,88 +887,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.ToTable("NotificationDelivery");
                 });
 
-            modelBuilder.Entity("Beacon.Domain.Entities.Posts.Post", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Caption")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("MediaId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("OwnerUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Visibility")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("MediaId");
-
-                    b.HasIndex("OwnerUserId", "CreatedAtUtc", "Id")
-                        .HasDatabaseName("IX_Posts_OwnerUserId_CreatedAtUtc");
-
-                    b.HasIndex("Status", "DeletedAtUtc", "CreatedAtUtc", "Id")
-                        .HasDatabaseName("IX_Posts_Feed_Filter");
-
-                    b.ToTable("Posts", (string)null);
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Posts.PostReaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Icon")
-                        .IsRequired()
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
-
-                    b.Property<Guid>("PostId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("IX_PostReactions_UserId");
-
-                    b.HasIndex("PostId", "Icon")
-                        .HasDatabaseName("IX_PostReactions_PostId_Icon");
-
-                    b.HasIndex("PostId", "UserId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_PostReactions_PostId_UserId");
-
-                    b.ToTable("PostReactions", (string)null);
-                });
-
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1534,36 +1455,6 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Navigation("User");
 
                     b.Navigation("UserDevice");
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Posts.Post", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Storage.MediaObject", null)
-                        .WithMany()
-                        .HasForeignKey("MediaId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
-                        .WithMany()
-                        .HasForeignKey("OwnerUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("Beacon.Domain.Entities.Posts.PostReaction", b =>
-                {
-                    b.HasOne("Beacon.Domain.Entities.Posts.Post", null)
-                        .WithMany()
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Beacon.Domain.Entities.Identity.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>

@@ -49,7 +49,7 @@ public class ListFriendPresenceQueryHandlerTests
         _friendRepoMock
             .Setup(r => r.ListByUserAsync(currentUserId, null, It.IsAny<int>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(paged);
-        _onlineTrackerMock.Setup(t => t.IsOnline(friendId)).Returns(true);
+        _onlineTrackerMock.Setup(t => t.IsOnline(friendUser.Id)).Returns(true);
 
         var handler = new ListFriendPresenceQueryHandler(
             _friendRepoMock.Object,
@@ -62,7 +62,7 @@ public class ListFriendPresenceQueryHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Data.Should().HaveCount(1);
-        result.Value.Data[0].UserId.Should().Be(friendId);
+        result.Value.Data[0].UserId.Should().Be(friendUser.Id);
         result.Value.Data[0].IsOnline.Should().BeTrue();
         result.Value.Data[0].LastActiveAtUtc.Should().Be(friendUser.LastActiveAtUtc);
     }
