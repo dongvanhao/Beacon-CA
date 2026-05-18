@@ -1,6 +1,7 @@
 using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Entities.Storage;
+using Beacon.Domain.Entities.Identity;
 
 namespace Beacon.Application.Mappings.Posts;
 
@@ -27,5 +28,19 @@ public sealed class PostDtoMapper
         DurationSeconds = media.DurationSeconds,
         Width = media.Width,
         Height = media.Height
+    };
+
+    public PostReactionItemResponse ToReactionItemResponse(
+        PostReaction reaction, string displayName, string? avatarUrl) => new()
+    {
+        ReactionId = reaction.Id,
+        Icon = reaction.Icon,
+        ReactedAtUtc = reaction.CreatedAtUtc,
+        User = new ReactorUserResponse
+        {
+            Id = reaction.UserId,
+            DisplayName = displayName,
+            AvatarUrl = avatarUrl
+        }
     };
 }

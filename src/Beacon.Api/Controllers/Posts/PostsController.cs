@@ -9,6 +9,7 @@ using Beacon.Application.Features.Posts.Queries.GetFeed;
 using Beacon.Application.Features.Posts.Queries.GetFriendsFeed;
 using Beacon.Application.Features.Posts.Queries.GetMyPosts;
 using Beacon.Application.Features.Posts.Queries.GetPostDetail;
+using Beacon.Application.Features.Posts.Queries.GetPostReactions;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -374,6 +375,49 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
         CancellationToken ct)
         => HandleResult(await mediator.Send(
             new UpsertPostReactionCommand(postId, request.Icon, currentUser.UserId), ct));
+
+    #region
+    /// <summary>Lấy danh sách người dùng đã react trên một bài đăng.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Người dùng phải có quyền xem bài (chủ bài hoặc bạn bè khi visibility=friends).
+    ///
+    /// Các giá trị <c>code</c>:
+    /// - <c>null</c>: Thành công.
+    /// - <c>VALIDATION_ERROR</c>: icon không hợp lệ, limit ngoài [1,100], cursor sai format.
+    /// - <c>POST_NOT_FOUND</c>: Bài đăng không tồn tại hoặc đã bị xóa.
+    /// - <c>POST_ACCESS_DENIED</c>: Bạn không có quyền xem bài đăng này.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "items": [
+    ///     {
+    ///       "reactionId": "guid",
+    ///       "icon":        "string  (heart | haha | like | sad | wow)",
+    ///       "reactedAtUtc":"datetime (UTC)",
+    ///       "user": { "id": "guid", "displayName": "string", "avatarUrl": "string?" }
+    ///     }
+    ///   ],
+    ///   "summary":    { "totalCount": "int", "icons": { "heart": "int", "like": "int", ... } },
+    ///   "nextCursor": "string? (null khi hết trang)",
+    ///   "hasMore":    "bool"
+    /// }
+    /// </code>
+    ///
+    /// Format: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpGet("{postId:guid}/reactions")]
+    public async Task<IActionResult> GetReactions(
+        Guid postId,
+        [FromQuery] string? icon,
+        [FromQuery] string? cursor,
+        [FromQuery] int limit = 30,
+        CancellationToken ct = default)
+        => HandleResult(await mediator.Send(
+            new GetPostReactionsQuery(postId, currentUser.UserId, icon, cursor, limit), ct));
 
     #region
     /// <summary>

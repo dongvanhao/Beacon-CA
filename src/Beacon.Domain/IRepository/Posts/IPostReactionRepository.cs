@@ -19,5 +19,18 @@ public interface IPostReactionRepository
     Task<List<PostReaction>> GetByPostIdsForUserAsync(
         IEnumerable<Guid> postIds, Guid userId, CancellationToken ct = default);
 
+    /// <summary>Keyset cursor pagination theo CreatedAtUtc DESC, optional filter by icon. Trả (items, hasMore).</summary>
+    Task<(List<PostReaction> Items, bool HasMore)> GetPagedByPostIdAsync(
+        Guid postId,
+        string? iconFilter,
+        DateTime? cursor,
+        int limit,
+        CancellationToken ct = default);
+
+    /// <summary>Load tất cả reactions của bài — dùng tính summary tổng (không bị ảnh hưởng bởi iconFilter).</summary>
+    Task<List<PostReaction>> GetAllByPostIdAsync(
+        Guid postId,
+        CancellationToken ct = default);
+
     Task SaveChangesAsync(CancellationToken ct = default);
 }

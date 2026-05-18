@@ -29,6 +29,34 @@ public class PostReactionRepository(AppDbContext db) : IPostReactionRepository
             .Where(r => postIds.Contains(r.PostId) && r.UserId == userId)
             .ToListAsync(ct);
 
+    public async Task<(List<PostReaction> Items, bool HasMore)> GetPagedByPostIdAsync(
+        Guid postId, string? iconFilter, DateTime? cursor, int limit, CancellationToken ct = default)
+    {
+        var query = db.PostReactions.Where(r => r.PostId == postId);
+
+        if (!string.IsNullOrEmpty(iconFilter))
+            query = query.Where(r => r.Icon == iconFilter);
+
+        if (cursor.HasValue)
+            query = query.Where(r => r.CreatedAtUtc < cursor.Value);
+
+        var items = await query
+            .OrderByDescending(r => r.CreatedAtUtc)
+            .Take(limit + 1)
+            .ToListAsync(ct);
+
+        var hasMore = items.Count > limit;
+        if (hasMore) items = items.Take(limit).ToList();
+
+        return (items, hasMore);
+    }
+
+    public Task<List<PostReaction>> GetAllByPostIdAsync(
+        Guid postId, CancellationToken ct = default)
+        => db.PostReactions
+            .Where(r => r.PostId == postId)
+            .ToListAsync(ct);
+
     public Task SaveChangesAsync(CancellationToken ct = default)
         => db.SaveChangesAsync(ct);
 }
