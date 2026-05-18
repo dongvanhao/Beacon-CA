@@ -86,13 +86,13 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
     // ─── 400 ──────────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task GetReactions_WithInvalidIcon_Returns400()
+    public async Task GetReactions_WithSeparatorInIcon_Returns400()
     {
         var (userId, db) = await SeedUserAsync();
         var post = await SeedPostAsync(db, userId, PostVisibility.Private);
         AuthorizeAs(userId);
 
-        var response = await _client.GetAsync($"/api/v1/posts/{post.Id}/reactions?icon=invalid_icon");
+        var response = await _client.GetAsync($"/api/v1/posts/{post.Id}/reactions?icon={Uri.EscapeDataString("heart - haha")}");
 
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
         body!.Success.Should().BeFalse();
@@ -131,8 +131,7 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         body.Data.HasMore.Should().BeFalse();
         body.Data.NextCursor.Should().BeNull();
         body.Data.Summary.TotalCount.Should().Be(0);
-        body.Data.Summary.Icons.Should().ContainKeys("heart", "like", "haha", "sad", "wow");
-        body.Data.Summary.Icons.Values.Should().AllBeEquivalentTo(0);
+        body.Data.Summary.Icons.Should().BeEmpty();
     }
 
     [Fact]
@@ -155,11 +154,10 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         body.Data.Summary.TotalCount.Should().Be(2);
         body.Data.Summary.Icons["heart"].Should().Be(1);
         body.Data.Summary.Icons["like"].Should().Be(1);
-        body.Data.Summary.Icons["haha"].Should().Be(0);
     }
 
     [Fact]
-    public async Task GetReactions_WhenFriendViewsFriendsPost_Returns200()
+    public async Task GetReactions_WhenFriendViewsFriendsPost_ReturnsOwnReaction()
     {
         var (ownerId, db) = await SeedUserAsync();
         var (friendId, _) = await SeedUserAsync();
@@ -175,6 +173,7 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         body!.Success.Should().BeTrue();
         body.Data!.Items.Should().HaveCount(1);
         body.Data.Items[0].Icon.Should().Be("haha");
+        body.Data.Summary.TotalCount.Should().Be(1);
     }
 
     [Fact]
@@ -194,7 +193,7 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         body!.Success.Should().BeTrue();
         body.Data!.Items.Should().HaveCount(1);
         body.Data.Items[0].Icon.Should().Be("heart");
-        body.Data.Summary.TotalCount.Should().Be(2); // summary is always total, not filtered
+        body.Data.Summary.TotalCount.Should().Be(2);
     }
 
     [Fact]
@@ -203,7 +202,6 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         var (ownerId, db) = await SeedUserAsync();
         var post = await SeedPostAsync(db, ownerId, PostVisibility.Private);
 
-        // Seed 5 reactions with distinct timestamps
         for (var i = 0; i < 5; i++)
         {
             var (reactorId, _) = await SeedUserAsync();
@@ -220,7 +218,6 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         page1.Data.HasMore.Should().BeTrue();
         page1.Data.NextCursor.Should().NotBeNull();
 
-        // Page 2 — using cursor from page 1
         var page2Response = await _client.GetAsync(
             $"/api/v1/posts/{post.Id}/reactions?limit=3&cursor={Uri.EscapeDataString(page1.Data.NextCursor!)}");
         var page2 = await page2Response.Content.ReadFromJsonAsync<ApiResponse<PostReactionListResponse>>();
@@ -228,10 +225,11 @@ public class PostReactionsControllerTests : IClassFixture<BeaconWebApplicationFa
         page2.Data!.Items.Should().HaveCount(2);
         page2.Data.HasMore.Should().BeFalse();
 
-        // No overlap between pages
         var page1Ids = page1.Data.Items.Select(i => i.ReactionId).ToHashSet();
         var page2Ids = page2.Data.Items.Select(i => i.ReactionId).ToHashSet();
         page1Ids.Intersect(page2Ids).Should().BeEmpty();
+
+        // Page 2 — using cursor from page 1
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -15,6 +16,9 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.Property(p => p.OwnerUserId).IsRequired();
         builder.Property(p => p.MediaId).IsRequired();
+        builder.Property(p => p.DailySafetyRecordId).IsRequired(false);
+        builder.Property(p => p.Latitude).HasPrecision(9, 6);
+        builder.Property(p => p.Longitude).HasPrecision(9, 6);
 
         builder.Property(p => p.Caption)
             .HasMaxLength(500)
@@ -40,10 +44,19 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
             .HasForeignKey(p => p.MediaId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne(p => p.DailySafetyRecord)
+            .WithMany()
+            .HasForeignKey(p => p.DailySafetyRecordId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
         builder.HasIndex(p => new { p.OwnerUserId, p.CreatedAtUtc, p.Id })
             .HasDatabaseName("IX_Posts_OwnerUserId_CreatedAtUtc");
 
         builder.HasIndex(p => new { p.Status, p.DeletedAtUtc, p.CreatedAtUtc, p.Id })
             .HasDatabaseName("IX_Posts_Feed_Filter");
+
+        builder.HasIndex(p => p.DailySafetyRecordId)
+            .HasDatabaseName("IX_Posts_DailySafetyRecordId");
     }
 }

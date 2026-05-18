@@ -47,6 +47,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     /// {
     ///   "id":           "guid",
     ///   "ownerUserId":  "guid",
+    ///   "dailySafetyRecordId": "guid|null",
     ///   "media": {
     ///     "id":               "guid",
     ///     "url":              "string  (presigned URL, hết hạn 15 phút)",
@@ -106,6 +107,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     ///     {
     ///       "id":          "guid",
     ///       "ownerUserId": "guid",
+    ///       "dailySafetyRecordId": "guid|null",
     ///       "owner": {
     ///         "id":          "guid",
     ///         "displayName": "string",
@@ -219,6 +221,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     /// {
     ///   "id":          "guid",
     ///   "ownerUserId": "guid",
+    ///   "dailySafetyRecordId": "guid|null",
     ///   "owner": {
     ///     "id":          "guid",
     ///     "displayName": "string",
@@ -273,6 +276,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     /// {
     ///   "id":           "guid",
     ///   "ownerUserId":  "guid",
+    ///   "dailySafetyRecordId": "guid|null",
     ///   "media": {
     ///     "id":               "guid",
     ///     "url":              "string",
@@ -338,13 +342,14 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>.
     ///
-    /// Nếu người dùng đã có reaction trên bài đăng này, icon sẽ được cập nhật (upsert).
+    /// Nếu người dùng đã có reaction trên bài đăng này, icon mới sẽ được nối vào danh sách icon hiện có.
+    /// Mỗi người dùng giữ tối đa 3 icon gần nhất trên mỗi bài đăng.
     ///
     /// Các giá trị <c>code</c> có thể xuất hiện trong response:
     ///
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: Icon rỗng hoặc không hợp lệ.
-    /// - <c>INVALID_REACTION_ICON</c>: Icon không nằm trong danh sách hỗ trợ (heart, haha, like, sad, wow).
+    /// - <c>INVALID_REACTION_ICON</c>: Icon rỗng, quá dài hoặc chứa dấu phẩy.
     /// - <c>POST_NOT_FOUND</c>: Bài đăng không tồn tại hoặc đã bị xóa.
     /// - <c>POST_ACCESS_DENIED</c>: Bạn không có quyền xem bài đăng này.
     ///
@@ -363,7 +368,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     /// Body JSON:
     /// <code>
     /// {
-    ///   "icon": "string  (bắt buộc — heart | haha | like | sad | wow)"
+    ///   "icon": "string  (bắt buộc)"
     /// }
     /// </code>
     /// </param>
@@ -395,7 +400,7 @@ public class PostsController(IMediator mediator, ICurrentUserService currentUser
     ///   "items": [
     ///     {
     ///       "reactionId": "guid",
-    ///       "icon":        "string  (heart | haha | like | sad | wow)",
+    ///       "icon":        "string  (tối đa 3 icon, phân tách bằng dấu phẩy)",
     ///       "reactedAtUtc":"datetime (UTC)",
     ///       "user": { "id": "guid", "displayName": "string", "avatarUrl": "string?" }
     ///     }

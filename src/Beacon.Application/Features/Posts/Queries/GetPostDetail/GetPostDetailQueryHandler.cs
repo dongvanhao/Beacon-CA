@@ -95,6 +95,10 @@ public class GetPostDetailQueryHandler(
         {
             Id = postResponse.Id,
             OwnerUserId = postResponse.OwnerUserId,
+            DailySafetyRecordId = postResponse.DailySafetyRecordId,
+            DailySafetyRecord = postResponse.DailySafetyRecord,
+            Latitude = postResponse.Latitude,
+            Longitude = postResponse.Longitude,
             Media = postResponse.Media,
             Caption = postResponse.Caption,
             Visibility = postResponse.Visibility,

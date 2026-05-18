@@ -9,8 +9,8 @@ public class UpsertPostReactionCommandValidator : AbstractValidator<UpsertPostRe
     public UpsertPostReactionCommandValidator()
     {
         RuleFor(x => x.Icon)
-            .NotEmpty().WithMessage("Icon không được để trống.")
+            .NotEmpty().WithMessage("Icon is required.")
             .Must(ReactionIcons.IsValid)
-            .WithMessage("Icon không hợp lệ. Chỉ hỗ trợ: heart, haha, like, sad, wow");
+            .WithMessage($"Icon must be at most {ReactionIcons.MaxIconLength} characters and must not contain the '{ReactionIcons.Separator}' separator.");
     }
 }

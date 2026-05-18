@@ -2,6 +2,7 @@ using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Entities.Storage;
 using Beacon.Domain.Entities.Identity;
+using Beacon.Domain.Entities.Safety;
 
 namespace Beacon.Application.Mappings.Posts;
 
@@ -11,6 +12,10 @@ public sealed class PostDtoMapper
     {
         Id = post.Id,
         OwnerUserId = post.OwnerUserId,
+        DailySafetyRecordId = post.DailySafetyRecordId,
+        DailySafetyRecord = ToDailySafetyRecordResponse(post.DailySafetyRecord),
+        Latitude = post.Latitude,
+        Longitude = post.Longitude,
         Media = media,
         Caption = post.Caption,
         Visibility = post.Visibility.ToString().ToLowerInvariant(),
@@ -43,4 +48,21 @@ public sealed class PostDtoMapper
             AvatarUrl = avatarUrl
         }
     };
+
+    public DailySafetyRecordInPostResponse? ToDailySafetyRecordResponse(DailySafetyRecord? record)
+        => record is null
+            ? null
+            : new DailySafetyRecordInPostResponse
+            {
+                Id = record.Id,
+                UserId = record.UserId,
+                Date = record.Date,
+                Status = record.Status.ToString(),
+                DeadlineAtUtc = record.DeadlineAtUtc,
+                CheckedInAtUtc = record.CheckedInAtUtc,
+                MarkedMissedAtUtc = record.MarkedMissedAtUtc,
+                ReminderSentAtUtc = record.ReminderSentAtUtc,
+                ResolvedAtUtc = record.ResolvedAtUtc,
+                LastEvaluatedAtUtc = record.LastEvaluatedAtUtc
+            };
 }

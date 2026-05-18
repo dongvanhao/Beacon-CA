@@ -14,6 +14,7 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.Property(m => m.CreatedAtUtc).IsRequired();
         b.Property(m => m.IsDeleted).HasDefaultValue(false);
         b.Property(m => m.ClientMessageId).HasMaxLength(100);
+        b.Property(m => m.PostId).IsRequired(false);
 
         b.Property(m => m.SequenceNumber)
             .ValueGeneratedOnAdd()
@@ -21,6 +22,7 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
 
         b.HasIndex(m => new { m.GroupId, m.SequenceNumber });
         b.HasIndex(m => new { m.GroupId, m.CreatedAtUtc });
+        b.HasIndex(m => m.PostId);
 
         // Idempotency: unique per group, skips NULL ClientMessageId
         b.HasIndex(m => new { m.GroupId, m.ClientMessageId })
@@ -32,6 +34,10 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
 
         b.HasOne(m => m.Sender).WithMany()
          .HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Restrict);
+
+        b.HasOne(m => m.Post).WithMany()
+         .HasForeignKey(m => m.PostId).OnDelete(DeleteBehavior.Restrict)
+         .IsRequired(false);
 
         b.HasOne<Message>()
          .WithMany()

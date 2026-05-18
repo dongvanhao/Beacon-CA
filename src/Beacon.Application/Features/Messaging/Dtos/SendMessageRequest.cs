@@ -1,3 +1,3 @@
 namespace Beacon.Application.Features.Messaging.Dtos;
 
-public record SendMessageRequest(string Content, string? ClientMessageId);
+public record SendMessageRequest(string? Content, string? ClientMessageId, Guid? PostId);

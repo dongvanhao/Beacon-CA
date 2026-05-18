@@ -1,5 +1,6 @@
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,7 +15,7 @@ public class PostReactionConfiguration : IEntityTypeConfiguration<PostReaction>
 
         builder.Property(r => r.PostId).IsRequired();
         builder.Property(r => r.UserId).IsRequired();
-        builder.Property(r => r.Icon).IsRequired().HasMaxLength(10);
+        builder.Property(r => r.Icon).IsRequired().HasMaxLength(ReactionIcons.MaxStoredLength);
 
         builder.HasIndex(r => new { r.PostId, r.UserId })
             .IsUnique()

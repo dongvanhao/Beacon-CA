@@ -14,6 +14,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
             var query = db.Messages
                 .AsNoTracking()
                 .Include(m => m.Sender)
+                .Include(m => m.Post)
+                    .ThenInclude(p => p!.DailySafetyRecord)
                 .Where(m => m.GroupId == groupId)
                 .Where(m => cursor == null || m.SequenceNumber < cursor)
                 .OrderByDescending(m => m.SequenceNumber)
@@ -37,6 +39,8 @@ namespace Beacon.Infrashtructure.Repository.Messaging
 
         public Task<Message?> GetByClientMessageIdAsync(Guid groupId, string clientMessageId, CancellationToken ct)
             => db.Messages
+                .Include(m => m.Post)
+                    .ThenInclude(p => p!.DailySafetyRecord)
                 .FirstOrDefaultAsync(m => m.GroupId == groupId && m.ClientMessageId == clientMessageId, ct);
 
         public Task<bool> ExistsInGroupAsync(Guid groupId, Guid messageId, CancellationToken ct)

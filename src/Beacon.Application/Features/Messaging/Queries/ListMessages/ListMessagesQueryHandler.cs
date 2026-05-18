@@ -13,7 +13,8 @@ public class ListMessagesQueryHandler(
     IMessageGroupRepository groupRepo,
     IMessageRepository messageRepo,
     ICurrentUserService currentUser,
-    MessageMapper mapper)
+    MessageMapper mapper,
+    MessagePostMapper postMapper)
     : IRequestHandler<ListMessagesQuery, Result<CursorPagedResult<MessageDto, long>>>
 {
     public async Task<Result<CursorPagedResult<MessageDto, long>>> Handle(
@@ -26,7 +27,15 @@ public class ListMessagesQueryHandler(
         var limit = Math.Clamp(query.Limit, 1, 100);
         var paged = await messageRepo.ListByGroupAsync(query.GroupId, query.Cursor, limit, ct);
 
-        var dtos = paged.Data.Select(m => mapper.ToDto(m, m.Sender.FamilyName, m.Sender.GivenName)).ToList();
+        var dtos = new List<MessageDto>(paged.Data.Count);
+        foreach (var message in paged.Data)
+        {
+            dtos.Add(mapper.ToDto(
+                message,
+                message.Sender.FamilyName,
+                message.Sender.GivenName,
+                await postMapper.ToDtoAsync(message.Post, ct)));
+        }
 
         return Result<CursorPagedResult<MessageDto, long>>.Success(new CursorPagedResult<MessageDto, long>
         {

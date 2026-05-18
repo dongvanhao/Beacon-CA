@@ -4,6 +4,10 @@ public record FeedPostResponse
 {
     public Guid Id { get; init; }
     public Guid OwnerUserId { get; init; }
+    public Guid? DailySafetyRecordId { get; init; }
+    public DailySafetyRecordInPostResponse? DailySafetyRecord { get; init; }
+    public decimal? Latitude { get; init; }
+    public decimal? Longitude { get; init; }
     public OwnerInPostResponse Owner { get; init; } = default!;
     public MediaInPostResponse Media { get; init; } = default!;
     public string? Caption { get; init; }

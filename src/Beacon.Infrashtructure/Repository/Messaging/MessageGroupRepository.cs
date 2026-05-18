@@ -25,7 +25,9 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
     public Task<MessageGroup?> GetPrivateGroupBetweenAsync(Guid userId1, Guid userId2, CancellationToken ct)
     {
         var directKey = MessageGroup.BuildDirectKey(userId1, userId2);
-        return db.MessageGroups.FirstOrDefaultAsync(g => g.DirectKey == directKey, ct);
+        return db.MessageGroups
+            .Include(g => g.Members)
+            .FirstOrDefaultAsync(g => g.DirectKey == directKey, ct);
     }
 
     public Task<MessageGroup?> GetByDirectKeyAsync(string directKey, CancellationToken ct)

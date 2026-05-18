@@ -3,9 +3,12 @@ using Beacon.Application.Features.Posts.Commands.CreatePost;
 using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Application.Mappings.Posts;
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Storage;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository.Posts;
+using Beacon.Domain.IRepository.Safety;
+using Beacon.Domain.IRepository.Settings;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -18,6 +21,8 @@ public class CreatePostHandlerTests
 {
     private readonly Mock<IPostRepository> _postRepoMock = new();
     private readonly Mock<IMediaObjectRepository> _mediaRepoMock = new();
+    private readonly Mock<IDailySafetyRecordRepository> _dailySafetyRecordRepoMock = new();
+    private readonly Mock<ISafetySettingRepository> _safetySettingRepoMock = new();
     private readonly Mock<IStorageService> _storageMock = new();
     private readonly PostDtoMapper _mapper = new();
     private readonly CreatePostCommandHandler _sut;
@@ -39,9 +44,23 @@ public class CreatePostHandlerTests
             .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _dailySafetyRecordRepoMock
+            .Setup(r => r.GetByUserIdAndDateAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((DailySafetyRecord?)null);
+
+        _dailySafetyRecordRepoMock
+            .Setup(r => r.AddAsync(It.IsAny<DailySafetyRecord>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        _safetySettingRepoMock
+            .Setup(r => r.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((Beacon.Domain.Entities.Setting.SafetySetting?)null);
+
         _sut = new CreatePostCommandHandler(
             _postRepoMock.Object,
             _mediaRepoMock.Object,
+            _dailySafetyRecordRepoMock.Object,
+            _safetySettingRepoMock.Object,
             _storageMock.Object,
             _mapper);
     }
@@ -86,6 +105,28 @@ public class CreatePostHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WithLocation_ReturnsLocation()
+    {
+        var media = BuildMedia(MediaType.Image, MediaStatus.Ready);
+        _mediaRepoMock.Setup(r => r.GetByIdAsync(_mediaId, It.IsAny<CancellationToken>())).ReturnsAsync(media);
+
+        var command = new CreatePostCommand(
+            new CreatePostRequest
+            {
+                MediaId = _mediaId,
+                Latitude = 10.762622m,
+                Longitude = 106.660172m
+            },
+            _userId);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Latitude.Should().Be(10.762622m);
+        result.Value.Longitude.Should().Be(106.660172m);
+    }
+
+    [Fact]
     public async Task Handle_WhenNoVisibilityProvided_DefaultsToFriends()
     {
         var media = BuildMedia(MediaType.Image, MediaStatus.Ready);
@@ -99,6 +140,38 @@ public class CreatePostHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.Visibility.Should().Be("friends");
+    }
+
+    [Fact]
+    public async Task Handle_WhenTodayHealthRecordDoesNotExist_CreatesCheckedInRecordAndLinksPost()
+    {
+        var media = BuildMedia(MediaType.Image, MediaStatus.Ready);
+        DailySafetyRecord? addedRecord = null;
+        Post? addedPost = null;
+
+        _mediaRepoMock.Setup(r => r.GetByIdAsync(_mediaId, It.IsAny<CancellationToken>())).ReturnsAsync(media);
+        _dailySafetyRecordRepoMock
+            .Setup(r => r.AddAsync(It.IsAny<DailySafetyRecord>(), It.IsAny<CancellationToken>()))
+            .Callback<DailySafetyRecord, CancellationToken>((record, _) => addedRecord = record)
+            .Returns(Task.CompletedTask);
+        _postRepoMock
+            .Setup(r => r.AddAsync(It.IsAny<Post>(), It.IsAny<CancellationToken>()))
+            .Callback<Post, CancellationToken>((post, _) => addedPost = post)
+            .Returns(Task.CompletedTask);
+
+        var command = new CreatePostCommand(
+            new CreatePostRequest { MediaId = _mediaId, Caption = "Health post", Visibility = "friends" },
+            _userId);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        addedRecord.Should().NotBeNull();
+        addedRecord!.Status.Should().Be(Beacon.Domain.Enums.Safety.SafetyStatus.CheckedIn);
+        addedRecord.CheckedInAtUtc.Should().NotBeNull();
+        addedPost.Should().NotBeNull();
+        addedPost!.DailySafetyRecordId.Should().Be(addedRecord.Id);
+        result.Value!.DailySafetyRecordId.Should().Be(addedRecord.Id);
     }
 
     [Fact]

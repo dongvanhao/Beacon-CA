@@ -9,7 +9,9 @@ namespace Beacon.Infrashtructure.Repository.Posts;
 public class PostRepository(AppDbContext db) : IPostRepository
 {
     public Task<Post?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => db.Posts.FirstOrDefaultAsync(p => p.Id == id, ct);
+        => db.Posts
+            .Include(p => p.DailySafetyRecord)
+            .FirstOrDefaultAsync(p => p.Id == id, ct);
 
     public async Task AddAsync(Post post, CancellationToken ct = default)
         => await db.Posts.AddAsync(post, ct);
@@ -26,6 +28,7 @@ public class PostRepository(AppDbContext db) : IPostRepository
         CancellationToken ct = default)
     {
         var query = db.Posts
+            .Include(p => p.DailySafetyRecord)
             .Where(p => p.Status == PostStatus.Active)
             .Where(p =>
                 p.OwnerUserId == currentUserId
@@ -52,6 +55,7 @@ public class PostRepository(AppDbContext db) : IPostRepository
         CancellationToken ct = default)
     {
         var query = db.Posts
+            .Include(p => p.DailySafetyRecord)
             .Where(p => p.OwnerUserId == currentUserId && p.Status == PostStatus.Active)
             .AsQueryable();
 
@@ -78,6 +82,7 @@ public class PostRepository(AppDbContext db) : IPostRepository
             return new List<Post>();
 
         var query = db.Posts
+            .Include(p => p.DailySafetyRecord)
             .Where(p => friendIds.Contains(p.OwnerUserId)
                         && p.Visibility == PostVisibility.Friends
                         && p.Status == PostStatus.Active)

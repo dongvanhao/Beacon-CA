@@ -55,6 +55,18 @@ public class BeaconHub(
         {
             presenceTracker.TrackDisconnect(parsedUserId, Context.ConnectionId);
             onlineTracker.TrackOffline(parsedUserId, Context.ConnectionId);
+
+            if (!onlineTracker.IsOnline(parsedUserId))
+            {
+                try
+                {
+                    await presenceService.MarkOfflineAsync(parsedUserId, CancellationToken.None);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Presence update failed for user {UserId}", parsedUserId);
+                }
+            }
         }
 
         await base.OnDisconnectedAsync(exception);

@@ -50,6 +50,10 @@ public class GetPostReactionsHandlerTests
             .Setup(r => r.GetAllByPostIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<PostReaction>());
 
+        _reactionRepo
+            .Setup(r => r.GetByPostAndUserAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((PostReaction?)null);
+
         _friendRepo
             .Setup(r => r.AreFriendsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(false);
@@ -153,12 +157,11 @@ public class GetPostReactionsHandlerTests
         result.Value.HasMore.Should().BeFalse();
         result.Value.NextCursor.Should().BeNull();
         result.Value.Summary.TotalCount.Should().Be(0);
-        result.Value.Summary.Icons.Should().ContainKeys("heart", "like", "haha", "sad", "wow");
-        result.Value.Summary.Icons.Values.Should().AllBeEquivalentTo(0);
+        result.Value.Summary.Icons.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenFriendViewsFriendsPost_ReturnsReactionList()
+    public async Task Handle_WhenFriendViewsFriendsPost_ReturnsOwnReaction()
     {
         var post = BuildPost(PostVisibility.Friends);
         _postRepo.Setup(r => r.GetByIdAsync(_postId, It.IsAny<CancellationToken>()))
@@ -167,13 +170,10 @@ public class GetPostReactionsHandlerTests
             .Setup(r => r.AreFriendsAsync(_viewerId, _ownerId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(true);
 
-        var reaction = BuildReaction(icon: "heart");
+        var reaction = BuildReaction(userId: _viewerId, icon: "heart");
         _reactionRepo
-            .Setup(r => r.GetPagedByPostIdAsync(_postId, null, null, 30, It.IsAny<CancellationToken>()))
-            .ReturnsAsync((new List<PostReaction> { reaction }, false));
-        _reactionRepo
-            .Setup(r => r.GetAllByPostIdAsync(_postId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<PostReaction> { reaction });
+            .Setup(r => r.GetByPostAndUserAsync(_postId, _viewerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(reaction);
 
         var result = await _handler.Handle(
             new GetPostReactionsQuery(_postId, _viewerId, null, null, 30), CancellationToken.None);
@@ -182,12 +182,10 @@ public class GetPostReactionsHandlerTests
         result.Value!.Items.Should().HaveCount(1);
         result.Value.Items[0].Icon.Should().Be("heart");
         result.Value.Summary.TotalCount.Should().Be(1);
-        result.Value.Summary.Icons["heart"].Should().Be(1);
-        result.Value.Summary.Icons.Should().ContainKeys("heart", "like", "haha", "sad", "wow");
     }
 
     [Fact]
-    public async Task Handle_WhenIconFilterApplied_ReturnsOnlyMatchingReactions()
+    public async Task Handle_WhenIconFilterApplied_ReturnsOnlyOwnMatchingReaction()
     {
         var post = BuildPost(PostVisibility.Private);
         _postRepo.Setup(r => r.GetByIdAsync(_postId, It.IsAny<CancellationToken>()))
@@ -207,7 +205,7 @@ public class GetPostReactionsHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Value!.Items.Should().HaveCount(1);
         result.Value.Items[0].Icon.Should().Be("heart");
-        result.Value.Summary.TotalCount.Should().Be(2); // summary is unfiltered
+        result.Value.Summary.TotalCount.Should().Be(2);
     }
 
     [Fact]
@@ -218,9 +216,8 @@ public class GetPostReactionsHandlerTests
             .ReturnsAsync(post);
 
         var reactions = Enumerable.Range(0, 30)
-            .Select(_ => BuildReaction())
+            .Select(i => BuildReaction(userId: Guid.NewGuid(), icon: $"icon{i}"))
             .ToList();
-
         _reactionRepo
             .Setup(r => r.GetPagedByPostIdAsync(_postId, null, null, 30, It.IsAny<CancellationToken>()))
             .ReturnsAsync((reactions, true));

@@ -1,9 +1,17 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Commands.SendMessage;
+using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Application.Mappings.Messaging;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Messaging;
+using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Messaging;
+using Beacon.Domain.IRepository.Posts;
+using Beacon.Domain.IRepository;
+using Beacon.Domain.IRepository.Storage;
+using Beacon.Application.Mappings.Posts;
+using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -20,8 +28,14 @@ public class SendMessageCommandHandlerTests
     private readonly Mock<IRealtimeNotifier> _notifierMock = new();
     private readonly Mock<IFcmService> _fcmServiceMock = new();
     private readonly Mock<IMessageGroupPresenceTracker> _presenceTrackerMock = new();
+    private readonly Mock<IPostRepository> _postRepoMock = new();
+    private readonly Mock<IFriendRepository> _friendRepoMock = new();
+    private readonly Mock<IMediaObjectRepository> _mediaRepoMock = new();
+    private readonly Mock<IUserRepository> _userRepoMock = new();
+    private readonly Mock<IStorageService> _storageMock = new();
     private readonly Mock<ILogger<SendMessageCommandHandler>> _loggerMock = new();
     private readonly MessageMapper _mapper = new();
+    private readonly MessagePostMapper _postMapper;
     private readonly SendMessageCommandHandler _sut;
 
     private readonly Guid _currentUserId = Guid.NewGuid();
@@ -43,6 +57,12 @@ public class SendMessageCommandHandlerTests
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
 
+        _postMapper = new MessagePostMapper(
+            _mediaRepoMock.Object,
+            _userRepoMock.Object,
+            _storageMock.Object,
+            new PostDtoMapper());
+
         _sut = new SendMessageCommandHandler(
             _groupRepoMock.Object,
             _messageRepoMock.Object,
@@ -50,8 +70,11 @@ public class SendMessageCommandHandlerTests
             _notifierMock.Object,
             _fcmServiceMock.Object,
             _presenceTrackerMock.Object,
+            _postRepoMock.Object,
+            _friendRepoMock.Object,
             _loggerMock.Object,
-            _mapper);
+            _mapper,
+            _postMapper);
     }
 
     [Fact]
@@ -279,5 +302,44 @@ public class SendMessageCommandHandlerTests
                 _currentUserId, It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_ShouldResolveDirectGroupAndReturnPost_WhenSendingWithPostIdOnly()
+    {
+        var ownerId = Guid.NewGuid();
+        var post = Post.Create(ownerId, Guid.NewGuid(), "Shared post", PostVisibility.Friends);
+        var group = new MessageGroup { Type = MessageGroupType.Direct, CreatedAtUtc = DateTime.UtcNow };
+        group.Members.Add(new MessageGroupMember { GroupId = group.Id, UserId = _currentUserId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
+        group.Members.Add(new MessageGroupMember { GroupId = group.Id, UserId = ownerId, Role = GroupMemberRole.Member, JoinedAtUtc = DateTime.UtcNow });
+
+        Message? savedMessage = null;
+        _postRepoMock.Setup(r => r.GetByIdAsync(post.Id, It.IsAny<CancellationToken>())).ReturnsAsync(post);
+        _friendRepoMock.Setup(r => r.AreFriendsAsync(_currentUserId, ownerId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _groupRepoMock
+            .Setup(r => r.GetPrivateGroupBetweenAsync(_currentUserId, ownerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(group);
+        _messageRepoMock
+            .Setup(r => r.AddAsync(It.IsAny<Message>(), It.IsAny<CancellationToken>()))
+            .Callback<Message, CancellationToken>((message, _) => savedMessage = message)
+            .Returns(Task.CompletedTask);
+        _messageRepoMock.Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>())).Returns(Task.CompletedTask);
+
+        var result = await _sut.Handle(new SendMessageCommand(null, null, null, post.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        savedMessage.Should().NotBeNull();
+        savedMessage!.PostId.Should().Be(post.Id);
+        savedMessage.GroupId.Should().Be(group.Id);
+        result.Value!.PostId.Should().Be(post.Id);
+        result.Value.Post.Should().NotBeNull();
+        result.Value.Post!.Caption.Should().Be("Shared post");
+        _notifierMock.Verify(
+            n => n.NotifyNewMessageAsync(
+                group.Id,
+                It.Is<MessageDto>(dto => dto.PostId == post.Id && dto.Post != null),
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 }

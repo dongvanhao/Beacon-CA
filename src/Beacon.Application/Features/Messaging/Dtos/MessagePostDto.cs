@@ -1,6 +1,8 @@
-namespace Beacon.Application.Features.Posts.Dtos;
+using Beacon.Application.Features.Posts.Dtos;
 
-public record PostResponse
+namespace Beacon.Application.Features.Messaging.Dtos;
+
+public record MessagePostDto
 {
     public Guid Id { get; init; }
     public Guid OwnerUserId { get; init; }
@@ -8,6 +10,7 @@ public record PostResponse
     public DailySafetyRecordInPostResponse? DailySafetyRecord { get; init; }
     public decimal? Latitude { get; init; }
     public decimal? Longitude { get; init; }
+    public OwnerInPostResponse Owner { get; init; } = default!;
     public MediaInPostResponse Media { get; init; } = default!;
     public string? Caption { get; init; }
     public string Visibility { get; init; } = default!;

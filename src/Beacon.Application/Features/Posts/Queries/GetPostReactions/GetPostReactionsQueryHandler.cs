@@ -2,8 +2,10 @@ using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Application.Features.Posts.Helpers;
 using Beacon.Application.Mappings.Posts;
+using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository;
+using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Posts;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Shared.Constants;
@@ -17,6 +19,7 @@ public class GetPostReactionsQueryHandler(
     IPostReactionRepository reactionRepo,
     IUserRepository userRepo,
     IMediaObjectRepository mediaRepo,
+    IFriendRepository friendRepo,
     IStorageService storage,
     PostDtoMapper mapper)
     : IRequestHandler<GetPostReactionsQuery, Result<PostReactionListResponse>>
@@ -24,56 +27,47 @@ public class GetPostReactionsQueryHandler(
     public async Task<Result<PostReactionListResponse>> Handle(
         GetPostReactionsQuery query, CancellationToken ct)
     {
-        // 1. Fetch post
         var post = await postRepo.GetByIdAsync(query.PostId, ct);
         if (post is null || post.IsDeleted || post.Status != PostStatus.Active)
             return Result<PostReactionListResponse>.Failure(
-                Error.NotFound(ErrorCodes.Post.POST_NOT_FOUND, "Bài đăng không tồn tại."));
+                Error.NotFound(ErrorCodes.Post.POST_NOT_FOUND, "Post does not exist."));
 
-        // 2. Access control — chỉ chủ bài đăng mới xem được danh sách reactions
-        if (post.OwnerUserId != query.CurrentUserId)
-            return Result<PostReactionListResponse>.Failure(
-                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bạn không có quyền xem danh sách reactions của bài đăng này."));
+        var isOwner = post.OwnerUserId == query.CurrentUserId;
+        if (!isOwner)
+        {
+            if (post.Visibility != PostVisibility.Friends ||
+                !await friendRepo.AreFriendsAsync(query.CurrentUserId, post.OwnerUserId, ct))
+            {
+                return Result<PostReactionListResponse>.Failure(
+                    Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "You cannot view this post's reactions."));
+            }
+        }
 
-        // 3. Parse cursor
+        if (!isOwner)
+            return await BuildCurrentUserReactionResponseAsync(query, ct);
+
         DateTime? cursorDt = null;
         if (!string.IsNullOrEmpty(query.Cursor) &&
             DateTime.TryParse(query.Cursor, null, System.Globalization.DateTimeStyles.RoundtripKind, out var parsed))
             cursorDt = parsed.ToUniversalTime();
 
-        // 4. Paged reactions + all reactions for summary (sequential — EF Core DbContext is not thread-safe)
-        var (pagedItems, hasMore) = await reactionRepo.GetPagedByPostIdAsync(query.PostId, query.Icon, cursorDt, query.Limit, ct);
+        var (pagedItems, hasMore) = await reactionRepo.GetPagedByPostIdAsync(
+            query.PostId,
+            query.Icon,
+            cursorDt,
+            query.Limit,
+            ct);
         var allReactions = await reactionRepo.GetAllByPostIdAsync(query.PostId, ct);
+        var summary = ReactionSummaryHelper.BuildSummary(allReactions);
 
-        // 5. Summary with all 5 icons always present
-        var iconCounts = ReactionIcons.Supported.ToDictionary(k => k, k => allReactions.Count(r => r.Icon == k));
-        var summary = new PostReactionSummaryResponse
-        {
-            TotalCount = allReactions.Count,
-            Icons = iconCounts
-        };
-
-        // 6. Batch load reactor user info (bounded by limit ≤ 100)
-        var uniqueUserIds = pagedItems.Select(r => r.UserId).Distinct().ToList();
         var userDict = new Dictionary<Guid, (string DisplayName, string? AvatarUrl)>();
-
-        foreach (var userId in uniqueUserIds)
+        foreach (var userId in pagedItems.Select(r => r.UserId).Distinct())
         {
-            var user = await userRepo.GetByIdAsync(userId, ct);
-            if (user is null) continue;
-
-            string? avatarUrl = null;
-            if (user.AvatarMediaObjectId.HasValue)
-            {
-                var avatarMedia = await mediaRepo.GetByIdAsync(user.AvatarMediaObjectId.Value, ct);
-                if (avatarMedia is not null)
-                    avatarUrl = await storage.GeneratePresignedGetUrlAsync(avatarMedia.ObjectKey, ct);
-            }
-
-            userDict[userId] = ($"{user.FamilyName} {user.GivenName}", avatarUrl);
+            var userInfo = await GetUserInfoAsync(userId, ct);
+            if (userInfo is not null)
+                userDict[userId] = userInfo.Value;
         }
 
-        // 7. Map items
         var items = pagedItems
             .Select(r =>
             {
@@ -82,7 +76,6 @@ public class GetPostReactionsQueryHandler(
             })
             .ToList();
 
-        // 8. Next cursor = CreatedAtUtc of last item (ISO-8601 round-trip)
         string? nextCursor = hasMore && pagedItems.Count > 0
             ? pagedItems.Last().CreatedAtUtc.ToString("O")
             : null;
@@ -94,5 +87,50 @@ public class GetPostReactionsQueryHandler(
             NextCursor = nextCursor,
             HasMore = hasMore
         });
+    }
+
+    private async Task<Result<PostReactionListResponse>> BuildCurrentUserReactionResponseAsync(
+        GetPostReactionsQuery query,
+        CancellationToken ct)
+    {
+        var myReaction = await reactionRepo.GetByPostAndUserAsync(query.PostId, query.CurrentUserId, ct);
+        var hasMatchingIcon = myReaction is not null &&
+                              (query.Icon is null || ReactionIcons.Split(myReaction.Icon).Contains(query.Icon));
+        var itemsSource = hasMatchingIcon ? new[] { myReaction! } : Array.Empty<PostReaction>();
+        var summary = ReactionSummaryHelper.BuildSummary(itemsSource);
+
+        var userInfo = itemsSource.Length > 0
+            ? await GetUserInfoAsync(query.CurrentUserId, ct)
+            : null;
+
+        var items = itemsSource.Select(r => mapper.ToReactionItemResponse(
+            r,
+            userInfo?.DisplayName ?? string.Empty,
+            userInfo?.AvatarUrl)).ToList();
+
+        return Result<PostReactionListResponse>.Success(new PostReactionListResponse
+        {
+            Items = items,
+            Summary = summary,
+            NextCursor = null,
+            HasMore = false
+        });
+    }
+
+    private async Task<(string DisplayName, string? AvatarUrl)?> GetUserInfoAsync(Guid userId, CancellationToken ct)
+    {
+        var user = await userRepo.GetByIdAsync(userId, ct);
+        if (user is null)
+            return null;
+
+        string? avatarUrl = null;
+        if (user.AvatarMediaObjectId.HasValue)
+        {
+            var avatarMedia = await mediaRepo.GetByIdAsync(user.AvatarMediaObjectId.Value, ct);
+            if (avatarMedia is not null)
+                avatarUrl = await storage.GeneratePresignedGetUrlAsync(avatarMedia.ObjectKey, ct);
+        }
+
+        return ($"{user.FamilyName} {user.GivenName}", avatarUrl);
     }
 }

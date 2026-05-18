@@ -8,5 +8,6 @@ public enum NotificationType
     GroupMessage   = 4,
     FriendDeclined = 5,
     GroupRemoved   = 6,
+    PostReaction   = 7,
     System         = 99
 }

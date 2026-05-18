@@ -1,4 +1,5 @@
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository.Posts;
 using Beacon.Infrashtructure.Presistence;
 using Microsoft.EntityFrameworkCore;
@@ -35,7 +36,11 @@ public class PostReactionRepository(AppDbContext db) : IPostReactionRepository
         var query = db.PostReactions.Where(r => r.PostId == postId);
 
         if (!string.IsNullOrEmpty(iconFilter))
-            query = query.Where(r => r.Icon == iconFilter);
+        {
+            var boundedIcon = $"{ReactionIcons.Separator}{iconFilter}{ReactionIcons.Separator}";
+            query = query.Where(r =>
+                (ReactionIcons.Separator + r.Icon + ReactionIcons.Separator).Contains(boundedIcon));
+        }
 
         if (cursor.HasValue)
             query = query.Where(r => r.CreatedAtUtc < cursor.Value);

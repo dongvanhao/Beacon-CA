@@ -117,6 +117,10 @@ public class GetFriendsFeedQueryHandler(
             {
                 Id = post.Id,
                 OwnerUserId = post.OwnerUserId,
+                DailySafetyRecordId = post.DailySafetyRecordId,
+                DailySafetyRecord = mapper.ToDailySafetyRecordResponse(post.DailySafetyRecord),
+                Latitude = post.Latitude,
+                Longitude = post.Longitude,
                 Owner = ownerResponse,
                 Media = mediaResponse,
                 Caption = post.Caption,

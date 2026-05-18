@@ -33,6 +33,9 @@ public class BeaconHubConnectionTests
         _presenceServiceMock
             .Setup(p => p.MarkOnlineAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .Returns(Task.CompletedTask);
+        _presenceServiceMock
+            .Setup(p => p.MarkOfflineAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new BeaconHub(
             _mediatorMock.Object,
@@ -92,7 +95,9 @@ public class BeaconHubConnectionTests
     [Fact]
     public async Task OnDisconnectedAsync_ShouldNotThrow_WhenExceptionIsNull()
     {
-        _contextMock.Setup(c => c.UserIdentifier).Returns(Guid.NewGuid().ToString());
+        var userId = Guid.NewGuid();
+        _contextMock.Setup(c => c.UserIdentifier).Returns(userId.ToString());
+        _onlineTrackerMock.Setup(t => t.IsOnline(userId)).Returns(false);
 
         var act = async () => await _sut.OnDisconnectedAsync(null);
 
@@ -104,6 +109,10 @@ public class BeaconHubConnectionTests
 
         _onlineTrackerMock.Verify(
             t => t.TrackOffline(It.IsAny<Guid>(), ConnectionId),
+            Times.Once);
+
+        _presenceServiceMock.Verify(
+            p => p.MarkOfflineAsync(userId, It.IsAny<CancellationToken>()),
             Times.Once);
     }
 
@@ -123,5 +132,19 @@ public class BeaconHubConnectionTests
         _onlineTrackerMock.Verify(
             t => t.TrackOffline(It.IsAny<Guid>(), ConnectionId),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task OnDisconnectedAsync_ShouldNotBroadcastOffline_WhenUserStillHasConnections()
+    {
+        var userId = Guid.NewGuid();
+        _contextMock.Setup(c => c.UserIdentifier).Returns(userId.ToString());
+        _onlineTrackerMock.Setup(t => t.IsOnline(userId)).Returns(true);
+
+        await _sut.OnDisconnectedAsync(null);
+
+        _presenceServiceMock.Verify(
+            p => p.MarkOfflineAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 }

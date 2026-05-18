@@ -7,4 +7,6 @@ public record MessageDto(
     string SenderFamilyName,
     string SenderGivenName,
     string Content,
-    DateTime CreatedAtUtc);
+    DateTime CreatedAtUtc,
+    Guid? PostId,
+    MessagePostDto? Post);

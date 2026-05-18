@@ -10,14 +10,14 @@ public class GetPostReactionsQueryValidator : AbstractValidator<GetPostReactions
     {
         RuleFor(x => x.Limit)
             .InclusiveBetween(1, 100)
-            .WithMessage("Số lượng kết quả phải từ 1 đến 100.");
+            .WithMessage("Limit must be between 1 and 100.");
 
         RuleFor(x => x.Icon)
             .Must(icon => icon == null || ReactionIcons.IsValid(icon))
-            .WithMessage($"Icon không hợp lệ. Chỉ chấp nhận: {string.Join(", ", ReactionIcons.Supported)}.");
+            .WithMessage($"Icon must be at most {ReactionIcons.MaxIconLength} characters and must not contain the '{ReactionIcons.Separator}' separator.");
 
         RuleFor(x => x.Cursor)
             .Must(cursor => cursor == null || DateTime.TryParse(cursor, out _))
-            .WithMessage("Cursor phải là định dạng ISO-8601 UTC datetime hợp lệ.");
+            .WithMessage("Cursor must be a valid ISO-8601 UTC datetime.");
     }
 }

@@ -8,7 +8,10 @@ public static class ReactionSummaryHelper
     public static PostReactionSummaryResponse BuildSummary(IEnumerable<PostReaction> reactions)
     {
         var list = reactions.ToList();
-        var icons = list.GroupBy(r => r.Icon).ToDictionary(g => g.Key, g => g.Count());
+        var icons = list
+            .SelectMany(r => Domain.Enums.ReactionIcons.Split(r.Icon))
+            .GroupBy(icon => icon)
+            .ToDictionary(g => g.Key, g => g.Count());
         return new PostReactionSummaryResponse { TotalCount = list.Count, Icons = icons };
     }
 }

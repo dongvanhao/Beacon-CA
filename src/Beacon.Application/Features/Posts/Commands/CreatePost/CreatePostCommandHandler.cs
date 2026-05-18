@@ -2,8 +2,11 @@ using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Application.Mappings.Posts;
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository.Posts;
+using Beacon.Domain.IRepository.Safety;
+using Beacon.Domain.IRepository.Settings;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
@@ -14,10 +17,15 @@ namespace Beacon.Application.Features.Posts.Commands.CreatePost;
 public class CreatePostCommandHandler(
     IPostRepository postRepo,
     IMediaObjectRepository mediaRepo,
+    IDailySafetyRecordRepository dailySafetyRecordRepo,
+    ISafetySettingRepository safetySettingRepo,
     IStorageService storage,
     PostDtoMapper mapper)
     : IRequestHandler<CreatePostCommand, Result<PostResponse>>
 {
+    private static readonly TimeZoneInfo VietnamTz =
+        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+
     public async Task<Result<PostResponse>> Handle(CreatePostCommand command, CancellationToken ct)
     {
         var request = command.Request;
@@ -69,18 +77,51 @@ public class CreatePostCommandHandler(
                     Error.Failure(ErrorCodes.Post.INVALID_VIDEO_DURATION, "Video phải có độ dài từ 5 đến 10 giây."));
         }
 
-        // 7. Create post entity
-        var post = Post.Create(currentUserId, request.MediaId, request.Caption, visibility);
+        // 7. Ensure today's safety record is checked in by this post.
+        var healthRecord = await GetOrCreateTodayHealthRecordAsync(currentUserId, ct);
+        if (healthRecord.Status != Beacon.Domain.Enums.Safety.SafetyStatus.CheckedIn)
+            healthRecord.MarkCheckedIn(DateTime.UtcNow);
 
-        // 8. Persist
+        // 8. Create post entity
+        var post = Post.Create(
+            currentUserId,
+            request.MediaId,
+            request.Caption,
+            visibility,
+            healthRecord.Id,
+            request.Latitude,
+            request.Longitude);
+
+        // 9. Persist
         await postRepo.AddAsync(post, ct);
         await postRepo.SaveChangesAsync(ct);
 
-        // 9. Get media URL
+        // 10. Get media URL
         var (url, thumbUrl) = await storage.GetMediaUrlsAsync(media, ct);
         var mediaResponse = mapper.ToMediaResponse(media, url, thumbUrl);
 
-        // 10. Return response
+        // 11. Return response
         return Result<PostResponse>.Success(mapper.ToPostResponse(post, mediaResponse));
+    }
+
+    private async Task<DailySafetyRecord> GetOrCreateTodayHealthRecordAsync(Guid userId, CancellationToken ct)
+    {
+        var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTz));
+        var record = await dailySafetyRecordRepo.GetByUserIdAndDateAsync(userId, today, ct);
+        if (record is not null)
+            return record;
+
+        var deadline = await ComputeDeadlineAsync(userId, today, ct);
+        record = DailySafetyRecord.Create(userId, today, deadline);
+        await dailySafetyRecordRepo.AddAsync(record, ct);
+        return record;
+    }
+
+    private async Task<DateTime> ComputeDeadlineAsync(Guid userId, DateOnly today, CancellationToken ct)
+    {
+        var setting = await safetySettingRepo.GetByUserIdAsync(userId, ct);
+        var deadlineTime = setting?.DailyDeadlineLocalTime ?? new TimeOnly(23, 59);
+        var deadlineVn = today.ToDateTime(deadlineTime, DateTimeKind.Unspecified);
+        return TimeZoneInfo.ConvertTimeToUtc(deadlineVn, VietnamTz);
     }
 }

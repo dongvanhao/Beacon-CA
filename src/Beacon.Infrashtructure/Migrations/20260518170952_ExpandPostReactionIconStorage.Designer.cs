@@ -4,6 +4,7 @@ using Beacon.Infrashtructure.Presistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Beacon.Infrashtructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260518170952_ExpandPostReactionIconStorage")]
+    partial class ExpandPostReactionIconStorage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -674,9 +677,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<Guid?>("PostId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid?>("ReplyToMessageId")
                         .HasColumnType("uniqueidentifier");
 
@@ -690,8 +690,6 @@ namespace Beacon.Infrashtructure.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SequenceNumber"));
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PostId");
 
                     b.HasIndex("ReplyToMessageId");
 
@@ -902,19 +900,8 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("DailySafetyRecordId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<decimal?>("Latitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
-
-                    b.Property<decimal?>("Longitude")
-                        .HasPrecision(9, 6)
-                        .HasColumnType("decimal(9,6)");
 
                     b.Property<Guid>("MediaId")
                         .HasColumnType("uniqueidentifier");
@@ -932,9 +919,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DailySafetyRecordId")
-                        .HasDatabaseName("IX_Posts_DailySafetyRecordId");
 
                     b.HasIndex("MediaId");
 
@@ -1464,11 +1448,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Beacon.Domain.Entities.Posts.Post", "Post")
-                        .WithMany()
-                        .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Beacon.Domain.Entities.Messaging.Message", null)
                         .WithMany()
                         .HasForeignKey("ReplyToMessageId");
@@ -1480,8 +1459,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Group");
-
-                    b.Navigation("Post");
 
                     b.Navigation("Sender");
                 });
@@ -1564,11 +1541,6 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Posts.Post", b =>
                 {
-                    b.HasOne("Beacon.Domain.Entities.Safety.DailySafetyRecord", "DailySafetyRecord")
-                        .WithMany()
-                        .HasForeignKey("DailySafetyRecordId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("Beacon.Domain.Entities.Storage.MediaObject", null)
                         .WithMany()
                         .HasForeignKey("MediaId")
@@ -1580,8 +1552,6 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasForeignKey("OwnerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("DailySafetyRecord");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Posts.PostReaction", b =>

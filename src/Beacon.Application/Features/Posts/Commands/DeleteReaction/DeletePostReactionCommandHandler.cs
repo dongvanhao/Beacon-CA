@@ -1,5 +1,6 @@
 using Beacon.Application.Features.Posts.Dtos;
 using Beacon.Application.Features.Posts.Helpers;
+using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Posts;
@@ -55,15 +56,11 @@ public class DeletePostReactionCommandHandler(
             await reactionRepo.SaveChangesAsync(ct);
         }
 
-        // 5. Load reactions for summary
-        var reactions = await reactionRepo.GetByPostIdsAsync(new[] { command.PostId }, ct);
-
-        // 6. Return
         return Result<PostReactionResponse>.Success(new PostReactionResponse
         {
             PostId = command.PostId,
             MyReaction = null,
-            ReactionSummary = ReactionSummaryHelper.BuildSummary(reactions)
+            ReactionSummary = ReactionSummaryHelper.BuildSummary(Array.Empty<PostReaction>())
         });
     }
 }

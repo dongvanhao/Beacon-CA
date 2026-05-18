@@ -55,7 +55,9 @@ public class UpdatePostCommandHandler(
 
         // 4. Update post content
         var newCaption = request.Caption ?? post.Caption;
-        post.UpdateContent(newCaption, newVisibility);
+        var newLatitude = request.Latitude ?? post.Latitude;
+        var newLongitude = request.Longitude ?? post.Longitude;
+        post.UpdateContent(newCaption, newVisibility, newLatitude, newLongitude);
 
         // 5. Persist
         await postRepo.SaveChangesAsync(ct);

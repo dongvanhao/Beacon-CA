@@ -4,4 +4,5 @@ using MediatR;
 
 namespace Beacon.Application.Features.Messaging.Commands.SendMessage;
 
-public record SendMessageCommand(Guid GroupId, string Content, string? ClientMessageId) : IRequest<Result<MessageDto>>;
+public record SendMessageCommand(Guid? GroupId, string? Content, string? ClientMessageId, Guid? PostId = null)
+    : IRequest<Result<MessageDto>>;

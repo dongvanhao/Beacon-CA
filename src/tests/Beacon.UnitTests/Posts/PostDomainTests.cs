@@ -55,7 +55,7 @@ public class PostDomainTests
     {
         var post = Post.Create(OwnerId, MediaId, "Old caption", PostVisibility.Friends);
 
-        post.UpdateContent("New caption", PostVisibility.Private);
+        post.UpdateContent("New caption", PostVisibility.Private, null, null);
 
         post.Caption.Should().Be("New caption");
         post.Visibility.Should().Be(PostVisibility.Private);
@@ -66,7 +66,7 @@ public class PostDomainTests
     {
         var post = Post.Create(OwnerId, MediaId, "Old", PostVisibility.Friends);
 
-        post.UpdateContent("  Trimmed  ", PostVisibility.Friends);
+        post.UpdateContent("  Trimmed  ", PostVisibility.Friends, null, null);
 
         post.Caption.Should().Be("Trimmed");
     }
@@ -113,13 +113,25 @@ public class PostDomainTests
     // ─── PostReaction.UpdateIcon ─────────────────────────────────────────────
 
     [Fact]
-    public void PostReaction_UpdateIcon_ShouldChangeIcon()
+    public void PostReaction_AppendIcon_ShouldAppendIcon()
     {
         var reaction = PostReaction.Create(Guid.NewGuid(), Guid.NewGuid(), "heart");
 
-        reaction.UpdateIcon("haha");
+        reaction.AppendIcon("haha");
 
-        reaction.Icon.Should().Be("haha");
+        reaction.Icon.Should().Be("heart - haha");
+    }
+
+    [Fact]
+    public void PostReaction_AppendIcon_WhenMoreThanThreeIcons_ShouldDropOldest()
+    {
+        var reaction = PostReaction.Create(Guid.NewGuid(), Guid.NewGuid(), "heart");
+
+        reaction.AppendIcon("haha");
+        reaction.AppendIcon("like");
+        reaction.AppendIcon("wow");
+
+        reaction.Icon.Should().Be("haha - like - wow");
     }
 
     // ─── ReactionIcons ──────────────────────────────────────────────────────
@@ -130,17 +142,17 @@ public class PostDomainTests
     [InlineData("like")]
     [InlineData("sad")]
     [InlineData("wow")]
-    public void ReactionIcons_IsValid_ReturnsTrueForSupportedIcons(string icon)
+    [InlineData("rocket")]
+    [InlineData("😊")]
+    public void ReactionIcons_IsValid_ReturnsTrueForSupportedFormat(string icon)
     {
         ReactionIcons.IsValid(icon).Should().BeTrue();
     }
 
     [Theory]
-    [InlineData("❤️")]
-    [InlineData("😂")]
     [InlineData("")]
-    [InlineData("rocket")]
-    public void ReactionIcons_IsValid_ReturnsFalseForUnsupportedIcons(string icon)
+    [InlineData("heart - haha")]
+    public void ReactionIcons_IsValid_ReturnsFalseForInvalidFormat(string icon)
     {
         ReactionIcons.IsValid(icon).Should().BeFalse();
     }

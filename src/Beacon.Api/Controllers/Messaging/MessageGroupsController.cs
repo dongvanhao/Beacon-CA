@@ -228,7 +228,13 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     public async Task<IActionResult> Send(
         Guid groupId, [FromBody] SendMessageRequest req, CancellationToken ct)
         => CreatedResult($"api/v1/message-groups/{groupId}/messages",
-            await mediator.Send(new SendMessageCommand(groupId, req.Content, req.ClientMessageId), ct));
+            await mediator.Send(new SendMessageCommand(groupId, req.Content, req.ClientMessageId, req.PostId), ct));
+
+    [HttpPost("messages")]
+    public async Task<IActionResult> SendByPost(
+        [FromBody] SendMessageRequest req, CancellationToken ct)
+        => CreatedResult("api/v1/message-groups/messages",
+            await mediator.Send(new SendMessageCommand(null, req.Content, req.ClientMessageId, req.PostId), ct));
 
     #region
     /// <summary>Danh sách tin nhắn trong nhóm.</summary>

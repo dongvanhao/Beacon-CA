@@ -1,4 +1,5 @@
 using Beacon.Domain.Common;
+using Beacon.Domain.Enums;
 
 namespace Beacon.Domain.Entities.Posts;
 
@@ -17,5 +18,5 @@ public class PostReaction : AuditableEntity
         Icon = icon
     };
 
-    public void UpdateIcon(string newIcon) => Icon = newIcon;
+    public void AppendIcon(string newIcon) => Icon = ReactionIcons.Append(Icon, newIcon);
 }
