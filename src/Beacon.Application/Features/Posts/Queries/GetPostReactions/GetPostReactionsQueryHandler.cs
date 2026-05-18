@@ -4,7 +4,6 @@ using Beacon.Application.Features.Posts.Helpers;
 using Beacon.Application.Mappings.Posts;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository;
-using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Posts;
 using Beacon.Domain.IRepository.Storage;
 using Beacon.Shared.Constants;
@@ -18,7 +17,6 @@ public class GetPostReactionsQueryHandler(
     IPostReactionRepository reactionRepo,
     IUserRepository userRepo,
     IMediaObjectRepository mediaRepo,
-    IFriendRepository friendRepo,
     IStorageService storage,
     PostDtoMapper mapper)
     : IRequestHandler<GetPostReactionsQuery, Result<PostReactionListResponse>>
@@ -32,22 +30,10 @@ public class GetPostReactionsQueryHandler(
             return Result<PostReactionListResponse>.Failure(
                 Error.NotFound(ErrorCodes.Post.POST_NOT_FOUND, "Bài đăng không tồn tại."));
 
-        // 2. Access control
+        // 2. Access control — chỉ chủ bài đăng mới xem được danh sách reactions
         if (post.OwnerUserId != query.CurrentUserId)
-        {
-            if (post.Visibility == PostVisibility.Friends)
-            {
-                var areFriends = await friendRepo.AreFriendsAsync(query.CurrentUserId, post.OwnerUserId, ct);
-                if (!areFriends)
-                    return Result<PostReactionListResponse>.Failure(
-                        Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bạn không có quyền xem bài đăng này."));
-            }
-            else
-            {
-                return Result<PostReactionListResponse>.Failure(
-                    Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bài đăng này là riêng tư."));
-            }
-        }
+            return Result<PostReactionListResponse>.Failure(
+                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bạn không có quyền xem danh sách reactions của bài đăng này."));
 
         // 3. Parse cursor
         DateTime? cursorDt = null;
