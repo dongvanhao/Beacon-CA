@@ -48,6 +48,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ISafetySettingRepository, SafetySettingRepository>();
         services.AddScoped<ICheckinRepository, CheckinRepository>();
         services.AddScoped<IDailySafetyRecordRepository, DailySafetyRecordRepository>();
+        services.AddScoped<IAlertIncidentRepository, AlertIncidentRepository>();
+        services.AddScoped<IEmergencyContactRepository, EmergencyContactRepository>();
 
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IFriendRepository, FriendRepository>();

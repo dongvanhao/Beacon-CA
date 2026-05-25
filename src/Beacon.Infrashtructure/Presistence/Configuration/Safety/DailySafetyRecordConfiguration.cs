@@ -21,6 +21,9 @@ public class DailySafetyRecordConfiguration : IEntityTypeConfiguration<DailySafe
         builder.Property(x => x.DeadlineAtUtc)
             .IsRequired();
 
+        builder.Property(x => x.RowVersion)
+            .IsRowVersion();
+
         builder.HasOne(x => x.User)
             .WithMany(x => x.DailySafetyRecords)
             .HasForeignKey(x => x.UserId)

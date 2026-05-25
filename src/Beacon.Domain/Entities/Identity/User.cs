@@ -39,6 +39,8 @@ namespace Beacon.Domain.Entities.Identity
         public ICollection<UserDevice> Devices { get; private set; } = new List<UserDevice>();
         public Setting.SafetySetting? SafetySetting { get; private set; }
         public ICollection<DailySafetyRecord> DailySafetyRecords { get; private set; } = new List<DailySafetyRecord>();
+        public ICollection<AlertIncident> AlertIncidents { get; private set; } = new List<AlertIncident>();
+        public ICollection<EmergencyContact> EmergencyContacts { get; private set; } = new List<EmergencyContact>();
         public ICollection<Checkin> Checkins { get; private set; } = new List<Checkin>();
 
         protected User() { }

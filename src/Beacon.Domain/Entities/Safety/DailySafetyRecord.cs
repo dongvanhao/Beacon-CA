@@ -24,6 +24,8 @@ namespace Beacon.Domain.Entities.Safety
         public DateTime? ResolvedAtUtc { get; private set; } //Thời điểm người dùng đã được đánh dấu là an toàn sau khi đã trễ hạn hoặc đã được gửi nhắc nhở, có thể dùng để kiểm tra xem có cần tiếp tục theo dõi hay không.
         public DateTime? LastEvaluatedAtUtc { get; private set; } //Thời điểm cuối cùng hệ thống đánh giá lại trạng thái của record, có thể dùng để kiểm tra xem có cần gửi nhắc nhở hay không.
 
+        public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
+
         public User User { get; private set; } = default!;
         public Checkin? Checkin { get; private set; }
         public AlertIncident? AlertIncident { get; private set; }

@@ -4,6 +4,7 @@ using Beacon.Application.Mappings.Group;
 using Beacon.Application.Mappings.Identity;
 using Beacon.Application.Mappings.Messaging;
 using Beacon.Application.Mappings.Posts;
+using Beacon.Application.Mappings.Safety;
 using Beacon.Application.Mappings.Settings;
 using Beacon.Application.Mappings.Storage;
 using FluentValidation;
@@ -30,6 +31,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<MediaDtoMapper>();
         services.AddSingleton<SafetySettingMapper>();
         services.AddSingleton<CheckinMapper>();
+        services.AddSingleton<CheckinHistoryMapper>();
         services.AddSingleton<CheckinStatusMapper>();
 
         services.AddSingleton<FriendRequestMapper>();
@@ -41,6 +43,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<MessageGroupDetailMapper>();
 
         services.AddSingleton<PostDtoMapper>();
+        services.AddSingleton<EmergencyContactMapper>();
 
         return services;
     }

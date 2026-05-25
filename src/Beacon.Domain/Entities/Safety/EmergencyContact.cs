@@ -41,7 +41,18 @@ namespace Beacon.Domain.Entities.Safety
                 PriorityOrder = priorityOrder
             };
 
+        public void Update(string fullName, string contactValue,
+            ContactChannelType channelType, string? relationship, int priorityOrder)
+        {
+            FullName = fullName;
+            ContactValue = contactValue;
+            ChannelType = channelType;
+            Relationship = relationship;
+            PriorityOrder = priorityOrder;
+        }
+
         public void SetAsPrimary() => IsPrimary = true;
+        public void ClearPrimary() => IsPrimary = false;
         public void Verify() => IsVerified = true;
         public void Deactivate() => IsActive = false;
     }

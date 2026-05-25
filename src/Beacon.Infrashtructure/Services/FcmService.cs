@@ -10,6 +10,8 @@ public class FcmService(
     IUserDeviceTokenRepository tokenRepo,
     ILogger<FcmService> logger) : IFcmService
 {
+    public bool IsAvailable => FirebaseApp.DefaultInstance is not null;
+
     public async Task SendToTokenAsync(
         string token,
         string title,
@@ -43,23 +45,34 @@ public class FcmService(
         }
     }
 
-    public async Task SendToUserAsync(
+    public async Task<bool> SendToUserAsync(
         Guid userId,
         string title,
         string body,
         Dictionary<string, string>? data = null,
         CancellationToken ct = default)
     {
-        var invalidTokens = await SendToUserAndGetInvalidTokensAsync(userId, title, body, data, ct);
-        if (invalidTokens.Count == 0) return;
-
-        foreach (var token in invalidTokens)
+        if (FirebaseApp.DefaultInstance is null)
         {
-            var t = await tokenRepo.GetByTokenAsync(token, ct);
-            t?.MarkInvalid();
+            logger.LogDebug("FCM skipped — Firebase not configured. UserId={UserId}", userId);
+            return false;
         }
 
-        await tokenRepo.SaveChangesAsync(ct);
+        var tokens = await tokenRepo.GetActiveByUserIdAsync(userId, ct);
+        if (tokens.Count == 0) return false;
+
+        var invalidTokens = await SendToUserAndGetInvalidTokensAsync(userId, title, body, data, ct);
+        if (invalidTokens.Count > 0)
+        {
+            foreach (var token in invalidTokens)
+            {
+                var t = await tokenRepo.GetByTokenAsync(token, ct);
+                t?.MarkInvalid();
+            }
+            await tokenRepo.SaveChangesAsync(ct);
+        }
+
+        return true;
     }
 
     public async Task<IReadOnlyList<string>> SendToUserAndGetInvalidTokensAsync(

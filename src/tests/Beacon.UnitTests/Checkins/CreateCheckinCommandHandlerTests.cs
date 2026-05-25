@@ -5,6 +5,7 @@ using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Setting;
 using Beacon.Domain.Entities.Storage;
+using Beacon.Domain.Enums;
 using Beacon.Domain.Enums.Checkins;
 using Beacon.Domain.Enums.Safety;
 using Beacon.Domain.IRepository.Checkins;
@@ -55,7 +56,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var record = MakePendingRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
 
         // Act
@@ -78,7 +79,7 @@ public class CreateCheckinCommandHandlerTests
         var record = MakePendingRecord();
         var media = CreateFakeMedia();
 
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
         _mediaRepo.Setup(r => r.GetByIdAsync(mediaId, default)).ReturnsAsync(media);
 
@@ -99,7 +100,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var setting = SafetySetting.CreateDefault(UserId, new TimeOnly(21, 0));
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync((DailySafetyRecord?)null);
         _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync(setting);
 
@@ -117,7 +118,7 @@ public class CreateCheckinCommandHandlerTests
     public async Task Handle_WhenNoRecord_AndNoSafetySetting_UsesDefaultDeadline()
     {
         // Arrange
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync((DailySafetyRecord?)null);
         _safetySettingRepo.Setup(r => r.GetByUserIdAsync(UserId, default)).ReturnsAsync((SafetySetting?)null);
 
@@ -136,7 +137,7 @@ public class CreateCheckinCommandHandlerTests
     {
         // Arrange
         var record = MakeCheckedInRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
 
         // Act
@@ -156,7 +157,7 @@ public class CreateCheckinCommandHandlerTests
         // Arrange
         var mediaId = Guid.NewGuid();
         var record = MakePendingRecord();
-        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateAsync(UserId, TodayVn, default))
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
             .ReturnsAsync(record);
         _mediaRepo.Setup(r => r.GetByIdAsync(mediaId, default)).ReturnsAsync((MediaObject?)null);
 
@@ -168,6 +169,65 @@ public class CreateCheckinCommandHandlerTests
         // Assert
         result.IsSuccess.Should().BeFalse();
         result.Error.Code.Should().Be(ErrorCodes.Storage.MEDIA_NOT_FOUND);
+        _checkinRepo.Verify(r => r.SaveChangesAsync(default), Times.Never);
+    }
+
+    // ─── Recovery flow ───────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task Handle_WhenRecordIsPending_ShouldCreateCheckinWithTypeManual_AndStatusCheckedIn()
+    {
+        var record = MakePendingRecord();
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
+            .ReturnsAsync(record);
+
+        var result = await _handler.Handle(new CreateCheckinCommand(UserId, BasicRequest), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Type.Should().Be(nameof(CheckinType.Manual));
+        record.Status.Should().Be(SafetyStatus.CheckedIn);
+    }
+
+    [Fact]
+    public async Task Handle_WhenRecordIsMissed_ShouldCreateCheckinWithTypeRecovery_AndStatusResolved()
+    {
+        var record = MakeMissedRecord();
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
+            .ReturnsAsync(record);
+
+        var result = await _handler.Handle(new CreateCheckinCommand(UserId, BasicRequest), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Type.Should().Be(nameof(CheckinType.Recovery));
+        record.Status.Should().Be(SafetyStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task Handle_WhenRecordIsAlerted_WithIncident_ShouldResolveIncident_AndMarkRecordResolved()
+    {
+        var record = MakeAlertedRecordWithIncident();
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
+            .ReturnsAsync(record);
+
+        var result = await _handler.Handle(new CreateCheckinCommand(UserId, BasicRequest), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Type.Should().Be(nameof(CheckinType.Recovery));
+        record.Status.Should().Be(SafetyStatus.Resolved);
+        record.AlertIncident!.Status.Should().Be(AlertIncidentStatus.Resolved);
+    }
+
+    [Fact]
+    public async Task Handle_WhenRecordIsResolved_ShouldReturnAlreadyCheckedInError()
+    {
+        var record = MakeResolvedRecord();
+        _dailySafetyRecordRepo.Setup(r => r.GetByUserIdAndDateWithIncidentAsync(UserId, TodayVn, default))
+            .ReturnsAsync(record);
+
+        var result = await _handler.Handle(new CreateCheckinCommand(UserId, BasicRequest), CancellationToken.None);
+
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Code.Should().Be(ErrorCodes.Safety.ALREADY_CHECKED_IN);
         _checkinRepo.Verify(r => r.SaveChangesAsync(default), Times.Never);
     }
 
@@ -189,6 +249,33 @@ public class CreateCheckinCommandHandlerTests
     {
         var record = MakePendingRecord();
         record.MarkCheckedIn(DateTime.UtcNow);
+        return record;
+    }
+
+    private static DailySafetyRecord MakeMissedRecord()
+    {
+        var record = MakePendingRecord();
+        record.MarkMissed();
+        return record;
+    }
+
+    private static DailySafetyRecord MakeAlertedRecordWithIncident()
+    {
+        var record = MakePendingRecord();
+        record.MarkMissed();
+        record.MarkAlerted();
+        // AlertIncident is set via navigation — simulate via reflection for unit test
+        var incident = AlertIncident.Create(UserId, record.Id, AlertIncidentType.MissedCheckin);
+        typeof(DailySafetyRecord)
+            .GetProperty(nameof(DailySafetyRecord.AlertIncident))!
+            .SetValue(record, incident);
+        return record;
+    }
+
+    private static DailySafetyRecord MakeResolvedRecord()
+    {
+        var record = MakeMissedRecord();
+        record.MarkResolved();
         return record;
     }
 

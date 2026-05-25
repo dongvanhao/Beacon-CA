@@ -11,7 +11,7 @@ public class RevokeDeviceTokenCommandHandler(
     public async Task<Result> Handle(RevokeDeviceTokenCommand command, CancellationToken ct)
     {
         var token = await tokenRepo.GetByTokenAsync(command.Token, ct);
-        if (token is null)
+        if (token is null || token.UserId != command.UserId)
             return Result.Success();
 
         token.Revoke();

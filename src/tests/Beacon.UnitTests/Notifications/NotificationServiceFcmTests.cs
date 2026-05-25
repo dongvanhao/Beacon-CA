@@ -35,12 +35,17 @@ public class NotificationServiceFcmTests
                 It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<string>());
+        _tokenRepoMock
+            .Setup(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        var scopeFactory = NotificationServiceTests.BuildScopeFactory(
+            _fcmServiceMock.Object, _tokenRepoMock.Object);
 
         _sut = new NotificationService(
             _notifRepoMock.Object,
             _notifierMock.Object,
-            _fcmServiceMock.Object,
-            _tokenRepoMock.Object,
+            scopeFactory,
             _loggerMock.Object);
     }
 
@@ -115,7 +120,6 @@ public class NotificationServiceFcmTests
 
         await act.Should().NotThrowAsync();
 
-        // Ensure background task ran before verifying
         await fcmSignal.Task.WaitAsync(TimeSpan.FromSeconds(5));
     }
 
