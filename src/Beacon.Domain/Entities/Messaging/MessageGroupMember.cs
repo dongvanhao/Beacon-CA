@@ -9,6 +9,7 @@ namespace Beacon.Domain.Entities.Messaging
         public Guid GroupId { get; set; }
         public Guid UserId { get; set; }
         public GroupMemberRole Role { get; set; }
+        public MessageGroupMemberStatus Status { get; set; } = MessageGroupMemberStatus.Joined;
         public DateTime JoinedAtUtc { get; set; }
         public Guid? InvitedByUserId { get; set; }
         public Guid? LastSeenMessageId { get; set; }

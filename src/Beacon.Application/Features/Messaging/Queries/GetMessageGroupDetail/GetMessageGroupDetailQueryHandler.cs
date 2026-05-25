@@ -11,6 +11,7 @@ namespace Beacon.Application.Features.Messaging.Queries.GetMessageGroupDetail;
 
 public class GetMessageGroupDetailQueryHandler(
     IMessageGroupRepository groupRepo,
+    IMessageGroupMemberSettingRepository settingRepo,
     ICurrentUserService currentUser,
     IStorageService storage,
     MessageGroupDetailMapper mapper)
@@ -26,12 +27,19 @@ public class GetMessageGroupDetailQueryHandler(
                     "Không tìm thấy nhóm chat."));
 
         var userId = currentUser.UserId;
-        if (!group.Members.Any(m => m.UserId == userId))
+        var callerMember = group.Members.FirstOrDefault(m => m.UserId == userId
+            && m.Status == MessageGroupMemberStatus.Joined);
+        if (callerMember is null)
             return Result<MessageGroupDetailDto>.Failure(
                 Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN,
                     "Bạn không phải thành viên của nhóm này."));
 
-        var avatarObjects = group.Members
+        var canManageMembers = callerMember.Role is GroupMemberRole.Owner or GroupMemberRole.Manager;
+        var visibleMembers = group.Members
+            .Where(m => canManageMembers || m.Status == MessageGroupMemberStatus.Joined)
+            .ToList();
+
+        var avatarObjects = visibleMembers
             .Select(m => m.User.AvatarMediaObject)
             .Where(a => a is not null)
             .Select(a => a!)
@@ -42,7 +50,7 @@ public class GetMessageGroupDetailQueryHandler(
                 .ToDictionary(x => x.Media.Id, x => x.Url)
             : new Dictionary<Guid, string>();
 
-        var memberDtos = group.Members.Select(m =>
+        var memberDtos = visibleMembers.Select(m =>
         {
             var avatarUrl = m.User.AvatarMediaObjectId.HasValue
                 && urlMap.TryGetValue(m.User.AvatarMediaObjectId.Value, out var url)
@@ -76,8 +84,17 @@ public class GetMessageGroupDetailQueryHandler(
                 : null;
         }
 
+        var setting = await settingRepo.GetByGroupAndUserAsync(group.Id, userId, ct);
+        var settingDto = setting is null
+            ? new MessageGroupMemberSettingDto(null, false, null, null)
+            : new MessageGroupMemberSettingDto(
+                setting.CustomName,
+                setting.IsMuted,
+                setting.LastReadMessageId,
+                setting.LastReadAtUtc);
+
         return Result<MessageGroupDetailDto>.Success(
-            mapper.ToDetailDto(group, displayName, displayAvatarUrl, memberDtos));
+            mapper.ToDetailDto(group, displayName, displayAvatarUrl, settingDto, memberDtos));
     }
 
     private static string BuildGroupFallbackName(IReadOnlyCollection<MessageGroupMemberDto> members)

@@ -7,6 +7,10 @@ namespace Beacon.Infrashtructure.Repository.Messaging
 {
     public class MessageGroupMemberSettingRepository(AppDbContext db) : IMessageGroupMemberSettingRepository
     {
+        public Task<MessageGroupMemberSetting?> GetByGroupAndUserAsync(Guid groupId, Guid userId, CancellationToken ct)
+            => db.MessageGroupMemberSettings
+                .FirstOrDefaultAsync(s => s.GroupId == groupId && s.UserId == userId, ct);
+
         public async Task AddAsync(MessageGroupMemberSetting setting, CancellationToken ct)
             => await db.MessageGroupMemberSettings.AddAsync(setting, ct);
 

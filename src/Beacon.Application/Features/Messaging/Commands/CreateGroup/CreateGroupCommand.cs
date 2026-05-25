@@ -4,4 +4,4 @@ using MediatR;
 
 namespace Beacon.Application.Features.Messaging.Commands.CreateGroup;
 
-public record CreateGroupCommand(string Name, Guid? AvatarMediaObjectId) : IRequest<Result<MessageGroupDetailDto>>;
+public record CreateGroupCommand(IReadOnlyList<Guid> MemberUserIds) : IRequest<Result<MessageGroupDetailDto>>;

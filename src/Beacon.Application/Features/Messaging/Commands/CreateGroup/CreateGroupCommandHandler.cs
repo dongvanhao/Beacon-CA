@@ -3,7 +3,9 @@ using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Application.Mappings.Messaging;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Messaging;
+using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Messaging;
+using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using MediatR;
 
@@ -11,6 +13,7 @@ namespace Beacon.Application.Features.Messaging.Commands.CreateGroup;
 
 public class CreateGroupCommandHandler(
     IMessageGroupRepository groupRepo,
+    IFriendRepository friendRepo,
     ICurrentUserService currentUser,
     IStorageService storage,
     MessageGroupDetailMapper mapper)
@@ -18,20 +21,56 @@ public class CreateGroupCommandHandler(
 {
     public async Task<Result<MessageGroupDetailDto>> Handle(CreateGroupCommand command, CancellationToken ct)
     {
+        var requestedMemberIds = command.MemberUserIds
+            .Distinct()
+            .ToList();
+
+        if (requestedMemberIds.Count == 0)
+            return Result<MessageGroupDetailDto>.Failure(
+                Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Danh sach thanh vien khong duoc rong."));
+
+        if (requestedMemberIds.Count != command.MemberUserIds.Count)
+            return Result<MessageGroupDetailDto>.Failure(
+                Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Danh sach thanh vien khong duoc trung lap."));
+
+        if (requestedMemberIds.Contains(currentUser.UserId))
+            return Result<MessageGroupDetailDto>.Failure(
+                Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Khong can truyen nguoi tao trong danh sach thanh vien."));
+
+        var friendIds = await friendRepo.GetFriendIdsAsync(currentUser.UserId, requestedMemberIds, ct);
+        if (friendIds.Count != requestedMemberIds.Count)
+            return Result<MessageGroupDetailDto>.Failure(
+                Error.Forbidden(ErrorCodes.Friend.FRIEND_NOT_FOUND, "Tat ca thanh vien duoc them vao nhom phai la ban be cua ban."));
+
+        var now = DateTime.UtcNow;
         var group = new MessageGroup
         {
             Type = MessageGroupType.Group,
-            Name = command.Name,
-            AvatarMediaObjectId = command.AvatarMediaObjectId,
-            CreatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = now,
+            RequireApprovalToAddMembers = true
         };
         group.Members.Add(new MessageGroupMember
         {
             GroupId = group.Id,
             UserId = currentUser.UserId,
             Role = GroupMemberRole.Owner,
-            JoinedAtUtc = DateTime.UtcNow
+            Status = MessageGroupMemberStatus.Joined,
+            JoinedAtUtc = now
         });
+
+        foreach (var memberId in requestedMemberIds)
+        {
+            group.Members.Add(new MessageGroupMember
+            {
+                GroupId = group.Id,
+                UserId = memberId,
+                Role = GroupMemberRole.Member,
+                Status = MessageGroupMemberStatus.Joined,
+                JoinedAtUtc = now,
+                InvitedByUserId = currentUser.UserId
+            });
+        }
+
         await groupRepo.AddAsync(group, ct);
         await groupRepo.SaveChangesAsync(ct);
 
@@ -58,7 +97,20 @@ public class CreateGroupCommandHandler(
             ? await storage.GeneratePresignedGetUrlAsync(reloaded.AvatarMedia.ObjectKey, ct)
             : null;
 
+        var displayName = BuildGroupFallbackName(memberDtos);
+        var settingDto = new MessageGroupMemberSettingDto(null, false, null, null);
+
         return Result<MessageGroupDetailDto>.Success(
-            mapper.ToDetailDto(reloaded, reloaded.Name, groupAvatarUrl, memberDtos));
+            mapper.ToDetailDto(reloaded, displayName, groupAvatarUrl, settingDto, memberDtos));
+    }
+
+    private static string BuildGroupFallbackName(IReadOnlyCollection<MessageGroupMemberDto> members)
+    {
+        var fallbackName = string.Join(", ", members
+            .Select(m => $"{m.FamilyName} {m.GivenName}".Trim())
+            .Where(name => name != string.Empty)
+            .Take(3));
+
+        return fallbackName != string.Empty ? fallbackName : "Nhom chat";
     }
 }

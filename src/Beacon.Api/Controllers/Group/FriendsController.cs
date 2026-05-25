@@ -71,10 +71,14 @@ public class FriendsController(IMediator mediator) : BaseController
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion
+    /// <param name="search">Từ khóa tìm kiếm tùy chọn. Hỗ trợ tìm bạn bè theo họ tên, email hoặc số điện thoại; tìm theo họ tên không phân biệt hoa/thường, có dấu/không dấu và hỗ trợ viết liền như <c>nguyenhao</c>.</param>
     [HttpGet]
     public async Task<IActionResult> List(
-        [FromQuery] DateTime? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
-        => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit), ct));
+        [FromQuery] DateTime? cursor,
+        [FromQuery] int limit = 20,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+        => HandleResult(await mediator.Send(new ListFriendsQuery(cursor, limit, search), ct));
 
     #region
     /// <summary>Trạng thái online của bạn bè.</summary>

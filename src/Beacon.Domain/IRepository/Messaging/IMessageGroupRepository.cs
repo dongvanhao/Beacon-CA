@@ -10,6 +10,7 @@ public record MessageGroupSummary(
     string? DirectKey,
     Guid? PeerUserId,
     DateTime CreatedAtUtc,
+    bool RequireApprovalToAddMembers,
     Guid? LastMessageId,
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,

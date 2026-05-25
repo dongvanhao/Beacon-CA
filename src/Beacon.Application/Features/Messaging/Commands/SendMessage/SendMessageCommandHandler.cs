@@ -4,6 +4,7 @@ using Beacon.Application.Mappings.Messaging;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Enums;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Domain.IRepository.Posts;
@@ -47,7 +48,8 @@ public class SendMessageCommandHandler(
         var group = groupResult.Value!;
         var groupId = command.GroupId ?? group.Id;
 
-        if (!group.Members.Any(m => m.UserId == currentUser.UserId))
+        if (!group.Members.Any(m => m.UserId == currentUser.UserId
+                && m.Status == MessageGroupMemberStatus.Joined))
             return Result<MessageDto>.Failure(
                 Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không phải thành viên của nhóm này."));
 
@@ -64,7 +66,8 @@ public class SendMessageCommandHandler(
 
         var content = command.Content?.Trim() ?? string.Empty;
         var message = Message.Create(groupId, currentUser.UserId, content, command.ClientMessageId, attachedPost?.Id);
-        var senderMember = group.Members.First(m => m.UserId == currentUser.UserId);
+        var senderMember = group.Members.First(m => m.UserId == currentUser.UserId
+            && m.Status == MessageGroupMemberStatus.Joined);
         senderMember.LastSeenMessageId = message.Id;
 
         await messageRepo.AddAsync(message, ct);
@@ -77,6 +80,7 @@ public class SendMessageCommandHandler(
             await postMapper.ToDtoAsync(attachedPost, ct));
 
         var recipientUserIds = group.Members
+            .Where(m => m.Status == MessageGroupMemberStatus.Joined)
             .Select(m => m.UserId)
             .Distinct()
             .ToArray();
@@ -89,7 +93,7 @@ public class SendMessageCommandHandler(
             .Distinct()
             .ToArray();
 
-        foreach (var member in group.Members)
+        foreach (var member in group.Members.Where(m => m.Status == MessageGroupMemberStatus.Joined))
         {
             var unreadCount = await messageRepo.CountUnreadAsync(groupId, member.LastSeenMessageId, ct);
             await notifier.NotifyUnreadMessageCountAsync(member.UserId, groupId, unreadCount, ct);

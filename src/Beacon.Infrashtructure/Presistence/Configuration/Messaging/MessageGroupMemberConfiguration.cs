@@ -1,5 +1,6 @@
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Messaging;
+using Beacon.Domain.Enums.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -14,6 +15,10 @@ public class MessageGroupMemberConfiguration : IEntityTypeConfiguration<MessageG
         b.HasIndex(m => m.UserId);
 
         b.Property(m => m.Role).IsRequired().HasConversion<int>();
+        b.Property(m => m.Status)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(MessageGroupMemberStatus.Joined);
         b.Property(m => m.JoinedAtUtc).IsRequired();
         b.Property(m => m.InvitedByUserId).IsRequired(false);
         b.Property(m => m.LastSeenMessageId).IsRequired(false);

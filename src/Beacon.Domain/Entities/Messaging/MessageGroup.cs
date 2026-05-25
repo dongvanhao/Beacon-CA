@@ -12,6 +12,7 @@ public class MessageGroup : BaseEntity
     public string? Name { get; set; }
     public Guid? AvatarMediaObjectId { get; set; }
     public MediaObject? AvatarMedia { get; set; }
+    public bool RequireApprovalToAddMembers { get; set; }
     public bool IsDeleted { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
     public ICollection<MessageGroupMember> Members { get; set; } = [];

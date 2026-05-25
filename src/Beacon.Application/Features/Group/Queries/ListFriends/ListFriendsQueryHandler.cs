@@ -20,7 +20,9 @@ public class ListFriendsQueryHandler(
     {
         var limit = Math.Clamp(query.Limit, 1, 100);
         var userId = currentUser.UserId;
-        var paged = await friendRepo.ListByUserAsync(userId, query.Cursor, limit, ct);
+        var paged = string.IsNullOrWhiteSpace(query.Search)
+            ? await friendRepo.ListByUserAsync(userId, query.Cursor, limit, ct)
+            : await friendRepo.SearchByUserAsync(userId, query.Search, query.Cursor, limit, ct);
 
         // Batch presign all avatars
         var avatarObjects = paged.Data

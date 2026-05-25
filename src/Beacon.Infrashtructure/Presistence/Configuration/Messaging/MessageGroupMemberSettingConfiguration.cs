@@ -12,7 +12,6 @@ public class MessageGroupMemberSettingConfiguration : IEntityTypeConfiguration<M
         b.HasKey(x => new { x.GroupId, x.UserId });
 
         b.Property(x => x.CustomName).HasMaxLength(100);
-        b.Property(x => x.CustomAvatarUrl).HasMaxLength(500);
 
         b.HasOne<MessageGroup>()
             .WithMany()

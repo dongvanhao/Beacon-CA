@@ -4,6 +4,7 @@ using Beacon.Infrashtructure.Presistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Beacon.Infrashtructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260525141923_AddMessageGroupApprovalAndMemberStatus")]
+    partial class AddMessageGroupApprovalAndMemberStatus
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -802,6 +805,10 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("CustomAvatarUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<string>("CustomName")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -1007,12 +1014,10 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("FailureReason")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Message")
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("ResolvedAtUtc")
                         .HasColumnType("datetime2");
@@ -1042,7 +1047,7 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AlertIncidents", (string)null);
+                    b.ToTable("AlertIncident");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.DailySafetyRecord", b =>
@@ -1103,8 +1108,7 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("ContactValue")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -1114,8 +1118,7 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -1133,8 +1136,7 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Relationship")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
@@ -1144,9 +1146,9 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "ContactValue", "ChannelType");
+                    b.HasIndex("UserId");
 
-                    b.ToTable("EmergencyContacts", (string)null);
+                    b.ToTable("EmergencyContact");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Setting.SafetySetting", b =>
@@ -1615,13 +1617,13 @@ namespace Beacon.Infrashtructure.Migrations
                     b.HasOne("Beacon.Domain.Entities.Safety.DailySafetyRecord", "DailySafetyRecord")
                         .WithOne("AlertIncident")
                         .HasForeignKey("Beacon.Domain.Entities.Safety.AlertIncident", "DailySafetyRecordId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("AlertIncidents")
+                        .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DailySafetyRecord");
@@ -1643,9 +1645,9 @@ namespace Beacon.Infrashtructure.Migrations
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.EmergencyContact", b =>
                 {
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany("EmergencyContacts")
+                        .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -1688,15 +1690,11 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.User", b =>
                 {
-                    b.Navigation("AlertIncidents");
-
                     b.Navigation("Checkins");
 
                     b.Navigation("DailySafetyRecords");
 
                     b.Navigation("Devices");
-
-                    b.Navigation("EmergencyContacts");
 
                     b.Navigation("RefreshTokens");
 

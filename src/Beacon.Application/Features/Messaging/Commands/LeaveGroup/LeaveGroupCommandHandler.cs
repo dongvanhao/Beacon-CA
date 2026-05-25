@@ -18,14 +18,16 @@ public class LeaveGroupCommandHandler(
         if (group is null || group.IsDeleted)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);
+        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId
+            && m.Status == MessageGroupMemberStatus.Joined);
         if (callerMember is null)
             return Result.Failure(Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không phải thành viên của nhóm này."));
 
-        if (callerMember.Role == GroupMemberRole.Owner && group.Members.Count > 1)
+        var joinedMemberCount = group.Members.Count(m => m.Status == MessageGroupMemberStatus.Joined);
+        if (callerMember.Role == GroupMemberRole.Owner && joinedMemberCount > 1)
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Owner phải transfer ownership trước khi rời nhóm."));
 
-        var isLastMember = group.Members.Count == 1;
+        var isLastMember = joinedMemberCount == 1;
         if (isLastMember)
             group.Delete();
 

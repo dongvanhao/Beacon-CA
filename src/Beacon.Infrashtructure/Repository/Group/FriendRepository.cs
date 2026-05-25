@@ -3,6 +3,7 @@ using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Infrashtructure.Presistence;
 using Beacon.Shared.Common.Pagination;
+using Beacon.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace Beacon.Infrashtructure.Repository.Group
@@ -80,7 +81,10 @@ namespace Beacon.Infrashtructure.Repository.Group
         public async Task<CursorPagedResult<FriendListItem>> SearchByUserAsync(
             Guid userId, string search, DateTime? cursor, int limit, CancellationToken ct)
         {
-            var pattern = $"%{search}%";
+            var normalizedSearch = StringNormalizer.RemoveDiacritics(search);
+            var normalizedNoSpace = normalizedSearch.Replace(" ", "");
+            var lowerSearch = search.Trim().ToLowerInvariant();
+
             var query = db.Friends
                 .AsNoTracking()
                 .Include(f => f.User1).ThenInclude(u => u!.AvatarMediaObject)
@@ -88,13 +92,17 @@ namespace Beacon.Infrashtructure.Repository.Group
                 .Where(f =>
                     (f.UserId1 == userId || f.UserId2 == userId)
                     && (
-                        (f.UserId1 == userId
-                            && f.User2.PhoneNumber != null
-                            && EF.Functions.Like(f.User2.PhoneNumber, pattern))
+                        (f.UserId1 == userId && (
+                            f.User2.SearchIndex.Contains(normalizedSearch)
+                            || f.User2.SearchIndex.Replace(" ", "").Contains(normalizedNoSpace)
+                            || f.User2.Email.ToLower().Contains(lowerSearch)
+                            || (f.User2.PhoneNumber != null && f.User2.PhoneNumber == search.Trim())))
                         ||
-                        (f.UserId2 == userId
-                            && f.User1.PhoneNumber != null
-                            && EF.Functions.Like(f.User1.PhoneNumber, pattern))
+                        (f.UserId2 == userId && (
+                            f.User1.SearchIndex.Contains(normalizedSearch)
+                            || f.User1.SearchIndex.Replace(" ", "").Contains(normalizedNoSpace)
+                            || f.User1.Email.ToLower().Contains(lowerSearch)
+                            || (f.User1.PhoneNumber != null && f.User1.PhoneNumber == search.Trim())))
                     ))
                 .OrderByDescending(f => f.CreatedAtUtc);
 

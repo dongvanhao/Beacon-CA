@@ -7,6 +7,12 @@ public class CreateGroupCommandValidator : AbstractValidator<CreateGroupCommand>
 {
     public CreateGroupCommandValidator()
     {
-        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.MemberUserIds)
+            .NotNull()
+            .Must(ids => ids.Count > 0)
+            .WithMessage("Danh sach thanh vien khong duoc rong.");
+
+        RuleForEach(x => x.MemberUserIds)
+            .NotEmpty();
     }
 }

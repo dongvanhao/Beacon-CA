@@ -8,4 +8,5 @@ public record MessageGroupMemberDto(
     string GivenName,
     string? AvatarUrl,
     GroupMemberRole Role,
+    MessageGroupMemberStatus Status,
     Guid? LastSeenMessageId);

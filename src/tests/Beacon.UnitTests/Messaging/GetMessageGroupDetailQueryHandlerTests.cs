@@ -17,6 +17,7 @@ namespace Beacon.UnitTests.Messaging;
 public class GetMessageGroupDetailQueryHandlerTests
 {
     private readonly Mock<IMessageGroupRepository> _groupRepoMock = new();
+    private readonly Mock<IMessageGroupMemberSettingRepository> _settingRepoMock = new();
     private readonly Mock<ICurrentUserService> _currentUserMock = new();
     private readonly Mock<IStorageService> _storageMock = new();
     private readonly MessageGroupDetailMapper _mapper = new();
@@ -30,6 +31,7 @@ public class GetMessageGroupDetailQueryHandlerTests
 
         _sut = new GetMessageGroupDetailQueryHandler(
             _groupRepoMock.Object,
+            _settingRepoMock.Object,
             _currentUserMock.Object,
             _storageMock.Object,
             _mapper);
@@ -56,6 +58,22 @@ public class GetMessageGroupDetailQueryHandlerTests
 
         return group;
     }
+
+    private static MessageGroupMember BuildMember(
+        Guid groupId,
+        Guid userId,
+        User user,
+        GroupMemberRole role = GroupMemberRole.Member,
+        MessageGroupMemberStatus status = MessageGroupMemberStatus.Joined)
+        => new()
+        {
+            GroupId = groupId,
+            UserId = userId,
+            User = user,
+            Role = role,
+            Status = status,
+            JoinedAtUtc = DateTime.UtcNow
+        };
 
     [Fact]
     public async Task Handle_WithValidGroupAndMember_ReturnsDetailWithMembers()
@@ -192,5 +210,77 @@ public class GetMessageGroupDetailQueryHandlerTests
         _storageMock.Verify(
             s => s.GeneratePresignedGetUrlAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task Handle_WhenSettingExists_ReturnsCurrentUserSetting()
+    {
+        var groupId = Guid.NewGuid();
+        var currentUser = User.Create("me", "me@example.com", "hash", "Tran", "Member");
+        var group = BuildGroup(groupId, (_currentUserId, currentUser));
+        var setting = MessageGroupMemberSetting.Create(groupId, _currentUserId);
+        setting.UpdateCustomName("My chat");
+        setting.SetMuted(true);
+
+        _groupRepoMock
+            .Setup(r => r.GetByIdWithMembersAsync(groupId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(group);
+        _settingRepoMock
+            .Setup(r => r.GetByGroupAndUserAsync(groupId, _currentUserId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(setting);
+
+        var result = await _sut.Handle(new GetMessageGroupDetailQuery(groupId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Setting.CustomName.Should().Be("My chat");
+        result.Value.Setting.IsMuted.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task Handle_WhenCallerIsMember_ReturnsOnlyJoinedMembers()
+    {
+        var groupId = Guid.NewGuid();
+        var currentUser = User.Create("me", "me@example.com", "hash", "Tran", "Member");
+        var joinedUser = User.Create("joined", "joined@example.com", "hash", "Nguyen", "Joined");
+        var pendingUser = User.Create("pending", "pending@example.com", "hash", "Le", "Pending");
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
+        group.GetType().GetProperty("Id")!.SetValue(group, groupId);
+        group.Members.Add(BuildMember(groupId, _currentUserId, currentUser, GroupMemberRole.Member));
+        group.Members.Add(BuildMember(groupId, Guid.NewGuid(), joinedUser));
+        group.Members.Add(BuildMember(groupId, Guid.NewGuid(), pendingUser, status: MessageGroupMemberStatus.PendingApproval));
+
+        _groupRepoMock
+            .Setup(r => r.GetByIdWithMembersAsync(groupId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(group);
+
+        var result = await _sut.Handle(new GetMessageGroupDetailQuery(groupId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Members.Should().HaveCount(2);
+        result.Value.Members.Should().OnlyContain(m => m.Status == MessageGroupMemberStatus.Joined);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCallerIsManager_ReturnsAllMemberStatuses()
+    {
+        var groupId = Guid.NewGuid();
+        var currentUser = User.Create("me", "me@example.com", "hash", "Tran", "Manager");
+        var joinedUser = User.Create("joined", "joined@example.com", "hash", "Nguyen", "Joined");
+        var pendingUser = User.Create("pending", "pending@example.com", "hash", "Le", "Pending");
+        var group = new MessageGroup { Type = MessageGroupType.Group, CreatedAtUtc = DateTime.UtcNow };
+        group.GetType().GetProperty("Id")!.SetValue(group, groupId);
+        group.Members.Add(BuildMember(groupId, _currentUserId, currentUser, GroupMemberRole.Manager));
+        group.Members.Add(BuildMember(groupId, Guid.NewGuid(), joinedUser));
+        group.Members.Add(BuildMember(groupId, Guid.NewGuid(), pendingUser, status: MessageGroupMemberStatus.PendingApproval));
+
+        _groupRepoMock
+            .Setup(r => r.GetByIdWithMembersAsync(groupId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(group);
+
+        var result = await _sut.Handle(new GetMessageGroupDetailQuery(groupId), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Members.Should().HaveCount(3);
+        result.Value.Members.Should().Contain(m => m.Status == MessageGroupMemberStatus.PendingApproval);
     }
 }
