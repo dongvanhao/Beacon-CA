@@ -41,6 +41,7 @@ public class CreateDirectMessageGroupHandler(
             GroupId = group.Id,
             UserId = ev.SenderId,
             Role = GroupMemberRole.Member,
+            Status = MessageGroupMemberStatus.Joined,
             JoinedAtUtc = DateTime.UtcNow
         });
         group.Members.Add(new MessageGroupMember
@@ -48,6 +49,7 @@ public class CreateDirectMessageGroupHandler(
             GroupId = group.Id,
             UserId = ev.ReceiverId,
             Role = GroupMemberRole.Member,
+            Status = MessageGroupMemberStatus.Joined,
             JoinedAtUtc = DateTime.UtcNow
         });
 
@@ -65,6 +67,7 @@ public class CreateDirectMessageGroupHandler(
                 GroupId = group.Id,
                 UserId = userId,
                 Role = GroupMemberRole.Member,
+                Status = MessageGroupMemberStatus.Joined,
                 JoinedAtUtc = DateTime.UtcNow
             });
     }

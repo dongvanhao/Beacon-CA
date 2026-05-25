@@ -26,9 +26,10 @@ public class AddGroupMemberCommandHandler(
         if (group.Type == MessageGroupType.Direct)
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Không thể thêm thành viên vào chat 1-1."));
 
-        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);
-        if (callerMember?.Role != GroupMemberRole.Owner)
-            return Result.Failure(Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Chỉ owner mới được thêm thành viên."));
+        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId
+            && m.Status == MessageGroupMemberStatus.Joined);
+        if (callerMember is null)
+            return Result.Failure(Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Ban khong phai thanh vien cua nhom nay."));
 
         if (!await userRepo.ExistsAsync(command.TargetUserId, ct))
             return Result.Failure(Error.NotFound(ErrorCodes.Identity.USER_NOT_FOUND, "Người dùng không tồn tại."));
@@ -36,11 +37,16 @@ public class AddGroupMemberCommandHandler(
         if (group.Members.Any(m => m.UserId == command.TargetUserId))
             return Result.Failure(Error.Conflict(ErrorCodes.Messaging.GROUP_MEMBER_ALREADY_EXISTS, "Người dùng đã là thành viên của nhóm."));
 
+        var status = callerMember.Role is GroupMemberRole.Owner or GroupMemberRole.Manager
+            ? MessageGroupMemberStatus.Joined
+            : MessageGroupMemberStatus.PendingApproval;
+
         group.Members.Add(new MessageGroupMember
         {
             GroupId = group.Id,
             UserId = command.TargetUserId,
             Role = GroupMemberRole.Member,
+            Status = status,
             JoinedAtUtc = DateTime.UtcNow,
             InvitedByUserId = currentUser.UserId
         });

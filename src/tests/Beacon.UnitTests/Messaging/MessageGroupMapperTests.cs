@@ -17,6 +17,7 @@ public class MessageGroupMapperTests
             DirectKey: "direct-key",
             PeerUserId: peerUserId,
             CreatedAtUtc: DateTime.UtcNow,
+            RequireApprovalToAddMembers: false,
             LastMessageId: null,
             LastMessageContent: null,
             LastMessageAtUtc: null,

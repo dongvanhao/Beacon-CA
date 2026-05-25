@@ -7,6 +7,7 @@ public record MessageGroupDto(
     MessageGroupType Type,
     Guid? PeerUserId,
     DateTime CreatedAtUtc,
+    bool RequireApprovalToAddMembers,
     Guid? LastMessageId,
     string? LastMessageContent,
     DateTime? LastMessageAtUtc,

@@ -18,11 +18,13 @@ public class TransferOwnershipCommandHandler(
         if (group is null || group.IsDeleted)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);
+        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId
+            && m.Status == MessageGroupMemberStatus.Joined);
         if (callerMember?.Role != GroupMemberRole.Owner)
             return Result.Failure(Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Chỉ owner mới được transfer ownership."));
 
-        var newOwnerMember = group.Members.FirstOrDefault(m => m.UserId == command.NewOwnerUserId);
+        var newOwnerMember = group.Members.FirstOrDefault(m => m.UserId == command.NewOwnerUserId
+            && m.Status == MessageGroupMemberStatus.Joined);
         if (newOwnerMember is null)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.GROUP_MEMBER_NOT_FOUND, "Người dùng không phải thành viên nhóm."));
 

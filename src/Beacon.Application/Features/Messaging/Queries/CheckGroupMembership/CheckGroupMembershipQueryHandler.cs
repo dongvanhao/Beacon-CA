@@ -1,4 +1,5 @@
 using Beacon.Domain.IRepository.Messaging;
+using Beacon.Domain.Enums.Messaging;
 using Beacon.Shared.Constants;
 using Beacon.Shared.Results;
 using MediatR;
@@ -15,7 +16,8 @@ public class CheckGroupMembershipQueryHandler(IMessageGroupRepository groupRepo)
             return Result<bool>.Failure(
                 Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        if (!group.Members.Any(m => m.UserId == query.UserId))
+        if (!group.Members.Any(m => m.UserId == query.UserId
+                && m.Status == MessageGroupMemberStatus.Joined))
             return Result<bool>.Failure(
                 Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không thuộc nhóm chat này."));
 

@@ -41,11 +41,13 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
 
     public Task<bool> IsMemberAsync(Guid groupId, Guid userId, CancellationToken ct)
         => db.MessageGroupMembers
-            .AnyAsync(m => m.GroupId == groupId && m.UserId == userId, ct);
+            .AnyAsync(m => m.GroupId == groupId
+                && m.UserId == userId
+                && m.Status == MessageGroupMemberStatus.Joined, ct);
 
     public Task<List<Guid>> GetGroupIdsByUserAsync(Guid userId, CancellationToken ct)
         => db.MessageGroupMembers
-            .Where(m => m.UserId == userId)
+            .Where(m => m.UserId == userId && m.Status == MessageGroupMemberStatus.Joined)
             .Select(m => m.GroupId)
             .ToListAsync(ct);
 
@@ -54,7 +56,7 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
     {
         var query = db.MessageGroupMembers
             .AsNoTracking()
-            .Where(m => m.UserId == userId)
+            .Where(m => m.UserId == userId && m.Status == MessageGroupMemberStatus.Joined)
             .Join(db.MessageGroups,
                 m => m.GroupId,
                 g => g.Id,
@@ -65,6 +67,7 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
                 x.Group.Type,
                 x.Group.DirectKey,
                 x.Group.CreatedAtUtc,
+                x.Group.RequireApprovalToAddMembers,
                 x.Group.Name,
                 GroupAvatarObjectKey = x.Group.AvatarMedia != null ? x.Group.AvatarMedia.ObjectKey : null,
                 LastMessageId = x.Group.Messages
@@ -98,18 +101,21 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
                 PeerDisplayName = x.Group.Type == MessageGroupType.Direct
                     ? x.Group.Members
                         .Where(m => m.UserId != userId)
+                        .Where(m => m.Status == MessageGroupMemberStatus.Joined)
                         .Select(m => (m.User.FamilyName + " " + m.User.GivenName).Trim())
                         .FirstOrDefault()
                     : null,
                 PeerUserId = x.Group.Type == MessageGroupType.Direct
                     ? x.Group.Members
                         .Where(m => m.UserId != userId)
+                        .Where(m => m.Status == MessageGroupMemberStatus.Joined)
                         .Select(m => (Guid?)m.UserId)
                         .FirstOrDefault()
                     : null,
                 PeerAvatarObjectKey = x.Group.Type == MessageGroupType.Direct
                     ? x.Group.Members
                         .Where(m => m.UserId != userId)
+                        .Where(m => m.Status == MessageGroupMemberStatus.Joined)
                         .Select(m => m.User.AvatarMediaObject != null ? m.User.AvatarMediaObject.ObjectKey : null)
                         .FirstOrDefault()
                     : null
@@ -137,7 +143,8 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
         {
             var memberNames = await db.MessageGroupMembers
                 .AsNoTracking()
-                .Where(m => groupIdsNeedingFallbackName.Contains(m.GroupId))
+                .Where(m => groupIdsNeedingFallbackName.Contains(m.GroupId)
+                    && m.Status == MessageGroupMemberStatus.Joined)
                 .OrderBy(m => m.JoinedAtUtc)
                 .Select(m => new
                 {
@@ -155,7 +162,7 @@ public class MessageGroupRepository(AppDbContext db) : IMessageGroupRepository
 
         var items = rawItems
             .Select(x => new MessageGroupSummary(
-                x.Id, x.Type, x.DirectKey, x.PeerUserId, x.CreatedAtUtc,
+                x.Id, x.Type, x.DirectKey, x.PeerUserId, x.CreatedAtUtc, x.RequireApprovalToAddMembers,
                 x.LastMessageId,
                 x.LastMessageContent, x.LastMessageAtUtc,
                 x.LastMessageSenderFamilyName, x.LastMessageSenderGivenName,

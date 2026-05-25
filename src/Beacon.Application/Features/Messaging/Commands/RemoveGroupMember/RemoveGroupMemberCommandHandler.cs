@@ -20,14 +20,16 @@ public class RemoveGroupMemberCommandHandler(
         if (group is null || group.IsDeleted)
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND, "Không tìm thấy nhóm chat."));
 
-        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId);
-        if (callerMember?.Role != GroupMemberRole.Owner)
+        var callerMember = group.Members.FirstOrDefault(m => m.UserId == currentUser.UserId
+            && m.Status == MessageGroupMemberStatus.Joined);
+        if (callerMember is null || callerMember.Role is not (GroupMemberRole.Owner or GroupMemberRole.Manager))
             return Result.Failure(Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Chỉ owner mới được xóa thành viên."));
 
         if (command.TargetUserId == currentUser.UserId)
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Owner không thể tự remove — dùng LeaveGroup sau khi transfer ownership."));
 
-        if (!group.Members.Any(m => m.UserId == command.TargetUserId))
+        if (!group.Members.Any(m => m.UserId == command.TargetUserId
+                && m.Status == MessageGroupMemberStatus.Joined))
             return Result.Failure(Error.NotFound(ErrorCodes.Messaging.GROUP_MEMBER_NOT_FOUND, "Người dùng không phải thành viên của nhóm."));
 
         await groupRepo.RemoveMemberAsync(command.GroupId, command.TargetUserId, ct);
