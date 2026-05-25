@@ -11,7 +11,8 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
 builder.Services.AddApiAuth(builder.Configuration, builder.Environment);
 builder.Services.AddApiSignalR(builder.Configuration);
-builder.Services.AddHangfireJobs(builder.Configuration);
+if (!builder.Environment.IsEnvironment("Testing"))
+    builder.Services.AddHangfireJobs(builder.Configuration);
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
 builder.Services.AddControllers();
@@ -89,8 +90,11 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHealthCheckEndpoints();
 app.MapSignalRHubs();
-app.MapHangfireDashboard();
-app.RegisterRecurringJobs();
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    app.MapHangfireDashboard();
+    app.RegisterRecurringJobs();
+}
 
 app.Run();
 

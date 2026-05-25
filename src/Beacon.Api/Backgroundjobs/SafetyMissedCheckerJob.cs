@@ -36,17 +36,18 @@ public class SafetyMissedCheckerJob(
             {
                 try
                 {
-                    var incident = AlertIncident.Create(
-                        record.UserId, record.Id, AlertIncidentType.MissedCheckin);
-                    await alertRepo.AddAsync(incident);
-
                     await fcm.SendToUserAsync(
                         record.UserId,
                         "Cảnh báo: Bạn chưa checkin!",
                         "Hệ thống đã ghi nhận bạn chưa checkin hôm nay. Vui lòng checkin ngay.");
 
+                    // Only track incident after FCM succeeds — if FCM throws above, no incident
+                    // is added to EF tracker, so GetMissedNeedingAlertAsync will retry this record
+                    var incident = AlertIncident.Create(
+                        record.UserId, record.Id, AlertIncidentType.MissedCheckin);
                     incident.MarkSent();
                     record.MarkAlerted();
+                    await alertRepo.AddAsync(incident);
                 }
                 catch (Exception ex)
                 {
