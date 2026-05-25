@@ -1,0 +1,27 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": ".NET Launch (Beacon.Api)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Beacon.Api/bin/Debug/net8.0/Beacon.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Beacon.Api",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            }
+        },
+        {
+            "name": ".NET Attach (Beacon.Api)",
+            "type": "coreclr",
+            "request": "attach"
+        }
+    ]
+}

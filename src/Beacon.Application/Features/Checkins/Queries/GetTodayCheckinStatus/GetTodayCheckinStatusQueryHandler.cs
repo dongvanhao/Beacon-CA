@@ -16,8 +16,13 @@ public class GetTodayCheckinStatusQueryHandler(
     CheckinStatusMapper mapper)
     : IRequestHandler<GetTodayCheckinStatusQuery, Result<TodayCheckinStatusDto>>
 {
-    private static readonly TimeZoneInfo VietnamTz =
-        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+    private static readonly TimeZoneInfo VietnamTz = GetVietnamTimeZone();
+
+    private static TimeZoneInfo GetVietnamTimeZone()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh"); }
+        catch { return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"); }
+    }
 
     public async Task<Result<TodayCheckinStatusDto>> Handle(
         GetTodayCheckinStatusQuery query, CancellationToken ct)

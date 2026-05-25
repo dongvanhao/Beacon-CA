@@ -49,7 +49,7 @@ public class SendMessageCommandHandler(
 
         if (!group.Members.Any(m => m.UserId == currentUser.UserId))
             return Result<MessageDto>.Failure(
-                Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Ban khong phai thanh vien cua nhom nay."));
+                Error.Forbidden(ErrorCodes.Messaging.MESSAGE_GROUP_FORBIDDEN, "Bạn không phải thành viên của nhóm này."));
 
         if (command.ClientMessageId is not null)
         {
@@ -98,8 +98,8 @@ public class SendMessageCommandHandler(
         if (fcmRecipientUserIds.Length > 0)
         {
             var senderName = $"{currentUser.GivenName} {currentUser.FamilyName}".Trim();
-            var title = string.IsNullOrWhiteSpace(senderName) ? "Tin nhan moi" : senderName;
-            var body = string.IsNullOrWhiteSpace(content) ? "Ban co tin nhan moi" : content;
+            var title = string.IsNullOrWhiteSpace(senderName) ? "Tin nhắn mới" : senderName;
+            var body = string.IsNullOrWhiteSpace(content) ? "Bạn có tin nhắn mới" : content;
 
             var fcmData = new Dictionary<string, string>
             {
@@ -130,19 +130,19 @@ public class SendMessageCommandHandler(
         var post = await postRepo.GetByIdAsync(postId, ct);
         if (post is null || post.IsDeleted || post.Status != PostStatus.Active)
             return Result<Post>.Failure(
-                Error.NotFound(ErrorCodes.Post.POST_NOT_FOUND, "Bai dang khong ton tai."));
+                Error.NotFound(ErrorCodes.Post.POST_NOT_FOUND, "Bài đăng không tồn tại."));
 
         if (post.OwnerUserId == currentUser.UserId)
             return Result<Post>.Success(post);
 
         if (post.Visibility != PostVisibility.Friends)
             return Result<Post>.Failure(
-                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bai dang nay la rieng tu."));
+                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bài đăng này là riêng tư."));
 
         var areFriends = await friendRepo.AreFriendsAsync(currentUser.UserId, post.OwnerUserId, ct);
         if (!areFriends)
             return Result<Post>.Failure(
-                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Ban khong co quyen xem bai dang nay."));
+                Error.Forbidden(ErrorCodes.Post.POST_ACCESS_DENIED, "Bạn không có quyền xem bài đăng này."));
 
         return Result<Post>.Success(post);
     }
@@ -155,19 +155,19 @@ public class SendMessageCommandHandler(
             return group is null
                 ? Result<MessageGroup>.Failure(Error.NotFound(
                     ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND,
-                    "Nhom chat khong ton tai hoac da bi xoa."))
+                    "Nhóm chat không tồn tại hoặc đã bị xóa."))
                 : Result<MessageGroup>.Success(group);
         }
 
         if (attachedPost is null)
             return Result<MessageGroup>.Failure(Error.Validation(
                 ErrorCodes.Validation.VALIDATION_ERROR,
-                "Can truyen groupId hoac postId de gui tin nhan."));
+                "Cần truyền groupId hoặc postId để gửi tin nhắn."));
 
         if (attachedPost.OwnerUserId == currentUser.UserId)
             return Result<MessageGroup>.Failure(Error.Validation(
                 ErrorCodes.Validation.VALIDATION_ERROR,
-                "Khong the tu suy ra nhom chat khi post thuoc ve chinh ban."));
+                "Không thể tự suy ra nhóm chat khi post thuộc về chính bạn."));
 
         var directGroup = await groupRepo.GetPrivateGroupBetweenAsync(
             currentUser.UserId,
@@ -177,7 +177,7 @@ public class SendMessageCommandHandler(
         return directGroup is null
             ? Result<MessageGroup>.Failure(Error.NotFound(
                 ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND,
-                "Khong tim thay nhom chat truc tiep voi chu bai dang."))
+                "Không tìm thấy nhóm chat trực tiếp với chủ bài đăng."))
             : Result<MessageGroup>.Success(directGroup);
     }
 }

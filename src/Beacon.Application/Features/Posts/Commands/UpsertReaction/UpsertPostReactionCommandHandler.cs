@@ -73,11 +73,13 @@ public class UpsertPostReactionCommandHandler(
         if (post.OwnerUserId != command.CurrentUserId)
             await SendReactionFcmToPostOwnerAsync(post.OwnerUserId, command, ct);
 
+        var allReactions = await reactionRepo.GetAllByPostIdAsync(command.PostId, ct);
+
         return Result<PostReactionResponse>.Success(new PostReactionResponse
         {
             PostId = command.PostId,
             MyReaction = new MyReactionResponse { Icon = myReaction.Icon },
-            ReactionSummary = ReactionSummaryHelper.BuildSummary(new[] { myReaction })
+            ReactionSummary = ReactionSummaryHelper.BuildSummary(allReactions)
         });
     }
 
@@ -90,10 +92,10 @@ public class UpsertPostReactionCommandHandler(
         var reactorDisplayName = reactor is null ? string.Empty : $"{reactor.FamilyName} {reactor.GivenName}".Trim();
         var reactorAvatarUrl = await ResolveAvatarUrlAsync(reactor, ct);
 
-        var title = "Co reaction moi";
+        var title = "Có reaction mới";
         var body = string.IsNullOrWhiteSpace(reactorDisplayName)
-            ? $"{command.Icon} tren bai viet cua ban."
-            : $"{reactorDisplayName} tha {command.Icon} tren bai viet cua ban.";
+            ? $"{command.Icon} trên bài viết của bạn."
+            : $"{reactorDisplayName} đã thả {command.Icon} trên bài viết của bạn.";
         var fcmData = new Dictionary<string, string>
         {
             ["type"] = "POST_REACTION",

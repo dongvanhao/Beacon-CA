@@ -23,8 +23,13 @@ public class CreatePostCommandHandler(
     PostDtoMapper mapper)
     : IRequestHandler<CreatePostCommand, Result<PostResponse>>
 {
-    private static readonly TimeZoneInfo VietnamTz =
-        TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time");
+    private static readonly TimeZoneInfo VietnamTz = GetVietnamTimeZone();
+
+    private static TimeZoneInfo GetVietnamTimeZone()
+    {
+        try { return TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh"); }
+        catch { return TimeZoneInfo.FindSystemTimeZoneById("SE Asia Standard Time"); }
+    }
 
     public async Task<Result<PostResponse>> Handle(CreatePostCommand command, CancellationToken ct)
     {
