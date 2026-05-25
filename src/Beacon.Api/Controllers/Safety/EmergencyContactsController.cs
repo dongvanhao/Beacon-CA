@@ -23,6 +23,22 @@ public class EmergencyContactsController(IMediator mediator, ICurrentUserService
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// [
+    ///   {
+    ///     "id": "guid",
+    ///     "fullName": "string",
+    ///     "contactValue": "string (số điện thoại / email / telegram handle)",
+    ///     "relationship": "string | null",
+    ///     "channelType": "string (Email | Telegram | Sms | Phone)",
+    ///     "priorityOrder": "int",
+    ///     "isPrimary": "bool",
+    ///     "isActive": "bool"
+    ///   }
+    /// ]
+    /// </code>
+    ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
     #endregion
@@ -37,10 +53,35 @@ public class EmergencyContactsController(IMediator mediator, ICurrentUserService
     ///
     /// Tối đa 5 liên hệ khẩn cấp trên mỗi user.
     ///
+    /// Body (<c>application/json</c>):
+    /// <code>
+    /// {
+    ///   "fullName": "string (bắt buộc)",
+    ///   "contactValue": "string (bắt buộc — số điện thoại / email / telegram handle)",
+    ///   "channelType": "int — 1=Email, 2=Telegram, 3=Sms, 4=Phone",
+    ///   "relationship": "string | null",
+    ///   "priorityOrder": "int (bắt buộc, >= 1)"
+    /// }
+    /// </code>
+    ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: Dữ liệu không hợp lệ.
     /// - <c>EMERGENCY_CONTACT_LIMIT_EXCEEDED</c>: Đã có 5 liên hệ khẩn cấp.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "id": "guid",
+    ///   "fullName": "string",
+    ///   "contactValue": "string",
+    ///   "relationship": "string | null",
+    ///   "channelType": "string (Email | Telegram | Sms | Phone)",
+    ///   "priorityOrder": "int",
+    ///   "isPrimary": "bool",
+    ///   "isActive": "bool"
+    /// }
+    /// </code>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
@@ -56,11 +97,36 @@ public class EmergencyContactsController(IMediator mediator, ICurrentUserService
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
+    /// Body (<c>application/json</c>):
+    /// <code>
+    /// {
+    ///   "fullName": "string (bắt buộc)",
+    ///   "contactValue": "string (bắt buộc — số điện thoại / email / telegram handle)",
+    ///   "channelType": "int — 1=Email, 2=Telegram, 3=Sms, 4=Phone",
+    ///   "relationship": "string | null",
+    ///   "priorityOrder": "int (bắt buộc, >= 1)"
+    /// }
+    /// </code>
+    ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: Dữ liệu không hợp lệ.
     /// - <c>EMERGENCY_CONTACT_NOT_FOUND</c>: Không tìm thấy liên hệ.
     /// - <c>EMERGENCY_CONTACT_FORBIDDEN</c>: Không có quyền chỉnh sửa.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "id": "guid",
+    ///   "fullName": "string",
+    ///   "contactValue": "string",
+    ///   "relationship": "string | null",
+    ///   "channelType": "string (Email | Telegram | Sms | Phone)",
+    ///   "priorityOrder": "int",
+    ///   "isPrimary": "bool",
+    ///   "isActive": "bool"
+    /// }
+    /// </code>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
@@ -81,6 +147,8 @@ public class EmergencyContactsController(IMediator mediator, ICurrentUserService
     /// - <c>EMERGENCY_CONTACT_NOT_FOUND</c>: Không tìm thấy liên hệ.
     /// - <c>EMERGENCY_CONTACT_FORBIDDEN</c>: Không có quyền xóa.
     ///
+    /// Cấu trúc <c>data</c> khi thành công: <c>null</c>
+    ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
     #endregion
@@ -100,6 +168,8 @@ public class EmergencyContactsController(IMediator mediator, ICurrentUserService
     /// - <c>null</c>: Thành công.
     /// - <c>EMERGENCY_CONTACT_NOT_FOUND</c>: Không tìm thấy liên hệ.
     /// - <c>EMERGENCY_CONTACT_FORBIDDEN</c>: Không có quyền thao tác.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công: <c>null</c>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>

@@ -2,9 +2,11 @@ using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Enums.Checkins;
 using Beacon.Domain.IRepository.Safety;
+using Hangfire;
 
 namespace Beacon.Api.Backgroundjobs;
 
+[DisableConcurrentExecution(timeoutInSeconds: 600)]
 public class SafetyMissedCheckerJob(
     IDailySafetyRecordRepository recordRepo,
     IAlertIncidentRepository alertRepo,
@@ -26,6 +28,7 @@ public class SafetyMissedCheckerJob(
         catch (Exception ex)
         {
             logger.LogError(ex, "SafetyMissedCheckerJob Phase 1 (MarkMissed) failed");
+            throw;
         }
 
         // Phase 2 — Create AlertIncident + FCM
@@ -48,11 +51,17 @@ public class SafetyMissedCheckerJob(
                     }
                     else
                     {
-                        await fcm.SendToUserAsync(
+                        var sent = await fcm.SendToUserAsync(
                             record.UserId,
                             "Cảnh báo: Bạn chưa checkin!",
                             "Hệ thống đã ghi nhận bạn chưa checkin hôm nay. Vui lòng checkin ngay.");
-                        incident.MarkSent();
+                        if (sent)
+                            incident.MarkSent();
+                        else
+                        {
+                            incident.MarkFailed("No active device tokens");
+                            logger.LogWarning("No active device tokens — incident marked Failed for UserId={UserId}", record.UserId);
+                        }
                     }
 
                     record.MarkAlerted();
@@ -69,6 +78,7 @@ public class SafetyMissedCheckerJob(
         catch (Exception ex)
         {
             logger.LogError(ex, "SafetyMissedCheckerJob Phase 2 (AlertIncident) failed");
+            throw;
         }
     }
 }

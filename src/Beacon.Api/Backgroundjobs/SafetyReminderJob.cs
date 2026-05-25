@@ -1,8 +1,10 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Domain.IRepository.Safety;
+using Hangfire;
 
 namespace Beacon.Api.Backgroundjobs;
 
+[DisableConcurrentExecution(timeoutInSeconds: 600)]
 public class SafetyReminderJob(
     IDailySafetyRecordRepository repo,
     IFcmService fcm,
@@ -20,7 +22,7 @@ public class SafetyReminderJob(
                 try
                 {
                     var remaining = (int)(record.DeadlineAtUtc - now.UtcDateTime).TotalMinutes;
-                    await fcm.SendToUserAsync(
+                    _ = await fcm.SendToUserAsync(
                         record.UserId,
                         "Nhắc nhở checkin an toàn",
                         $"Bạn còn {remaining} phút để checkin hôm nay.");
@@ -38,6 +40,7 @@ public class SafetyReminderJob(
         catch (Exception ex)
         {
             logger.LogError(ex, "SafetyReminderJob failed");
+            throw;
         }
     }
 }

@@ -41,6 +41,7 @@ public class DailyRecordSeedingJob(
         catch (Exception ex)
         {
             logger.LogError(ex, "DailyRecordSeedingJob failed");
+            throw;
         }
     }
 }

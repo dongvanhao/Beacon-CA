@@ -22,9 +22,22 @@ public class DeviceTokensController(IMediator mediator, ICurrentUserService curr
     /// - Token đã tồn tại, cùng user → cập nhật LastUsedAtUtc.
     /// - Token đã tồn tại, khác user → chuyển owner sang user hiện tại.
     ///
+    /// Body (<c>application/json</c>):
+    /// <code>
+    /// {
+    ///   "token": "string (bắt buộc — FCM token cho Android/Web, APNs token cho iOS)",
+    ///   "platform": "string (bắt buộc) — Unknown | iOS | Android | Web",
+    ///   "deviceId": "string | null (device unique identifier)",
+    ///   "deviceName": "string | null (tên thiết bị hiển thị)",
+    ///   "appVersion": "string | null (vd: 1.2.3)"
+    /// }
+    /// </code>
+    ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: Token rỗng hoặc Platform không hợp lệ.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công: <c>null</c>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
@@ -49,9 +62,18 @@ public class DeviceTokensController(IMediator mediator, ICurrentUserService curr
     ///
     /// Trả về success kể cả khi token không tồn tại.
     ///
+    /// Body (<c>application/json</c>):
+    /// <code>
+    /// {
+    ///   "token": "string (bắt buộc — FCM/APNs token cần thu hồi)"
+    /// }
+    /// </code>
+    ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: Token rỗng.
+    ///
+    /// Cấu trúc <c>data</c> khi thành công: <c>null</c>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>

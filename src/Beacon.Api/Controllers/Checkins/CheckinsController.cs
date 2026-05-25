@@ -89,21 +89,51 @@ public class CheckinsController(IMediator mediator, ICurrentUserService currentU
         => HandleResult(await mediator.Send(new GetTodayCheckinStatusQuery(currentUser.UserId), ct));
 
     #region
-    /// <summary>Lấy lịch sử các lần checkin của user hiện tại</summary>
+    /// <summary>Lấy lịch sử các lần checkin của user hiện tại.</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
     /// Trả danh sách lần user đã checkin (bảng Checkins), mới nhất trước.
     /// Không bao gồm ngày chưa checkin hay Missed.
     ///
-    /// Cursor là <c>CheckedInAtUtc</c> (ISO-8601 UTC) của item cuối trang trước.
+    /// Query params:
+    /// - <c>cursor</c>: <c>DateTimeOffset</c> ISO-8601 UTC — <c>checkedInAtUtc</c> của item cuối trang trước. Bỏ trống để lấy trang đầu.
+    /// - <c>limit</c>: số item mỗi trang, mặc định <c>20</c>, tối đa <c>100</c>.
     ///
     /// Các giá trị <c>code</c>:
     /// - <c>null</c>: Thành công.
     /// - <c>VALIDATION_ERROR</c>: limit ngoài khoảng 1–100.
     ///
-    /// Cấu trúc <c>data</c>:
-    /// <code>{ "data": [...], "meta": { "nextCursor": "ISO-UTC|null", "hasMore": bool, "limit": int } }</code>
+    /// Cấu trúc <c>data</c> khi thành công:
+    /// <code>
+    /// {
+    ///   "data": [
+    ///     {
+    ///       "id": "guid",
+    ///       "dailySafetyRecordId": "guid",
+    ///       "checkinDate": "date (yyyy-MM-dd)",
+    ///       "checkedInAtUtc": "datetime (ISO-8601 UTC)",
+    ///       "type": "string — Manual | Recovery | Emergency",
+    ///       "note": "string | null",
+    ///       "latitude": "decimal | null",
+    ///       "longitude": "decimal | null",
+    ///       "mediaItems": [
+    ///         {
+    ///           "mediaObjectId": "guid",
+    ///           "isPrimary": "bool",
+    ///           "sortOrder": "int",
+    ///           "caption": "string | null"
+    ///         }
+    ///       ]
+    ///     }
+    ///   ],
+    ///   "meta": {
+    ///     "nextCursor": "datetime ISO-8601 UTC | null (null = hết trang)",
+    ///     "hasMore": "bool",
+    ///     "limit": "int"
+    ///   }
+    /// }
+    /// </code>
     ///
     /// Format: <c>{ success, message, code, data, errors }</c>
     /// </remarks>
