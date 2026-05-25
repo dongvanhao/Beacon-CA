@@ -2,12 +2,13 @@ using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Entities.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using NotificationEntity = Beacon.Domain.Entities.Group.Notification;
 
 namespace Beacon.Infrashtructure.Presistence.Configuration.Group;
 
-public class NotificationConfiguration : IEntityTypeConfiguration<Notification>
+public class NotificationConfiguration : IEntityTypeConfiguration<NotificationEntity>
 {
-    public void Configure(EntityTypeBuilder<Notification> b)
+    public void Configure(EntityTypeBuilder<NotificationEntity> b)
     {
         b.ToTable("Notifications");
         b.HasKey(n => n.Id);

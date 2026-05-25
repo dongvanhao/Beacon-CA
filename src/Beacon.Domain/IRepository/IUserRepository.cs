@@ -11,6 +11,7 @@ public interface IUserRepository
     Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default);
     Task<bool> ExistsByEmailExcludingUserAsync(string email, Guid excludeUserId, CancellationToken ct = default);
     Task<User?> GetByPhoneAsync(string phoneNumber, CancellationToken ct = default);
+    Task<User?> GetByEmailAsync(string email, CancellationToken ct = default);
     Task<List<User>> SearchByNameOrPhoneAsync(string keyword, Guid excludeUserId, int limit, CancellationToken ct = default);
     Task<bool> ExistsByPhoneAsync(string phoneNumber, CancellationToken ct = default);
     Task<bool> ExistsByPhoneExcludingUserAsync(string phoneNumber, Guid excludeUserId, CancellationToken ct = default);

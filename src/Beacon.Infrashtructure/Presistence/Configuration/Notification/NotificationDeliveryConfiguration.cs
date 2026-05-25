@@ -1,16 +1,14 @@
-#if false
-// Chưa dùng — sẽ bật lại khi implement module Notification
 using Beacon.Domain.Entities.Notification;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Beacon.Infrastructure.Persistence.Configurations.Notifications;
+namespace Beacon.Infrashtructure.Presistence.Configuration.Notification;
 
 public class NotificationDeliveryConfiguration : IEntityTypeConfiguration<NotificationDelivery>
 {
     public void Configure(EntityTypeBuilder<NotificationDelivery> builder)
     {
-        builder.ToTable("NotificationDeliveries");
+        builder.ToTable("NotificationDelivery");
 
         builder.HasKey(x => x.Id);
 
@@ -45,7 +43,7 @@ public class NotificationDeliveryConfiguration : IEntityTypeConfiguration<Notifi
         builder.HasIndex(x => new { x.UserId, x.SentAtUtc });
 
         builder.HasOne(x => x.User)
-            .WithMany(x => x.NotificationDeliveries)
+            .WithMany()
             .HasForeignKey(x => x.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -60,9 +58,8 @@ public class NotificationDeliveryConfiguration : IEntityTypeConfiguration<Notifi
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne(x => x.UserDevice)
-            .WithMany(x => x.NotificationDeliveries)
+            .WithMany()
             .HasForeignKey(x => x.UserDeviceId)
             .OnDelete(DeleteBehavior.SetNull);
     }
 }
-#endif

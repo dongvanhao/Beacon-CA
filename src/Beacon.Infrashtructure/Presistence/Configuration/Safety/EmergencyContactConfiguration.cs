@@ -2,7 +2,7 @@ using Beacon.Domain.Entities.Safety;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace Beacon.Infrastructure.Persistence.Configurations.Safety;
+namespace Beacon.Infrashtructure.Presistence.Configuration.Safety;
 
 public class EmergencyContactConfiguration : IEntityTypeConfiguration<EmergencyContact>
 {
