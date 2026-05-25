@@ -1,4 +1,6 @@
 using Beacon.Application.Common.Interfaces.IService;
+using Beacon.Application.Features.Messaging.Commands.SendMessage;
+using Beacon.Application.Features.Messaging.Helpers;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Constants;
@@ -9,7 +11,8 @@ namespace Beacon.Application.Features.Messaging.Commands.LeaveGroup;
 
 public class LeaveGroupCommandHandler(
     IMessageGroupRepository groupRepo,
-    ICurrentUserService currentUser)
+    ICurrentUserService currentUser,
+    ISender sender)
     : IRequestHandler<LeaveGroupCommand, Result>
 {
     public async Task<Result> Handle(LeaveGroupCommand command, CancellationToken ct)
@@ -28,6 +31,24 @@ public class LeaveGroupCommandHandler(
             return Result.Failure(Error.Validation(ErrorCodes.Validation.VALIDATION_ERROR, "Owner phải transfer ownership trước khi rời nhóm."));
 
         var isLastMember = joinedMemberCount == 1;
+        if (!isLastMember)
+        {
+            var actorName = FormatName(currentUser.FamilyName, currentUser.GivenName, "Một thành viên");
+            var sendResult = await sender.Send(new SendMessageCommand(
+                command.GroupId,
+                $"{actorName} đã rời khỏi đoạn chat".Trim(),
+                null,
+                null,
+            MessageType.MemberLeft,
+            MessageMetadataHelper.Serialize(new
+            {
+                actorUserId = currentUser.UserId,
+                userId = currentUser.UserId
+            })), ct);
+            if (sendResult.IsFailure)
+                return Result.Failure(sendResult.Error);
+        }
+
         if (isLastMember)
             group.Delete();
 
@@ -35,5 +56,11 @@ public class LeaveGroupCommandHandler(
         await groupRepo.SaveChangesAsync(ct);
 
         return Result.Success();
+    }
+
+    private static string FormatName(string? familyName, string? givenName, string fallback)
+    {
+        var name = $"{familyName} {givenName}".Trim();
+        return string.IsNullOrWhiteSpace(name) ? fallback : name;
     }
 }

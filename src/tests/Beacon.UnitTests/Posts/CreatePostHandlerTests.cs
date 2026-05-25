@@ -6,6 +6,7 @@ using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Entities.Storage;
 using Beacon.Domain.Enums;
+using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Posts;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
@@ -24,6 +25,8 @@ public class CreatePostHandlerTests
     private readonly Mock<IDailySafetyRecordRepository> _dailySafetyRecordRepoMock = new();
     private readonly Mock<ISafetySettingRepository> _safetySettingRepoMock = new();
     private readonly Mock<IStorageService> _storageMock = new();
+    private readonly Mock<IRealtimeNotifier> _notifierMock = new();
+    private readonly Mock<IFriendRepository> _friendRepoMock = new();
     private readonly PostDtoMapper _mapper = new();
     private readonly CreatePostCommandHandler _sut;
 
@@ -56,12 +59,18 @@ public class CreatePostHandlerTests
             .Setup(r => r.GetByUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((Beacon.Domain.Entities.Setting.SafetySetting?)null);
 
+        _friendRepoMock
+            .Setup(r => r.ListFriendIdsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
         _sut = new CreatePostCommandHandler(
             _postRepoMock.Object,
             _mediaRepoMock.Object,
             _dailySafetyRecordRepoMock.Object,
             _safetySettingRepoMock.Object,
             _storageMock.Object,
+            _notifierMock.Object,
+            _friendRepoMock.Object,
             _mapper);
     }
 
@@ -102,6 +111,52 @@ public class CreatePostHandlerTests
         result.Value.Should().NotBeNull();
         result.Value!.Visibility.Should().Be("friends");
         result.Value.Caption.Should().Be("Hello");
+    }
+
+    [Fact]
+    public async Task Handle_WithFriendsVisibility_NotifiesFriendsWithCreatedPost()
+    {
+        var friend1 = Guid.NewGuid();
+        var friend2 = Guid.NewGuid();
+        var media = BuildMedia(MediaType.Image, MediaStatus.Ready);
+        _mediaRepoMock.Setup(r => r.GetByIdAsync(_mediaId, It.IsAny<CancellationToken>())).ReturnsAsync(media);
+        _friendRepoMock
+            .Setup(r => r.ListFriendIdsAsync(_userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([friend1, friend2]);
+
+        var command = new CreatePostCommand(
+            new CreatePostRequest { MediaId = _mediaId, Caption = "Hello", Visibility = "friends" },
+            _userId);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        _notifierMock.Verify(n => n.NotifyNewPostAsync(
+                It.Is<PostResponse>(p => p.Id == result.Value!.Id && p.Caption == "Hello"),
+                It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(friend1) && ids.Contains(friend2)),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Handle_WithPrivateVisibility_DoesNotNotifyFriends()
+    {
+        var media = BuildMedia(MediaType.Image, MediaStatus.Ready);
+        _mediaRepoMock.Setup(r => r.GetByIdAsync(_mediaId, It.IsAny<CancellationToken>())).ReturnsAsync(media);
+
+        var command = new CreatePostCommand(
+            new CreatePostRequest { MediaId = _mediaId, Visibility = "private" },
+            _userId);
+
+        var result = await _sut.Handle(command, CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        _friendRepoMock.Verify(r => r.ListFriendIdsAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _notifierMock.Verify(n => n.NotifyNewPostAsync(
+                It.IsAny<object>(),
+                It.IsAny<IReadOnlyCollection<Guid>>(),
+                It.IsAny<CancellationToken>()),
+            Times.Never);
     }
 
     [Fact]

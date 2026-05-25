@@ -4,6 +4,7 @@ using Beacon.Application.Mappings.Posts;
 using Beacon.Domain.Entities.Posts;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Enums;
+using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Posts;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
@@ -20,6 +21,8 @@ public class CreatePostCommandHandler(
     IDailySafetyRecordRepository dailySafetyRecordRepo,
     ISafetySettingRepository safetySettingRepo,
     IStorageService storage,
+    IRealtimeNotifier notifier,
+    IFriendRepository friendRepo,
     PostDtoMapper mapper)
     : IRequestHandler<CreatePostCommand, Result<PostResponse>>
 {
@@ -104,9 +107,17 @@ public class CreatePostCommandHandler(
         // 10. Get media URL
         var (url, thumbUrl) = await storage.GetMediaUrlsAsync(media, ct);
         var mediaResponse = mapper.ToMediaResponse(media, url, thumbUrl);
+        var response = mapper.ToPostResponse(post, mediaResponse);
+
+        if (visibility == PostVisibility.Friends)
+        {
+            var friendIds = await friendRepo.ListFriendIdsAsync(currentUserId, ct);
+            if (friendIds.Count > 0)
+                await notifier.NotifyNewPostAsync(response, friendIds, ct);
+        }
 
         // 11. Return response
-        return Result<PostResponse>.Success(mapper.ToPostResponse(post, mediaResponse));
+        return Result<PostResponse>.Success(response);
     }
 
     private async Task<DailySafetyRecord> GetOrCreateTodayHealthRecordAsync(Guid userId, CancellationToken ct)

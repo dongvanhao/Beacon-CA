@@ -11,11 +11,12 @@ public sealed class MessageGroupDetailMapper
         IReadOnlyList<MessageGroupMemberDto> members)
         => new(group.Id, group.Type, group.CreatedAtUtc, group.RequireApprovalToAddMembers, displayName, displayAvatarUrl, setting, members);
 
-    public MessageGroupMemberDto ToMemberDto(MessageGroupMember member, string? avatarUrl)
+    public MessageGroupMemberDto ToMemberDto(MessageGroupMember member, string? customName, string? avatarUrl)
         => new(
             UserId: member.UserId,
             FamilyName: member.User.FamilyName,
             GivenName: member.User.GivenName,
+            CustomName: customName,
             AvatarUrl: avatarUrl,
             Role: member.Role,
             Status: member.Status,

@@ -24,6 +24,7 @@ public class SendMessageCommandHandler(
     IMessageGroupPresenceTracker presenceTracker,
     IPostRepository postRepo,
     IFriendRepository friendRepo,
+    IMessageGroupMemberSettingRepository settingRepo,
     ILogger<SendMessageCommandHandler> logger,
     MessageMapper mapper,
     MessagePostMapper postMapper)
@@ -59,13 +60,19 @@ public class SendMessageCommandHandler(
             if (existing is not null)
                 return Result<MessageDto>.Success(mapper.ToDto(
                     existing,
-                    currentUser.FamilyName,
-                    currentUser.GivenName,
+                    await ResolveCurrentUserDisplayNameAsync(groupId, ct),
                     await postMapper.ToDtoAsync(existing.Post, ct)));
         }
 
         var content = command.Content?.Trim() ?? string.Empty;
-        var message = Message.Create(groupId, currentUser.UserId, content, command.ClientMessageId, attachedPost?.Id);
+        var message = Message.Create(
+            groupId,
+            currentUser.UserId,
+            content,
+            command.ClientMessageId,
+            attachedPost?.Id,
+            command.Type,
+            command.MetadataJson);
         var senderMember = group.Members.First(m => m.UserId == currentUser.UserId
             && m.Status == MessageGroupMemberStatus.Joined);
         senderMember.LastSeenMessageId = message.Id;
@@ -75,8 +82,7 @@ public class SendMessageCommandHandler(
 
         var dto = mapper.ToDto(
             message,
-            currentUser.FamilyName,
-            currentUser.GivenName,
+            await ResolveCurrentUserDisplayNameAsync(groupId, ct),
             await postMapper.ToDtoAsync(attachedPost, ct));
 
         var recipientUserIds = group.Members
@@ -183,5 +189,15 @@ public class SendMessageCommandHandler(
                 ErrorCodes.Messaging.MESSAGE_GROUP_NOT_FOUND,
                 "Không tìm thấy nhóm chat trực tiếp với chủ bài đăng."))
             : Result<MessageGroup>.Success(directGroup);
+    }
+
+    private async Task<string> ResolveCurrentUserDisplayNameAsync(Guid groupId, CancellationToken ct)
+    {
+        var setting = await settingRepo.GetByGroupAndUserAsync(groupId, currentUser.UserId, ct);
+        if (!string.IsNullOrWhiteSpace(setting?.CustomName))
+            return setting.CustomName;
+
+        var fullName = $"{currentUser.FamilyName} {currentUser.GivenName}".Trim();
+        return fullName != string.Empty ? fullName : "Người dùng";
     }
 }

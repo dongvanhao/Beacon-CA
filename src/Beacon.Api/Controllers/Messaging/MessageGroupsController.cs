@@ -1,20 +1,28 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Commands.AddGroupMember;
+using Beacon.Application.Features.Messaging.Commands.ApproveGroupMember;
 using Beacon.Application.Features.Messaging.Commands.CreateGroup;
 using Beacon.Application.Features.Messaging.Commands.DeleteGroup;
+using Beacon.Application.Features.Messaging.Commands.DenyGroupMember;
 using Beacon.Application.Features.Messaging.Commands.LeaveGroup;
 using Beacon.Application.Features.Messaging.Commands.MarkGroupMessagesSeen;
 using Beacon.Application.Features.Messaging.Commands.RemoveGroupMember;
 using Beacon.Application.Features.Messaging.Commands.SendMessage;
 using Beacon.Application.Features.Messaging.Commands.TransferOwnership;
-using Beacon.Application.Features.Messaging.Commands.UpdateGroup;
+using Beacon.Application.Features.Messaging.Commands.UpdateGroupApprovalSetting;
+using Beacon.Application.Features.Messaging.Commands.UpdateGroupAvatar;
+using Beacon.Application.Features.Messaging.Commands.UpdateGroupName;
+using Beacon.Application.Features.Messaging.Commands.UpdateGroupMemberCustomName;
+using Beacon.Application.Features.Messaging.Commands.UpdateGroupMemberMuted;
 using Beacon.Application.Features.Messaging.Commands.UpdateTypingStatus;
 using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Application.Features.Messaging.Queries.GetMessageGroupDetail;
 using Beacon.Application.Features.Messaging.Queries.ListMessages;
 using Beacon.Application.Features.Messaging.Queries.ListMyMessageGroups;
+using Beacon.Application.Features.Messaging.Queries.SearchMessages;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Beacon.Api.Controllers.Messaging;
@@ -139,8 +147,10 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "userId": "aaaaaaaa-0000-0000-0000-000000000001",
     ///         "familyName": "Nguyễn",
     ///         "givenName": "Alice",
+    ///         "customName": null,
     ///         "avatarUrl": "https://cdn.example.com/avatars/alice.jpg",
     ///         "role": 1,
+    ///         "status": 0,
     ///         "lastSeenMessageId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
     ///       },
     ///       {
@@ -149,6 +159,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "givenName": "Bob",
     ///         "avatarUrl": null,
     ///         "role": 0,
+    ///         "status": 0,
     ///         "lastSeenMessageId": null
     ///       }
     ///     ]
@@ -163,6 +174,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>isPrivate</c>: <c>true</c> nếu là chat 1-1 (giữa 2 bạn bè), <c>false</c> nếu là nhóm nhiều người.
     /// - <c>members</c>: Toàn bộ thành viên của nhóm, **bao gồm cả user hiện tại**.
     /// - <c>familyName</c> / <c>givenName</c>: Họ và tên của thành viên.
+    /// - <c>customName</c>: Biệt danh của thành viên trong nhóm, có thể được sửa bởi bất kỳ thành viên <c>Joined</c> nào.
     /// - <c>avatarUrl</c>: Signed URL ảnh đại diện của thành viên, <c>null</c> nếu chưa có.
     /// - <c>role</c>: Vai trò trong nhóm — <c>0</c> = Member, <c>1</c> = Owner, <c>2</c> = Manager. Dùng để hiển thị quyền quản trị.
     /// - <c>status</c>: Trạng thái thành viên — <c>0</c> = Joined, <c>1</c> = PendingApproval.
@@ -216,9 +228,10 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///     "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///     "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///     "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///     "senderFamilyName": "Nguyễn",
-    ///     "senderGivenName": "Alice",
+    ///     "senderDisplayName": "Nguyễn Alice",
     ///     "content": "Nội dung tin nhắn",
+    ///     "type": 0,
+    ///     "metadata": null,
     ///     "createdAtUtc": "2026-05-04T10:30:00Z"
     ///   },
     ///   "errors": null
@@ -231,6 +244,13 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: <c>groupId</c> không tồn tại (HTTP 404).
     /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: User không phải thành viên của nhóm này (HTTP 403).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    ///
+    /// **Message type:** <c>0</c> = Normal, <c>1</c> = NicknameChanged, <c>2</c> = RoleChanged,
+    /// <c>3</c> = MemberAdded, <c>4</c> = MemberLeft, <c>5</c> = MemberNicknameChanged,
+    /// <c>6</c> = GroupAvatarChanged, <c>7</c> = GroupDeleted, <c>8</c> = GroupApprovalSettingChanged,
+    /// <c>9</c> = MemberApproved, <c>10</c> = MemberDenied, <c>11</c> = GroupNameChanged.
+    /// <c>metadata</c> chứa dữ liệu JSON theo từng type: ví dụ <c>MemberAdded</c> có <c>members</c>,
+    /// <c>MemberNicknameChanged</c> có <c>userId</c>/<c>customName</c>, <c>GroupNameChanged</c> có <c>name</c>.
     /// </remarks>
     #endregion
     [HttpPost("{groupId:guid}/messages")]
@@ -278,9 +298,10 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     ///         "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-    ///         "senderFamilyName": "Nguyễn",
-    ///         "senderGivenName": "Alice",
+    ///         "senderDisplayName": "Nguyễn Alice",
     ///         "content": "Hẹn gặp nhé!",
+    ///         "type": 0,
+    ///         "metadata": null,
     ///         "createdAtUtc": "2026-05-04T10:30:00Z"
     ///       }
     ///     ],
@@ -298,6 +319,14 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>null</c>: Thành công (HTTP 200).
     /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: User không phải thành viên của nhóm này (HTTP 403).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    ///
+    /// - <c>senderDisplayName</c>: Tên hiển thị người gửi, ưu tiên biệt danh trong nhóm rồi đến họ tên thật.
+    ///
+    /// **Message type:** <c>0</c> = Normal, <c>1</c> = NicknameChanged, <c>2</c> = RoleChanged,
+    /// <c>3</c> = MemberAdded, <c>4</c> = MemberLeft, <c>5</c> = MemberNicknameChanged,
+    /// <c>6</c> = GroupAvatarChanged, <c>7</c> = GroupDeleted, <c>8</c> = GroupApprovalSettingChanged,
+    /// <c>9</c> = MemberApproved, <c>10</c> = MemberDenied, <c>11</c> = GroupNameChanged.
+    /// <c>metadata</c> là object JSON đi kèm system message và cũng được gửi qua realtime payload.
     /// </remarks>
     #endregion
     
@@ -305,6 +334,66 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     public async Task<IActionResult> ListMessages(
         Guid groupId, [FromQuery] long? cursor, [FromQuery] int limit = 20, CancellationToken ct = default)
         => HandleResult(await mediator.Send(new ListMessagesQuery(groupId, cursor, limit), ct));
+
+    #region
+    /// <summary>Tìm kiếm tin nhắn trong nhóm.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Tìm theo nội dung tin nhắn (contains). Kết quả trả về theo thứ tự **mới nhất trước**.
+    ///
+    /// **Path param:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    ///
+    /// **Query params:**
+    /// - <c>search</c> (string, bắt buộc, tối đa 200 ký tự): Từ khóa tìm kiếm.
+    /// - <c>cursor</c> (long, tuỳ chọn): Sequence number để load thêm kết quả cũ hơn.
+    /// - <c>limit</c> (int, tuỳ chọn, mặc định 20, tối đa 100): Số tin nhắn mỗi lần load.
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "...",
+    ///   "code": null,
+    ///   "data": {
+    ///     "data": [
+    ///       {
+    ///         "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "groupId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "senderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///         "senderDisplayName": "Nguyễn Alice",
+    ///         "content": "Hẹn gặp nhé!",
+    ///         "type": 0,
+    ///         "metadata": null,
+    ///         "createdAtUtc": "2026-05-04T10:30:00Z"
+    ///       }
+    ///     ],
+    ///     "meta": {
+    ///       "nextCursor": 1234567890,
+    ///       "limit": 20,
+    ///       "hasMore": true
+    ///     }
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200).
+    /// - <c>VALIDATION_ERROR</c>: <c>search</c> rỗng hoặc vượt 200 ký tự (HTTP 400).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: User không phải thành viên của nhóm này (HTTP 403).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpGet("{groupId:guid}/messages/search")]
+    public async Task<IActionResult> SearchMessages(
+        Guid groupId,
+        [FromQuery] string search,
+        [FromQuery] long? cursor,
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
+        => HandleResult(await mediator.Send(new SearchMessagesQuery(groupId, search, cursor, limit), ct));
 
     #region
     /// <summary>Tạo nhóm chat mới.</summary>
@@ -381,7 +470,9 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// **Request body:**
     /// <code>
     /// {
-    ///   "targetUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ///   "targetUserIds": [
+    ///     "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ///   ]
     /// }
     /// </code>
     ///
@@ -391,7 +482,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
     /// - <c>VALIDATION_ERROR</c>: Cố thêm vào chat 1-1 (HTTP 400).
-    /// - <c>USER_NOT_FOUND</c>: <c>targetUserId</c> không tồn tại (HTTP 404).
+    /// - <c>USER_NOT_FOUND</c>: Có user trong <c>targetUserIds</c> không tồn tại (HTTP 404).
     /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
     /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: User hiện tại không phải thành viên trạng thái <c>Joined</c> của nhóm (HTTP 403).
     /// - <c>GROUP_MEMBER_ALREADY_EXISTS</c>: Người dùng đã là thành viên (HTTP 409).
@@ -401,14 +492,74 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     [HttpPost("{groupId:guid}/members")]
     public async Task<IActionResult> AddMember(
         Guid groupId, [FromBody] AddGroupMemberRequest req, CancellationToken ct)
-        => HandleResult(await mediator.Send(new AddGroupMemberCommand(groupId, req.TargetUserId), ct));
+        => HandleResult(await mediator.Send(new AddGroupMemberCommand(groupId, req.TargetUserIds), ct));
+
+    #region
+    /// <summary>Duyệt thành viên vào nhóm (Owner/Manager only).</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ owner hoặc manager mới có quyền duyệt. Không áp dụng cho chat 1-1.
+    /// Sau khi duyệt, server gửi system message <c>type = MemberApproved</c>.
+    ///
+    /// **Path params:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    /// - <c>userId</c> (guid, bắt buộc): Id thành viên cần duyệt (status = PendingApproval).
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>VALIDATION_ERROR</c>: Cố duyệt chat 1-1 (HTTP 400).
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải owner/manager hoặc không phải thành viên (HTTP 403).
+    /// - <c>GROUP_MEMBER_NOT_FOUND</c>: <c>userId</c> không thuộc nhóm (HTTP 404).
+    /// - <c>GROUP_MEMBER_NOT_PENDING</c>: Thành viên không ở trạng thái chờ duyệt (HTTP 409).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpPatch("{groupId:guid}/members/{userId:guid}/approve")]
+    public async Task<IActionResult> ApproveMember(Guid groupId, Guid userId, CancellationToken ct)
+        => HandleResult(await mediator.Send(new ApproveGroupMemberCommand(groupId, userId), ct));
+
+    #region
+    /// <summary>Từ chối thành viên vào nhóm (Owner/Manager only).</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ owner hoặc manager mới có quyền từ chối. Không áp dụng cho chat 1-1.
+    /// Sau khi từ chối, server gửi system message <c>type = MemberDenied</c>.
+    ///
+    /// **Path params:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    /// - <c>userId</c> (guid, bắt buộc): Id thành viên cần từ chối (status = PendingApproval).
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>VALIDATION_ERROR</c>: Cố từ chối chat 1-1 (HTTP 400).
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải owner/manager hoặc không phải thành viên (HTTP 403).
+    /// - <c>GROUP_MEMBER_NOT_FOUND</c>: <c>userId</c> không thuộc nhóm (HTTP 404).
+    /// - <c>GROUP_MEMBER_NOT_PENDING</c>: Thành viên không ở trạng thái chờ duyệt (HTTP 409).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpDelete("{groupId:guid}/members/{userId:guid}/deny")]
+    public async Task<IActionResult> DenyMember(Guid groupId, Guid userId, CancellationToken ct)
+        => HandleResult(await mediator.Send(new DenyGroupMemberCommand(groupId, userId), ct));
 
     #region
     /// <summary>Xóa thành viên khỏi nhóm (Owner/Manager only).</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Chỉ Owner hoặc Manager mới được xóa thành viên. Owner không thể tự xóa mình (dùng DELETE /members/me để rời nhóm).
+    /// Chỉ Owner hoặc Manager mới được xóa thành viên.
+    /// Owner có thể xóa Manager hoặc Member. Manager chỉ được xóa Member.
+    /// Owner không thể tự xóa mình (dùng DELETE /members/me để rời nhóm).
     ///
     /// **Path params:**
     /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
@@ -419,9 +570,9 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
-    /// - <c>VALIDATION_ERROR</c>: Owner cố tự remove (HTTP 400).
+    /// - <c>VALIDATION_ERROR</c>: Tự remove (HTTP 400).
     /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
-    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải Owner hoặc Manager (HTTP 403).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải Owner/Manager, hoặc Manager cố xóa Manager/Owner (HTTP 403).
     /// - <c>GROUP_MEMBER_NOT_FOUND</c>: <c>userId</c> không phải thành viên nhóm (HTTP 404).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
@@ -429,6 +580,60 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     [HttpDelete("{groupId:guid}/members/{userId:guid}")]
     public async Task<IActionResult> RemoveMember(Guid groupId, Guid userId, CancellationToken ct)
         => HandleResult(await mediator.Send(new RemoveGroupMemberCommand(groupId, userId), ct));
+
+    /// <summary>Sửa biệt danh của một thành viên trong nhóm chat.</summary>
+    /// <remarks>
+    /// Mọi thành viên đang ở trạng thái <c>Joined</c> đều có thể sửa biệt danh của bất kỳ thành viên <c>Joined</c> nào trong cùng nhóm.
+    /// Sau khi cập nhật, server tạo một tin nhắn hệ thống có <c>type = NicknameChanged</c> và broadcast realtime như gửi tin nhắn thường.
+    ///
+    /// **Path params:**
+    /// - <c>groupId</c>: Id nhóm chat.
+    /// - <c>userId</c>: Id thành viên cần sửa biệt danh.
+    ///
+    /// **Request body:**
+    /// <code>
+    /// { "customName": "Biệt danh mới" }
+    /// </code>
+    ///
+    /// Truyền <c>null</c> hoặc chuỗi rỗng để xóa biệt danh.
+    /// </remarks>
+    [HttpPatch("{groupId:guid}/members/{userId:guid}/custom-name")]
+    public async Task<IActionResult> UpdateMemberCustomName(
+        Guid groupId, Guid userId, [FromBody] UpdateGroupMemberCustomNameRequest req, CancellationToken ct)
+        => HandleResult(await mediator.Send(
+            new UpdateGroupMemberCustomNameCommand(groupId, userId, req.CustomName), ct));
+
+    #region
+    /// <summary>Cập nhật trạng thái mute của bản thân trong nhóm chat.</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ áp dụng cho user hiện tại trong group. Không ảnh hưởng đến các thành viên khác.
+    ///
+    /// **Path param:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    ///
+    /// **Request body:**
+    /// <code>
+    /// {
+    ///   "isMuted": true
+    /// }
+    /// </code>
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải thành viên nhóm (HTTP 403).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpPatch("{groupId:guid}/members/me/mute")]
+    public async Task<IActionResult> UpdateMuted(
+        Guid groupId, [FromBody] UpdateGroupMemberMutedRequest req, CancellationToken ct)
+        => HandleResult(await mediator.Send(new UpdateGroupMemberMutedCommand(groupId, req.IsMuted), ct));
 
     #region
     /// <summary>Xóa nhóm chat (Owner only).</summary>
@@ -460,7 +665,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Owner phải transfer ownership trước khi rời nếu còn thành viên khác (PUT /{groupId}/owner).
+    /// Owner phải đổi role người khác thành Owner trước khi rời nếu còn thành viên khác (PUT /{groupId}/owner).
     /// Nếu là thành viên cuối cùng, nhóm sẽ bị xóa hoàn toàn.
     ///
     /// **Path param:**
@@ -482,11 +687,12 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
         => HandleResult(await mediator.Send(new LeaveGroupCommand(groupId), ct));
 
     #region
-    /// <summary>Transfer ownership cho thành viên khác.</summary>
+    /// <summary>Đổi role cho thành viên khác (Owner only).</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Chỉ Owner hiện tại mới được transfer. Sau khi transfer, Owner cũ trở thành Member.
+    /// Chỉ Owner hiện tại mới được đổi role cho thành viên khác.
+    /// Nếu đổi một thành viên khác thành Owner, Owner hiện tại sẽ xuống Manager.
     ///
     /// **Path param:**
     /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
@@ -494,33 +700,38 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// **Request body:**
     /// <code>
     /// {
-    ///   "newOwnerUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ///   "targetUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ///   "role": 2
     /// }
     /// </code>
+    ///
+    /// **Giải thích:**
+    /// - <c>role</c>: <c>0</c> = Member, <c>1</c> = Owner, <c>2</c> = Manager.
     ///
     /// **Response khi thành công (HTTP 200):**
     /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
     ///
     /// **Các giá trị <c>code</c>:**
     /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>VALIDATION_ERROR</c>: Owner tự đổi role hoặc <c>role</c> không hợp lệ (HTTP 400).
     /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
     /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải Owner (HTTP 403).
-    /// - <c>GROUP_MEMBER_NOT_FOUND</c>: <c>newOwnerUserId</c> không phải thành viên nhóm (HTTP 404).
+    /// - <c>GROUP_MEMBER_NOT_FOUND</c>: <c>targetUserId</c> không phải thành viên nhóm (HTTP 404).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion
     [HttpPut("{groupId:guid}/owner")]
     public async Task<IActionResult> TransferOwnership(
         Guid groupId, [FromBody] TransferOwnershipRequest req, CancellationToken ct)
-        => HandleResult(await mediator.Send(new TransferOwnershipCommand(groupId, req.NewOwnerUserId), ct));
+        => HandleResult(await mediator.Send(new TransferOwnershipCommand(groupId, req.TargetUserId, req.Role), ct));
 
     #region
-    /// <summary>Cập nhật tên/avatar nhóm (Owner only).</summary>
+    /// <summary>Cập nhật tên nhóm (member có thể cập nhật).</summary>
     /// <remarks>
     /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
     ///
-    /// Chỉ Owner mới được cập nhật. Không áp dụng cho chat 1-1.
-    /// Chỉ truyền field muốn cập nhật; field <c>null</c> sẽ bị bỏ qua (không xóa giá trị cũ).
+    /// Chỉ áp dụng cho group chat (không áp dụng cho chat 1-1).
+    /// Chỉ thành viên trạng thái <c>Joined</c> mới được cập nhật.
     ///
     /// **Path param:**
     /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
@@ -528,8 +739,7 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// **Request body:**
     /// <code>
     /// {
-    ///   "name": "Tên nhóm mới (tuỳ chọn, tối đa 100 ký tự)",
-    ///   "avatarMediaObjectId": "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+    ///   "name": "Tên nhóm mới (tối đa 100 ký tự)"
     /// }
     /// </code>
     ///
@@ -540,14 +750,77 @@ public class MessageGroupsController(IMediator mediator, ICurrentUserService cur
     /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
     /// - <c>VALIDATION_ERROR</c>: Cố cập nhật chat 1-1, hoặc <c>name</c> rỗng/vượt 100 ký tự (HTTP 400).
     /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải thành viên nhóm (HTTP 403).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpPatch("{groupId:guid}/name")]
+    public async Task<IActionResult> UpdateName(
+        Guid groupId, [FromBody] UpdateGroupNameRequest req, CancellationToken ct)
+        => HandleResult(await mediator.Send(new UpdateGroupNameCommand(groupId, req.Name), ct));
+
+    #region
+    /// <summary>Cập nhật avatar nhóm (member có thể cập nhật).</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ áp dụng cho group chat (không áp dụng cho chat 1-1).
+    /// Body: <c>multipart/form-data</c> với field <c>file</c> (ảnh jpeg/png/webp/gif, tối đa 10MB).
+    ///
+    /// **Path param:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>VALIDATION_ERROR</c>: Cố cập nhật chat 1-1, file rỗng, sai MIME type, hoặc vượt quá 10MB (HTTP 400).
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
+    /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải thành viên nhóm (HTTP 403).
+    /// - <c>UPLOAD_FAILED</c>: Upload/storage thất bại (HTTP 400).
+    /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
+    /// </remarks>
+    #endregion
+    [HttpPut("{groupId:guid}/avatar")]
+    [RequestSizeLimit(11L * 1024 * 1024)]
+    public async Task<IActionResult> UpdateAvatar(
+        Guid groupId, IFormFile file, CancellationToken ct)
+        => HandleResult(await mediator.Send(new UpdateGroupAvatarCommand(groupId, file), ct));
+
+    #region
+    /// <summary>Cập nhật yêu cầu duyệt thành viên (Owner only).</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Chỉ Owner mới được cập nhật. Không áp dụng cho chat 1-1.
+    ///
+    /// **Path param:**
+    /// - <c>groupId</c> (guid, bắt buộc): Id của nhóm.
+    ///
+    /// **Request body:**
+    /// <code>
+    /// {
+    ///   "requireApprovalToAddMembers": true
+    /// }
+    /// </code>
+    ///
+    /// **Response khi thành công (HTTP 200):**
+    /// <code>{ "success": true, "message": "...", "code": null, "data": null, "errors": null }</code>
+    ///
+    /// **Các giá trị <c>code</c>:**
+    /// - <c>null</c>: Thành công (HTTP 200), <c>data</c> là <c>null</c>.
+    /// - <c>VALIDATION_ERROR</c>: Cố cập nhật chat 1-1 (HTTP 400).
+    /// - <c>MESSAGE_GROUP_NOT_FOUND</c>: Nhóm không tồn tại (HTTP 404).
     /// - <c>MESSAGE_GROUP_FORBIDDEN</c>: Không phải Owner (HTTP 403).
     /// - <c>401</c>: Token không hợp lệ hoặc hết hạn.
     /// </remarks>
     #endregion
-    [HttpPatch("{groupId:guid}")]
-    public async Task<IActionResult> Update(
-        Guid groupId, [FromBody] UpdateGroupRequest req, CancellationToken ct)
-        => HandleResult(await mediator.Send(new UpdateGroupCommand(groupId, req.Name, req.AvatarMediaObjectId), ct));
+    [HttpPatch("{groupId:guid}/require-approval-to-add-members")]
+    public async Task<IActionResult> UpdateRequireApprovalToAddMembers(
+        Guid groupId, [FromBody] UpdateGroupApprovalSettingRequest req, CancellationToken ct)
+        => HandleResult(await mediator.Send(
+            new UpdateGroupApprovalSettingCommand(groupId, req.RequireApprovalToAddMembers), ct));
 
     #region
     /// <summary>Cập nhật trạng thái đang gõ trong nhóm chat.</summary>

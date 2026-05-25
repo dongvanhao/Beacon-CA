@@ -1,3 +1,3 @@
 namespace Beacon.Application.Features.Messaging.Dtos;
 
-public record AddGroupMemberRequest(Guid TargetUserId);
+public record AddGroupMemberRequest(IReadOnlyList<Guid> TargetUserIds);

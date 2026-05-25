@@ -1,4 +1,5 @@
 using Beacon.Domain.Entities.Messaging;
+using Beacon.Domain.Enums.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -15,6 +16,11 @@ public class MessageConfiguration : IEntityTypeConfiguration<Message>
         b.Property(m => m.IsDeleted).HasDefaultValue(false);
         b.Property(m => m.ClientMessageId).HasMaxLength(100);
         b.Property(m => m.PostId).IsRequired(false);
+        b.Property(m => m.MetadataJson).HasColumnType("nvarchar(max)");
+        b.Property(m => m.Type)
+            .IsRequired()
+            .HasConversion<int>()
+            .HasDefaultValue(MessageType.Normal);
 
         b.Property(m => m.SequenceNumber)
             .ValueGeneratedOnAdd()

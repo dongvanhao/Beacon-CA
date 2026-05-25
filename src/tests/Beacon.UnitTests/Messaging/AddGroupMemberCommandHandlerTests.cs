@@ -1,11 +1,14 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Commands.AddGroupMember;
+using Beacon.Application.Features.Messaging.Commands.SendMessage;
+using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Results;
 using FluentAssertions;
+using MediatR;
 using Moq;
 
 namespace Beacon.UnitTests.Messaging;
@@ -16,6 +19,7 @@ public class AddGroupMemberCommandHandlerTests
     private readonly Mock<IUserRepository> _userRepoMock = new();
     private readonly Mock<ICurrentUserService> _currentUserMock = new();
     private readonly Mock<INotificationService> _notificationMock = new();
+    private readonly Mock<ISender> _senderMock = new();
 
     [Theory]
     [InlineData(GroupMemberRole.Owner, MessageGroupMemberStatus.Joined)]
@@ -46,12 +50,16 @@ public class AddGroupMemberCommandHandlerTests
         _currentUserMock.Setup(x => x.UserId).Returns(callerId);
         _groupRepoMock.Setup(x => x.GetByIdWithMembersAsync(groupId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(group);
-        _userRepoMock.Setup(x => x.ExistsAsync(targetId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(true);
+        _userRepoMock.Setup(x => x.GetByIdAsync(targetId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Beacon.Domain.Entities.Identity.User.Create("target", "target@test.com", "hash", "Tran", "Target"));
+        _senderMock.Setup(x => x.Send(It.IsAny<SendMessageCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<MessageDto>.Success(new MessageDto(
+                Guid.NewGuid(), groupId, callerId, "Nguyen Caller", "system", MessageType.MemberAdded,
+                null, DateTime.UtcNow, null, null)));
 
         var handler = CreateHandler();
 
-        var result = await handler.Handle(new AddGroupMemberCommand(groupId, targetId), CancellationToken.None);
+        var result = await handler.Handle(new AddGroupMemberCommand(groupId, [targetId]), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         group.Members.Single(m => m.UserId == targetId).Status.Should().Be(expectedStatus);
@@ -85,7 +93,7 @@ public class AddGroupMemberCommandHandlerTests
 
         var handler = CreateHandler();
 
-        var result = await handler.Handle(new AddGroupMemberCommand(groupId, targetId), CancellationToken.None);
+        var result = await handler.Handle(new AddGroupMemberCommand(groupId, [targetId]), CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error.Type.Should().Be(ErrorType.Forbidden);
@@ -93,5 +101,5 @@ public class AddGroupMemberCommandHandlerTests
     }
 
     private AddGroupMemberCommandHandler CreateHandler()
-        => new(_groupRepoMock.Object, _userRepoMock.Object, _currentUserMock.Object, _notificationMock.Object);
+        => new(_groupRepoMock.Object, _userRepoMock.Object, _currentUserMock.Object, _notificationMock.Object, _senderMock.Object);
 }

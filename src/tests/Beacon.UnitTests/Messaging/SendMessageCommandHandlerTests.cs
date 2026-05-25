@@ -30,6 +30,7 @@ public class SendMessageCommandHandlerTests
     private readonly Mock<IMessageGroupPresenceTracker> _presenceTrackerMock = new();
     private readonly Mock<IPostRepository> _postRepoMock = new();
     private readonly Mock<IFriendRepository> _friendRepoMock = new();
+    private readonly Mock<IMessageGroupMemberSettingRepository> _settingRepoMock = new();
     private readonly Mock<IMediaObjectRepository> _mediaRepoMock = new();
     private readonly Mock<IUserRepository> _userRepoMock = new();
     private readonly Mock<IStorageService> _storageMock = new();
@@ -72,6 +73,7 @@ public class SendMessageCommandHandlerTests
             _presenceTrackerMock.Object,
             _postRepoMock.Object,
             _friendRepoMock.Object,
+            _settingRepoMock.Object,
             _loggerMock.Object,
             _mapper,
             _postMapper);

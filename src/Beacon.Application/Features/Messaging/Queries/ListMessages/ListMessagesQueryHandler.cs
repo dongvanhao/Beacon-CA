@@ -12,6 +12,7 @@ namespace Beacon.Application.Features.Messaging.Queries.ListMessages;
 public class ListMessagesQueryHandler(
     IMessageGroupRepository groupRepo,
     IMessageRepository messageRepo,
+    IMessageGroupMemberSettingRepository settingRepo,
     ICurrentUserService currentUser,
     MessageMapper mapper,
     MessagePostMapper postMapper)
@@ -26,14 +27,22 @@ public class ListMessagesQueryHandler(
 
         var limit = Math.Clamp(query.Limit, 1, 100);
         var paged = await messageRepo.ListByGroupAsync(query.GroupId, query.Cursor, limit, ct);
+        var customNamesByUserId = (await settingRepo.ListByGroupAsync(query.GroupId, ct))
+            .Where(s => !string.IsNullOrWhiteSpace(s.CustomName))
+            .ToDictionary(s => s.UserId, s => s.CustomName!);
 
         var dtos = new List<MessageDto>(paged.Data.Count);
         foreach (var message in paged.Data)
         {
-            dtos.Add(mapper.ToDto(
-                message,
+            var senderDisplayName = ResolveSenderDisplayName(
+                message.SenderId,
                 message.Sender.FamilyName,
                 message.Sender.GivenName,
+                customNamesByUserId);
+
+            dtos.Add(mapper.ToDto(
+                message,
+                senderDisplayName,
                 await postMapper.ToDtoAsync(message.Post, ct)));
         }
 
@@ -42,5 +51,19 @@ public class ListMessagesQueryHandler(
             Data = dtos,
             Meta = paged.Meta
         });
+    }
+
+    private static string ResolveSenderDisplayName(
+        Guid senderId,
+        string familyName,
+        string givenName,
+        IReadOnlyDictionary<Guid, string> customNamesByUserId)
+    {
+        if (customNamesByUserId.TryGetValue(senderId, out var customName)
+            && !string.IsNullOrWhiteSpace(customName))
+            return customName;
+
+        var fullName = $"{familyName} {givenName}".Trim();
+        return fullName != string.Empty ? fullName : "Người dùng";
     }
 }

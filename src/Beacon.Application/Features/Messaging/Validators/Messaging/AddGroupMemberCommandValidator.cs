@@ -8,6 +8,17 @@ public class AddGroupMemberCommandValidator : AbstractValidator<AddGroupMemberCo
     public AddGroupMemberCommandValidator()
     {
         RuleFor(x => x.GroupId).NotEmpty();
-        RuleFor(x => x.TargetUserId).NotEmpty();
+        RuleFor(x => x.TargetUserIds)
+            .NotEmpty()
+            .WithMessage("Danh sách thành viên cần thêm không được để trống.");
+
+        RuleForEach(x => x.TargetUserIds)
+            .NotEmpty()
+            .WithMessage("Id thành viên cần thêm không hợp lệ.");
+
+        RuleFor(x => x.TargetUserIds)
+            .Must(ids => ids.Distinct().Count() == ids.Count)
+            .WithMessage("Danh sách thành viên cần thêm không được trùng lặp.")
+            .When(x => x.TargetUserIds is not null);
     }
 }

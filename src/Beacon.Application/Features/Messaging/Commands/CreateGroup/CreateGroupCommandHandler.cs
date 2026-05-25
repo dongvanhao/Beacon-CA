@@ -90,7 +90,7 @@ public class CreateGroupCommandHandler(
         {
             var avatarUrl = m.User.AvatarMediaObjectId.HasValue
                 && urlMap.TryGetValue(m.User.AvatarMediaObjectId.Value, out var url) ? url : null;
-            return mapper.ToMemberDto(m, avatarUrl);
+            return mapper.ToMemberDto(m, null, avatarUrl);
         }).ToList();
 
         string? groupAvatarUrl = reloaded.AvatarMedia is not null

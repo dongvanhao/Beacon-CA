@@ -14,6 +14,11 @@ public interface IRealtimeNotifier
         IReadOnlyCollection<Guid> recipientUserIds,
         CancellationToken ct = default);
 
+    Task NotifyNewPostAsync(
+        object postDto,
+        IReadOnlyCollection<Guid> recipientUserIds,
+        CancellationToken ct = default);
+
     Task NotifyTypingAsync(Guid groupId, Guid typingUserId, bool isTyping, CancellationToken ct = default);
 
     Task NotifyMessageSeenAsync(Guid groupId, Guid seenByUserId, Guid lastSeenMessageId, CancellationToken ct = default);

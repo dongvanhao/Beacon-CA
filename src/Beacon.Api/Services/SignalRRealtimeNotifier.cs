@@ -34,6 +34,18 @@ public class SignalRRealtimeNotifier(IHubContext<BeaconHub, IBeaconHub> hubConte
         return Task.WhenAll(tasks);
     }
 
+    public Task NotifyNewPostAsync(
+        object postDto,
+        IReadOnlyCollection<Guid> recipientUserIds,
+        CancellationToken ct = default)
+    {
+        var tasks = recipientUserIds
+            .Distinct()
+            .Select(userId => hubContext.Clients.Group($"user:{userId}").ReceiveNewPost(postDto));
+
+        return Task.WhenAll(tasks);
+    }
+
     public Task NotifyTypingAsync(Guid groupId, Guid typingUserId, bool isTyping, CancellationToken ct = default)
         => hubContext.Clients.Group($"message_group:{groupId}")
             .ReceiveTypingStatus(groupId, typingUserId, isTyping);

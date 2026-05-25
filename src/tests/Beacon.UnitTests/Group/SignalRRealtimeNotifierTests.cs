@@ -22,6 +22,7 @@ public class SignalRRealtimeNotifierTests
         _groupClientMock.Setup(c => c.ReceiveNotification(It.IsAny<NotificationPayload>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveUserPresence(It.IsAny<UserPresencePayload>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveNewMessage(It.IsAny<object>())).Returns(Task.CompletedTask);
+        _groupClientMock.Setup(c => c.ReceiveNewPost(It.IsAny<object>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveTypingStatus(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<bool>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveMessageSeen(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<Guid>())).Returns(Task.CompletedTask);
         _groupClientMock.Setup(c => c.ReceiveMessageGroupSeen(It.IsAny<Guid>(), It.IsAny<Guid>())).Returns(Task.CompletedTask);
@@ -80,6 +81,20 @@ public class SignalRRealtimeNotifierTests
         _clientsMock.Verify(c => c.Group($"user:{user1}"), Times.Once);
         _clientsMock.Verify(c => c.Group($"user:{user2}"), Times.Once);
         _groupClientMock.Verify(c => c.ReceiveNewMessage(messageDto), Times.Exactly(3));
+    }
+
+    [Fact]
+    public async Task NotifyNewPostAsync_ShouldBroadcastToUserRooms()
+    {
+        var user1 = Guid.NewGuid();
+        var user2 = Guid.NewGuid();
+        var postDto = new { Caption = "new post" };
+
+        await _sut.NotifyNewPostAsync(postDto, [user1, user2, user1]);
+
+        _clientsMock.Verify(c => c.Group($"user:{user1}"), Times.Once);
+        _clientsMock.Verify(c => c.Group($"user:{user2}"), Times.Once);
+        _groupClientMock.Verify(c => c.ReceiveNewPost(postDto), Times.Exactly(2));
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using Beacon.Domain.Common;
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.Entities.Posts;
+using Beacon.Domain.Enums.Messaging;
 
 namespace Beacon.Domain.Entities.Messaging
 {
@@ -17,6 +18,8 @@ namespace Beacon.Domain.Entities.Messaging
         public string? ClientMessageId { get; private set; }
         public Guid? ReplyToMessageId { get; private set; }
         public Guid? PostId { get; private set; }
+        public MessageType Type { get; private set; } = MessageType.Normal;
+        public string? MetadataJson { get; private set; }
 
         public MessageGroup Group { get; private set; } = null!;
         public User Sender { get; private set; } = null!;
@@ -29,7 +32,9 @@ namespace Beacon.Domain.Entities.Messaging
             Guid senderId,
             string content,
             string? clientMessageId = null,
-            Guid? postId = null)
+            Guid? postId = null,
+            MessageType type = MessageType.Normal,
+            string? metadataJson = null)
             => new()
             {
                 GroupId = groupId,
@@ -37,7 +42,9 @@ namespace Beacon.Domain.Entities.Messaging
                 Content = content,
                 CreatedAtUtc = DateTime.UtcNow,
                 ClientMessageId = clientMessageId,
-                PostId = postId
+                PostId = postId,
+                Type = type,
+                MetadataJson = metadataJson
             };
 
         public void SoftDelete()

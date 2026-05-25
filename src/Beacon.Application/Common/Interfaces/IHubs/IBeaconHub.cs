@@ -7,6 +7,7 @@ public interface IBeaconHub
     Task ReceiveNotification(NotificationPayload payload);
     Task ReceiveUserPresence(UserPresencePayload payload);
     Task ReceiveNewMessage(object messageDto);
+    Task ReceiveNewPost(object postDto);
     Task ReceiveTypingStatus(Guid groupId, Guid typingUserId, bool isTyping);
     Task ReceiveMessageSeen(Guid groupId, Guid seenByUserId, Guid lastSeenMessageId);
     Task ReceiveMessageGroupSeen(Guid groupId, Guid lastSeenMessageId);

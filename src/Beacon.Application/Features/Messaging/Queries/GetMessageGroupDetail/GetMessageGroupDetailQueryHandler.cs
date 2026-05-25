@@ -50,12 +50,16 @@ public class GetMessageGroupDetailQueryHandler(
                 .ToDictionary(x => x.Media.Id, x => x.Url)
             : new Dictionary<Guid, string>();
 
+        var settingsByUserId = (await settingRepo.ListByGroupAsync(group.Id, ct))
+            .ToDictionary(s => s.UserId, s => s.CustomName);
+
         var memberDtos = visibleMembers.Select(m =>
         {
             var avatarUrl = m.User.AvatarMediaObjectId.HasValue
                 && urlMap.TryGetValue(m.User.AvatarMediaObjectId.Value, out var url)
                 ? url : null;
-            return mapper.ToMemberDto(m, avatarUrl);
+            settingsByUserId.TryGetValue(m.UserId, out var customName);
+            return mapper.ToMemberDto(m, customName, avatarUrl);
         }).ToList();
 
         // Resolve display fields so FE does not need conversation naming logic.

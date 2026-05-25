@@ -94,6 +94,7 @@ namespace Beacon.Shared.Constants
             public const string MESSAGE_GROUP_FORBIDDEN = "MESSAGE_GROUP_FORBIDDEN";
             public const string GROUP_MEMBER_ALREADY_EXISTS = "GROUP_MEMBER_ALREADY_EXISTS";
             public const string GROUP_MEMBER_NOT_FOUND = "GROUP_MEMBER_NOT_FOUND";
+            public const string GROUP_MEMBER_NOT_PENDING = "GROUP_MEMBER_NOT_PENDING";
             public const string MESSAGE_NOT_FOUND = "MESSAGE_NOT_FOUND";
         }
 

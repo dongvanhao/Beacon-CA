@@ -11,6 +11,12 @@ namespace Beacon.Infrashtructure.Repository.Messaging
             => db.MessageGroupMemberSettings
                 .FirstOrDefaultAsync(s => s.GroupId == groupId && s.UserId == userId, ct);
 
+        public Task<List<MessageGroupMemberSetting>> ListByGroupAsync(Guid groupId, CancellationToken ct)
+            => db.MessageGroupMemberSettings
+                .AsNoTracking()
+                .Where(s => s.GroupId == groupId)
+                .ToListAsync(ct);
+
         public async Task AddAsync(MessageGroupMemberSetting setting, CancellationToken ct)
             => await db.MessageGroupMemberSettings.AddAsync(setting, ct);
 

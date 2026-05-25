@@ -37,6 +37,36 @@ namespace Beacon.Infrashtructure.Repository.Messaging
             };
         }
 
+        public async Task<CursorPagedResult<Message, long>> SearchByGroupAsync(
+            Guid groupId, string search, long? cursor, int limit, CancellationToken ct)
+        {
+            var query = db.Messages
+                .AsNoTracking()
+                .Include(m => m.Sender)
+                .Include(m => m.Post)
+                    .ThenInclude(p => p!.DailySafetyRecord)
+                .Where(m => m.GroupId == groupId)
+                .Where(m => m.Content.Contains(search))
+                .Where(m => cursor == null || m.SequenceNumber < cursor)
+                .OrderByDescending(m => m.SequenceNumber)
+                .AsQueryable();
+
+            var items = await query.Take(limit + 1).ToListAsync(ct);
+            var hasMore = items.Count > limit;
+            if (hasMore) items.RemoveAt(items.Count - 1);
+
+            return new CursorPagedResult<Message, long>
+            {
+                Data = items,
+                Meta = new CursorMeta<long>
+                {
+                    NextCursor = hasMore ? items[^1].SequenceNumber : (long?)null,
+                    Limit = limit,
+                    HasMore = hasMore
+                }
+            };
+        }
+
         public Task<Message?> GetByClientMessageIdAsync(Guid groupId, string clientMessageId, CancellationToken ct)
             => db.Messages
                 .Include(m => m.Post)

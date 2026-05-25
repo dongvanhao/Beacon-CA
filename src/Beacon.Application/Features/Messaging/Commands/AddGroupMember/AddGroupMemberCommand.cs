@@ -3,4 +3,4 @@ using MediatR;
 
 namespace Beacon.Application.Features.Messaging.Commands.AddGroupMember;
 
-public record AddGroupMemberCommand(Guid GroupId, Guid TargetUserId) : IRequest<Result>;
+public record AddGroupMemberCommand(Guid GroupId, IReadOnlyList<Guid> TargetUserIds) : IRequest<Result>;

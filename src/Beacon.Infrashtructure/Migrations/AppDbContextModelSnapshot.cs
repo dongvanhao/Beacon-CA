@@ -674,6 +674,9 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
+                    b.Property<string>("MetadataJson")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("PostId")
                         .HasColumnType("uniqueidentifier");
 
@@ -688,6 +691,11 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("bigint");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("SequenceNumber"));
+
+                    b.Property<int>("Type")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.HasKey("Id");
 
@@ -1074,6 +1082,12 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<DateTime?>("ResolvedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
