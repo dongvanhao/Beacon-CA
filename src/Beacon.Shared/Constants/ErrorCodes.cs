@@ -44,6 +44,10 @@ namespace Beacon.Shared.Constants
             public const string RECORD_NOT_FOUND = "SAFETY_RECORD_NOT_FOUND";
             public const string ALREADY_CHECKED_IN = "ALREADY_CHECKED_IN";
             public const string INCIDENT_NOT_FOUND = "INCIDENT_NOT_FOUND";
+
+            public const string EMERGENCY_CONTACT_NOT_FOUND = "EMERGENCY_CONTACT_NOT_FOUND";
+            public const string EMERGENCY_CONTACT_LIMIT_EXCEEDED = "EMERGENCY_CONTACT_LIMIT_EXCEEDED";
+            public const string EMERGENCY_CONTACT_FORBIDDEN = "EMERGENCY_CONTACT_FORBIDDEN";
         }
 
         public static class Checkin

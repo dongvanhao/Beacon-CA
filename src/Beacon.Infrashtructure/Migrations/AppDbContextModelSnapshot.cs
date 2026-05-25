@@ -1001,10 +1001,12 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<string>("FailureReason")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("Message")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<DateTime?>("ResolvedAtUtc")
                         .HasColumnType("datetime2");
@@ -1034,7 +1036,7 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AlertIncident");
+                    b.ToTable("AlertIncidents", (string)null);
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.DailySafetyRecord", b =>
@@ -1095,7 +1097,8 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("ContactValue")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
@@ -1105,7 +1108,8 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.Property<string>("FullName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -1123,7 +1127,8 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Relationship")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("datetime2");
@@ -1133,9 +1138,9 @@ namespace Beacon.Infrashtructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("UserId", "ContactValue", "ChannelType");
 
-                    b.ToTable("EmergencyContact");
+                    b.ToTable("EmergencyContacts", (string)null);
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Setting.SafetySetting", b =>
@@ -1604,13 +1609,13 @@ namespace Beacon.Infrashtructure.Migrations
                     b.HasOne("Beacon.Domain.Entities.Safety.DailySafetyRecord", "DailySafetyRecord")
                         .WithOne("AlertIncident")
                         .HasForeignKey("Beacon.Domain.Entities.Safety.AlertIncident", "DailySafetyRecordId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany()
+                        .WithMany("AlertIncidents")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("DailySafetyRecord");
@@ -1632,9 +1637,9 @@ namespace Beacon.Infrashtructure.Migrations
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.EmergencyContact", b =>
                 {
                     b.HasOne("Beacon.Domain.Entities.Identity.User", "User")
-                        .WithMany()
+                        .WithMany("EmergencyContacts")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
@@ -1677,11 +1682,15 @@ namespace Beacon.Infrashtructure.Migrations
 
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.User", b =>
                 {
+                    b.Navigation("AlertIncidents");
+
                     b.Navigation("Checkins");
 
                     b.Navigation("DailySafetyRecords");
 
                     b.Navigation("Devices");
+
+                    b.Navigation("EmergencyContacts");
 
                     b.Navigation("RefreshTokens");
 

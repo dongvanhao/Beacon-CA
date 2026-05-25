@@ -51,7 +51,7 @@ public class UpsertPostReactionHandlerTests
 
         // Default: reactions list is empty
         _reactionRepo
-            .Setup(r => r.GetByPostIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .Setup(r => r.GetAllByPostIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<PostReaction>());
 
         // Default: AddAsync is a no-op task

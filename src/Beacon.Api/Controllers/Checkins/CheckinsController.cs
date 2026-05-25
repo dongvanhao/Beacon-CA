@@ -1,6 +1,7 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Checkins.Commands.CreateCheckin;
 using Beacon.Application.Features.Checkins.Dtos;
+using Beacon.Application.Features.Checkins.Queries.GetCheckinHistory;
 using Beacon.Application.Features.Checkins.Queries.GetTodayCheckinStatus;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -86,4 +87,32 @@ public class CheckinsController(IMediator mediator, ICurrentUserService currentU
     [HttpGet("today-status")]
     public async Task<IActionResult> GetTodayStatus(CancellationToken ct)
         => HandleResult(await mediator.Send(new GetTodayCheckinStatusQuery(currentUser.UserId), ct));
+
+    #region
+    /// <summary>Lấy lịch sử các lần checkin của user hiện tại</summary>
+    /// <remarks>
+    /// Yêu cầu: <c>Authorization: Bearer &lt;token&gt;</c>
+    ///
+    /// Trả danh sách lần user đã checkin (bảng Checkins), mới nhất trước.
+    /// Không bao gồm ngày chưa checkin hay Missed.
+    ///
+    /// Cursor là <c>CheckedInAtUtc</c> (ISO-8601 UTC) của item cuối trang trước.
+    ///
+    /// Các giá trị <c>code</c>:
+    /// - <c>null</c>: Thành công.
+    /// - <c>VALIDATION_ERROR</c>: limit ngoài khoảng 1–100.
+    ///
+    /// Cấu trúc <c>data</c>:
+    /// <code>{ "data": [...], "meta": { "nextCursor": "ISO-UTC|null", "hasMore": bool, "limit": int } }</code>
+    ///
+    /// Format: <c>{ success, message, code, data, errors }</c>
+    /// </remarks>
+    #endregion
+    [HttpGet("history")]
+    public async Task<IActionResult> GetHistory(
+        [FromQuery] DateTimeOffset? cursor,
+        [FromQuery] int limit = 20,
+        CancellationToken ct = default)
+        => HandleResult(await mediator.Send(
+            new GetCheckinHistoryQuery(currentUser.UserId, cursor, limit), ct));
 }

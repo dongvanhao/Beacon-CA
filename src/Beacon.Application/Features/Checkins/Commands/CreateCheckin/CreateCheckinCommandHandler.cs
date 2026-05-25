@@ -3,6 +3,7 @@ using Beacon.Application.Mappings.Checkins;
 using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Enums.Checkins;
+using Beacon.Domain.Enums.Safety;
 using Beacon.Domain.IRepository.Checkins;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
@@ -33,7 +34,7 @@ public class CreateCheckinCommandHandler(
     {
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, VietnamTz));
 
-        var record = await dailySafetyRecordRepo.GetByUserIdAndDateAsync(cmd.UserId, today, ct);
+        var record = await dailySafetyRecordRepo.GetByUserIdAndDateWithIncidentAsync(cmd.UserId, today, ct);
 
         if (record is null)
         {
@@ -42,7 +43,7 @@ public class CreateCheckinCommandHandler(
             await dailySafetyRecordRepo.AddAsync(record, ct);
         }
 
-        if (record.Status == Beacon.Domain.Enums.Safety.SafetyStatus.CheckedIn)
+        if (record.Status is SafetyStatus.CheckedIn or SafetyStatus.Resolved)
             return Result<CheckinDto>.Failure(
                 Error.Conflict(ErrorCodes.Safety.ALREADY_CHECKED_IN, "Bạn đã check-in hôm nay rồi."));
 
@@ -56,17 +57,36 @@ public class CreateCheckinCommandHandler(
                     Error.NotFound(ErrorCodes.Storage.MEDIA_NOT_FOUND, "Không tìm thấy media."));
         }
 
-        var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Manual, today, req.Note, req.Latitude, req.Longitude);
+        // Nhánh A — Pending: checkin đúng hạn
+        if (record.Status == SafetyStatus.Pending)
+        {
+            var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Manual, today, req.Note, req.Latitude, req.Longitude);
+            if (req.MediaId.HasValue)
+                checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
 
-        if (req.MediaId.HasValue)
-            checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
+            record.MarkCheckedIn(checkin.CheckedInAtUtc);
 
-        record.MarkCheckedIn(checkin.CheckedInAtUtc);
+            await checkinRepo.AddAsync(checkin, ct);
+            await checkinRepo.SaveChangesAsync(ct);
+            return Result<CheckinDto>.Success(mapper.ToDto(checkin, req.MediaId));
+        }
 
-        await checkinRepo.AddAsync(checkin, ct);
-        await checkinRepo.SaveChangesAsync(ct);
+        // Nhánh B — Missed/Alerted: recovery checkin
+        {
+            var checkin = Checkin.Create(cmd.UserId, record.Id, CheckinType.Recovery, today, req.Note, req.Latitude, req.Longitude);
+            if (req.MediaId.HasValue)
+                checkin.MediaItems.Add(CheckinMedia.Create(checkin.Id, req.MediaId.Value, isPrimary: true));
 
-        return Result<CheckinDto>.Success(mapper.ToDto(checkin, req.MediaId));
+            if (record.AlertIncident is not null
+                && record.AlertIncident.Status != AlertIncidentStatus.Resolved)
+                record.AlertIncident.Resolve();
+
+            record.MarkResolved();
+
+            await checkinRepo.AddAsync(checkin, ct);
+            await checkinRepo.SaveChangesAsync(ct);
+            return Result<CheckinDto>.Success(mapper.ToDto(checkin, req.MediaId));
+        }
     }
 
     private async Task<DateTime> ComputeDeadlineAsync(Guid userId, DateOnly today, CancellationToken ct)

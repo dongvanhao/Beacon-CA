@@ -37,7 +37,7 @@ namespace Beacon.Infrashtructure.Presistence
         // public DbSet<NotificationPreference> NotificationPreferences => Set<NotificationPreference>();
         // public DbSet<AppPreference> AppPreferences => Set<AppPreference>();
 
-        // public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
+        public DbSet<EmergencyContact> EmergencyContacts => Set<EmergencyContact>();
         public DbSet<DailySafetyRecord> DailySafetyRecords => Set<DailySafetyRecord>();
 
         public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
@@ -55,7 +55,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<MessageGroupMemberSetting> MessageGroupMemberSettings => Set<MessageGroupMemberSetting>();
         public DbSet<Message> Messages => Set<Message>();
 
-        // public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
+        public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
         // public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
@@ -90,6 +90,7 @@ namespace Beacon.Infrashtructure.Presistence
             modelBuilder.Entity<Message>().HasQueryFilter(x => !x.IsDeleted);
             modelBuilder.Entity<MessageGroupMember>().HasQueryFilter(m => !m.Group.IsDeleted);
             modelBuilder.Entity<CheckinMedia>().HasQueryFilter(cm => !cm.MediaObject.IsDeleted);
+            modelBuilder.Entity<EmergencyContact>().HasQueryFilter(e => !e.IsDeleted);
 
             base.OnModelCreating(modelBuilder);
         }

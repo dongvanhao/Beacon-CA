@@ -1,6 +1,7 @@
 using Beacon.Domain.Entities.Checkins;
 using Beacon.Domain.IRepository.Checkins;
 using Beacon.Infrashtructure.Presistence;
+using Beacon.Shared.Common.Pagination;
 using Microsoft.EntityFrameworkCore;
 
 namespace Beacon.Infrashtructure.Repository.Checkins;
@@ -12,6 +13,37 @@ public class CheckinRepository(AppDbContext db) : ICheckinRepository
 
     public Task SaveChangesAsync(CancellationToken ct = default)
         => db.SaveChangesAsync(ct);
+
+    public async Task<CursorPagedResult<Checkin>> GetPagedByUserIdAsync(
+        Guid userId, DateTimeOffset? cursor, int limit, CancellationToken ct = default)
+    {
+        var query = db.Checkins
+            .Include(c => c.MediaItems)
+                .ThenInclude(m => m.MediaObject)
+            .Where(c => c.UserId == userId);
+
+        if (cursor.HasValue)
+            query = query.Where(c => c.CheckedInAtUtc < cursor.Value.UtcDateTime);
+
+        var items = await query
+            .OrderByDescending(c => c.CheckedInAtUtc)
+            .Take(limit + 1)
+            .ToListAsync(ct);
+
+        var hasMore = items.Count > limit;
+        if (hasMore) items.RemoveAt(limit);
+
+        return new CursorPagedResult<Checkin>
+        {
+            Data = items,
+            Meta = new CursorMeta
+            {
+                NextCursor = hasMore ? items.Last().CheckedInAtUtc : (DateTime?)null,
+                Limit = limit,
+                HasMore = hasMore
+            }
+        };
+    }
 
     public async Task<int> GetStreakAsync(Guid userId, DateOnly today, CancellationToken ct = default)
     {
