@@ -3,6 +3,7 @@ using Beacon.Domain.Entities.Group;
 using Beacon.Domain.Enums.Group;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Identity;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Beacon.Infrashtructure.Services;
@@ -10,8 +11,7 @@ namespace Beacon.Infrashtructure.Services;
 public class NotificationService(
     INotificationRepository notifRepo,
     IRealtimeNotifier notifier,
-    IFcmService fcmService,
-    IUserDeviceTokenRepository tokenRepo,
+    IServiceScopeFactory scopeFactory,
     ILogger<NotificationService> logger) : INotificationService
 {
     public async Task CreateAndDeliverAsync(
@@ -39,17 +39,28 @@ public class NotificationService(
             logger.LogWarning(ex, "SignalR emit failed for user {UserId}", receiverUserId);
         }
 
-        // Step 3: FCM — fire-and-forget so the request is not blocked or cancelled
+        // Step 3: FCM — fire-and-forget with a dedicated scope so scoped services (FcmService,
+        // IUserDeviceTokenRepository) are not accessed after the request scope is disposed.
+        var notificationId = notification.Id;
         _ = Task.Run(async () =>
         {
             try
             {
-                var fcmData = BuildFcmData(type, notification.Id, data);
-                var invalidTokens = await fcmService.SendToUserAndGetInvalidTokensAsync(
+                await using var scope   = scopeFactory.CreateAsyncScope();
+                var fcm       = scope.ServiceProvider.GetRequiredService<IFcmService>();
+                var tokenRepo = scope.ServiceProvider.GetRequiredService<IUserDeviceTokenRepository>();
+
+                var fcmData      = BuildFcmData(type, notificationId, data);
+                var invalidTokens = await fcm.SendToUserAndGetInvalidTokensAsync(
                     receiverUserId, title, body, fcmData);
 
+                foreach (var token in invalidTokens)
+                {
+                    var t = await tokenRepo.GetByTokenAsync(token);
+                    t?.MarkInvalid();
+                }
                 if (invalidTokens.Count > 0)
-                    await MarkTokensInvalidAsync(invalidTokens);
+                    await tokenRepo.SaveChangesAsync();
             }
             catch (Exception ex)
             {
@@ -70,15 +81,5 @@ public class NotificationService(
         if (!string.IsNullOrEmpty(extraData))
             d["data"] = extraData;
         return d;
-    }
-
-    private async Task MarkTokensInvalidAsync(IReadOnlyList<string> tokens)
-    {
-        foreach (var token in tokens)
-        {
-            var t = await tokenRepo.GetByTokenAsync(token);
-            t?.MarkInvalid();
-        }
-        await tokenRepo.SaveChangesAsync();
     }
 }

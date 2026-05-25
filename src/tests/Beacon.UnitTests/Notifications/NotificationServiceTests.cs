@@ -5,6 +5,7 @@ using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Identity;
 using Beacon.Infrashtructure.Services;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 
@@ -36,11 +37,12 @@ public class NotificationServiceTests
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<string>());
 
+        var scopeFactory = BuildScopeFactory(_fcmServiceMock.Object, _tokenRepoMock.Object);
+
         _sut = new NotificationService(
             _notifRepoMock.Object,
             _notifierMock.Object,
-            _fcmServiceMock.Object,
-            _tokenRepoMock.Object,
+            scopeFactory,
             _loggerMock.Object);
     }
 
@@ -113,5 +115,23 @@ public class NotificationServiceTests
 
         // DB save must have happened — notification is persisted regardless of SignalR failure
         _notifRepoMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    internal static IServiceScopeFactory BuildScopeFactory(
+        IFcmService fcmService, IUserDeviceTokenRepository tokenRepo)
+    {
+        var sp = new Mock<IServiceProvider>();
+        sp.Setup(p => p.GetService(typeof(IFcmService))).Returns(fcmService);
+        sp.Setup(p => p.GetService(typeof(IUserDeviceTokenRepository))).Returns(tokenRepo);
+
+        var scope = new Mock<IServiceScope>();
+        scope.Setup(s => s.ServiceProvider).Returns(sp.Object);
+
+        var factory = new Mock<IServiceScopeFactory>();
+        factory.Setup(f => f.CreateScope()).Returns(scope.Object);
+
+        return factory.Object;
     }
 }

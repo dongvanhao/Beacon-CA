@@ -36,16 +36,25 @@ public class SafetyMissedCheckerJob(
             {
                 try
                 {
-                    await fcm.SendToUserAsync(
-                        record.UserId,
-                        "Cảnh báo: Bạn chưa checkin!",
-                        "Hệ thống đã ghi nhận bạn chưa checkin hôm nay. Vui lòng checkin ngay.");
-
-                    // Only track incident after FCM succeeds — if FCM throws above, no incident
-                    // is added to EF tracker, so GetMissedNeedingAlertAsync will retry this record
                     var incident = AlertIncident.Create(
                         record.UserId, record.Id, AlertIncidentType.MissedCheckin);
-                    incident.MarkSent();
+
+                    if (!fcm.IsAvailable)
+                    {
+                        // Firebase credential not configured — mark Failed so ops can diagnose;
+                        // record is still MarkAlerted to prevent infinite retry loops.
+                        incident.MarkFailed("FCM not configured");
+                        logger.LogWarning("FCM unavailable — incident marked Failed for UserId={UserId}", record.UserId);
+                    }
+                    else
+                    {
+                        await fcm.SendToUserAsync(
+                            record.UserId,
+                            "Cảnh báo: Bạn chưa checkin!",
+                            "Hệ thống đã ghi nhận bạn chưa checkin hôm nay. Vui lòng checkin ngay.");
+                        incident.MarkSent();
+                    }
+
                     record.MarkAlerted();
                     await alertRepo.AddAsync(incident);
                 }

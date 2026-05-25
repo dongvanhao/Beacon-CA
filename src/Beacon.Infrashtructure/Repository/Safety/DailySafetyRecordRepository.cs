@@ -30,8 +30,11 @@ public class DailySafetyRecordRepository(AppDbContext db) : IDailySafetyRecordRe
     public async Task<IReadOnlyList<DailySafetyRecord>> GetPendingPastDeadlineAsync(
         DateTimeOffset now, CancellationToken ct = default)
         => await db.DailySafetyRecords
-            .Where(r => r.Status == SafetyStatus.Pending
-                     && r.DeadlineAtUtc < now.UtcDateTime)
+            .Join(db.SafetySettings, r => r.UserId, s => s.UserId, (r, s) => new { r, s })
+            .Where(x => x.r.Status == SafetyStatus.Pending
+                     && x.r.DeadlineAtUtc < now.UtcDateTime
+                     && x.s.IsMonitoringEnabled)
+            .Select(x => x.r)
             .ToListAsync(ct);
 
     public async Task<IReadOnlyList<DailySafetyRecord>> GetMissedNeedingAlertAsync(

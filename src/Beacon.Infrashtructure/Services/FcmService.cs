@@ -10,6 +10,8 @@ public class FcmService(
     IUserDeviceTokenRepository tokenRepo,
     ILogger<FcmService> logger) : IFcmService
 {
+    public bool IsAvailable => FirebaseApp.DefaultInstance is not null;
+
     public async Task SendToTokenAsync(
         string token,
         string title,

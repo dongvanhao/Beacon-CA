@@ -2,6 +2,8 @@ namespace Beacon.Application.Common.Interfaces.IService;
 
 public interface IFcmService
 {
+    bool IsAvailable { get; }
+
     Task SendToTokenAsync(
         string token,
         string title,

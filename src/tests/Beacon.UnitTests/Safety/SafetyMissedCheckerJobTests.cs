@@ -30,6 +30,9 @@ public class SafetyMissedCheckerJobTests
         _alertRepoMock.Setup(r => r.SaveChangesAsync(default)).Returns(Task.CompletedTask);
         _alertRepoMock.Setup(r => r.AddAsync(It.IsAny<AlertIncident>(), default)).Returns(Task.CompletedTask);
 
+        // Default FCM available — individual tests override when testing unavailable path
+        _fcmMock.Setup(f => f.IsAvailable).Returns(true);
+
         // Default: Phase 2 trả empty để không ảnh hưởng Phase 1 test
         _recordRepoMock.Setup(r => r.GetMissedNeedingAlertAsync(It.IsAny<DateTimeOffset>(), default))
             .ReturnsAsync(new List<DailySafetyRecord>());
@@ -97,6 +100,26 @@ public class SafetyMissedCheckerJobTests
 
         // record2 vẫn được xử lý
         record2.Status.Should().Be(SafetyStatus.Alerted);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_Phase2_WhenFcmUnavailable_ShouldMarkIncidentFailed_AndStillMarkAlerted()
+    {
+        // Arrange
+        var record = MakeMissedRecord();
+        _fcmMock.Setup(f => f.IsAvailable).Returns(false);
+        _recordRepoMock.Setup(r => r.GetPendingPastDeadlineAsync(It.IsAny<DateTimeOffset>(), default))
+            .ReturnsAsync(new List<DailySafetyRecord>());
+        _recordRepoMock.Setup(r => r.GetMissedNeedingAlertAsync(It.IsAny<DateTimeOffset>(), default))
+            .ReturnsAsync(new List<DailySafetyRecord> { record });
+
+        // Act
+        await _sut.ExecuteAsync();
+
+        // Assert
+        _fcmMock.Verify(f => f.SendToUserAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), null, default), Times.Never);
+        _alertRepoMock.Verify(r => r.AddAsync(It.Is<AlertIncident>(i => i.Status == AlertIncidentStatus.Failed), default), Times.Once);
+        record.Status.Should().Be(SafetyStatus.Alerted);
     }
 
     [Fact]
