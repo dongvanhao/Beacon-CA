@@ -9,5 +9,6 @@ public enum NotificationType
     FriendDeclined = 5,
     GroupRemoved   = 6,
     PostReaction   = 7,
-    System         = 99
+    System         = 99,
+    EmergencyAlert = 100
 }

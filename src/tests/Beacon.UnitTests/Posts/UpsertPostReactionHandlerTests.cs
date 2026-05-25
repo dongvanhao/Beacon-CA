@@ -71,7 +71,7 @@ public class UpsertPostReactionHandlerTests
                 It.IsAny<string>(),
                 It.IsAny<Dictionary<string, string>>(),
                 It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         _friendRepo
             .Setup(r => r.AreFriendsAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

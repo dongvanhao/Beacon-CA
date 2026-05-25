@@ -26,6 +26,9 @@ public class UserRepository(AppDbContext context) : IUserRepository
     public async Task<bool> ExistsByEmailExcludingUserAsync(string email, Guid excludeUserId, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.Email == email.Trim().ToLowerInvariant() && u.Id != excludeUserId, ct);
 
+    public Task<User?> GetByEmailAsync(string email, CancellationToken ct = default)
+        => context.Users.FirstOrDefaultAsync(u => u.Email == email.ToLowerInvariant(), ct);
+
     public async Task<User?> GetByPhoneAsync(string phoneNumber, CancellationToken ct = default)
         => await context.Users
             .Include(u => u.AvatarMediaObject)

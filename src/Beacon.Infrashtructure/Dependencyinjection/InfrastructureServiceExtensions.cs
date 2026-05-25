@@ -5,6 +5,7 @@ using Beacon.Domain.IRepository.Group;
 using Beacon.Domain.IRepository.Identity;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Domain.IRepository.Posts;
+using Beacon.Domain.IRepository.Notification;
 using Beacon.Domain.IRepository.Safety;
 using Beacon.Domain.IRepository.Settings;
 using Beacon.Domain.IRepository.Storage;
@@ -14,6 +15,7 @@ using Beacon.Infrashtructure.Repository.Group;
 using Beacon.Infrashtructure.Repository.Identity;
 using Beacon.Infrashtructure.Repository.Messaging;
 using Beacon.Infrashtructure.Repository.Posts;
+using Beacon.Infrashtructure.Repository.Notification;
 using Beacon.Infrashtructure.Repository.Safety;
 using Beacon.Infrashtructure.Repository.Settings;
 using Beacon.Infrashtructure.Repository.Storage;
@@ -50,6 +52,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IDailySafetyRecordRepository, DailySafetyRecordRepository>();
         services.AddScoped<IAlertIncidentRepository, AlertIncidentRepository>();
         services.AddScoped<IEmergencyContactRepository, EmergencyContactRepository>();
+        services.AddScoped<INotificationDeliveryRepository, NotificationDeliveryRepository>();
 
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<IFriendRepository, FriendRepository>();

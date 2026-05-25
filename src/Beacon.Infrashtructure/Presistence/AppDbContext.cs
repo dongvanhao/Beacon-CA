@@ -56,7 +56,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<Message> Messages => Set<Message>();
 
         public DbSet<AlertIncident> AlertIncidents => Set<AlertIncident>();
-        // public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
+        public DbSet<NotificationDelivery> NotificationDeliveries => Set<NotificationDelivery>();
 
         public AppDbContext(DbContextOptions<AppDbContext> options)
             : base(options)

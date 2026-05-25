@@ -55,7 +55,7 @@ public class SendMessageCommandHandlerTests
             .Setup(f => f.SendToUserAsync(
                 It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         _postMapper = new MessagePostMapper(
             _mediaRepoMock.Object,
@@ -277,7 +277,7 @@ public class SendMessageCommandHandlerTests
                 offlineUserId, It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<Dictionary<string, string>>(), It.IsAny<CancellationToken>()))
             .Callback(() => fcmSignal.TrySetResult(true))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         var result = await _sut.Handle(new SendMessageCommand(groupId, "Hi!", null), CancellationToken.None);
 
