@@ -40,10 +40,9 @@ public class DailySafetyRecordRepository(AppDbContext db) : IDailySafetyRecordRe
     public async Task<IReadOnlyList<DailySafetyRecord>> GetMissedNeedingAlertAsync(
         DateTimeOffset now, CancellationToken ct = default)
         => await db.DailySafetyRecords
-            .Include(r => r.AlertIncident)
             .Join(db.SafetySettings, r => r.UserId, s => s.UserId, (r, s) => new { r, s })
             .Where(x => (x.r.Status == SafetyStatus.Missed || x.r.Status == SafetyStatus.Alerted)
-                     && x.r.AlertIncident == null
+                     && !db.AlertIncidents.Any(a => a.DailySafetyRecordId == x.r.Id)
                      && x.s.IsAutoAlertEnabled
                      && x.r.MarkedMissedAtUtc != null
                      && x.r.MarkedMissedAtUtc.Value.AddMinutes(x.s.AutoAlertDelayMinutes) <= now.UtcDateTime)

@@ -2,15 +2,16 @@ using Beacon.Domain.Entities.Group;
 using Beacon.Domain.IRepository.Group;
 using Beacon.Infrashtructure.Presistence;
 using Microsoft.EntityFrameworkCore;
+using NotificationEntity = Beacon.Domain.Entities.Group.Notification;
 
 namespace Beacon.Infrashtructure.Repository.Group;
 
 public class NotificationRepository(AppDbContext db) : INotificationRepository
 {
-    public Task<Notification?> GetByIdAsync(Guid id, CancellationToken ct = default)
+    public Task<NotificationEntity?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.Notifications.FirstOrDefaultAsync(n => n.Id == id, ct);
 
-    public async Task<List<Notification>> ListByReceiverAsync(
+    public async Task<List<NotificationEntity>> ListByReceiverAsync(
         Guid receiverUserId, DateTime? cursor, int limit, CancellationToken ct = default)
     {
         var query = db.Notifications
@@ -28,7 +29,7 @@ public class NotificationRepository(AppDbContext db) : INotificationRepository
     public Task<int> CountUnreadAsync(Guid receiverUserId, CancellationToken ct = default)
         => db.Notifications.CountAsync(n => n.ReceiverUserId == receiverUserId && !n.IsRead, ct);
 
-    public async Task AddAsync(Notification notification, CancellationToken ct = default)
+    public async Task AddAsync(NotificationEntity notification, CancellationToken ct = default)
         => await db.Notifications.AddAsync(notification, ct);
 
     public async Task MarkAllReadAsync(Guid receiverUserId, CancellationToken ct = default)

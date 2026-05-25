@@ -30,7 +30,7 @@ public class SafetyReminderJobTests
         _repoMock.Setup(r => r.GetPendingNeedingReminderAsync(It.IsAny<DateTimeOffset>(), default))
             .ReturnsAsync(new List<DailySafetyRecord> { record });
         _fcmMock.Setup(f => f.SendToUserAsync(record.UserId, It.IsAny<string>(), It.IsAny<string>(), null, default))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         // Act
         await _sut.ExecuteAsync();
@@ -70,7 +70,7 @@ public class SafetyReminderJobTests
 
         _fcmMock.SetupSequence(f => f.SendToUserAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<string>(), null, default))
             .ThrowsAsync(new Exception("FCM error"))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(true);
 
         // Act
         var act = () => _sut.ExecuteAsync();

@@ -48,6 +48,7 @@ namespace Beacon.Shared.Constants
             public const string EMERGENCY_CONTACT_NOT_FOUND = "EMERGENCY_CONTACT_NOT_FOUND";
             public const string EMERGENCY_CONTACT_LIMIT_EXCEEDED = "EMERGENCY_CONTACT_LIMIT_EXCEEDED";
             public const string EMERGENCY_CONTACT_FORBIDDEN = "EMERGENCY_CONTACT_FORBIDDEN";
+            public const string EMERGENCY_CONTACT_INACTIVE = "EMERGENCY_CONTACT_INACTIVE";
         }
 
         public static class Checkin

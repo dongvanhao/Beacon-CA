@@ -13,6 +13,12 @@ public class EmergencyContactRepository(AppDbContext db) : IEmergencyContactRepo
             .OrderBy(e => e.PriorityOrder)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<EmergencyContact>> GetActiveByUserIdAsync(Guid userId, CancellationToken ct = default)
+        => await db.EmergencyContacts
+            .Where(e => e.UserId == userId && e.IsActive)
+            .OrderBy(e => e.PriorityOrder)
+            .ToListAsync(ct);
+
     public Task<EmergencyContact?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.EmergencyContacts.FirstOrDefaultAsync(e => e.Id == id, ct);
 

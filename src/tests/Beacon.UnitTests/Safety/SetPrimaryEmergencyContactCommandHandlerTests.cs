@@ -1,5 +1,4 @@
 using Beacon.Application.Features.Safety.Commands.SetPrimaryEmergencyContact;
-using Beacon.Application.Mappings.Safety;
 using Beacon.Domain.Entities.Safety;
 using Beacon.Domain.Enums;
 using Beacon.Domain.IRepository.Safety;
@@ -13,7 +12,6 @@ namespace Beacon.UnitTests.Safety;
 public class SetPrimaryEmergencyContactCommandHandlerTests
 {
     private readonly Mock<IEmergencyContactRepository> _repoMock = new();
-    private readonly EmergencyContactMapper _mapper = new();
     private readonly SetPrimaryEmergencyContactCommandHandler _sut;
 
     private static readonly Guid OwnerId = Guid.NewGuid();
@@ -21,7 +19,7 @@ public class SetPrimaryEmergencyContactCommandHandlerTests
 
     public SetPrimaryEmergencyContactCommandHandlerTests()
     {
-        _sut = new SetPrimaryEmergencyContactCommandHandler(_repoMock.Object, _mapper);
+        _sut = new SetPrimaryEmergencyContactCommandHandler(_repoMock.Object);
     }
 
     [Fact]
@@ -38,8 +36,8 @@ public class SetPrimaryEmergencyContactCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
+        result.Value.Should().BeTrue();
         contact.IsPrimary.Should().BeTrue();
-        result.Value!.IsPrimary.Should().BeTrue();
         _repoMock.Verify(r => r.SaveChangesAsync(default), Times.Once);
     }
 
@@ -97,6 +95,26 @@ public class SetPrimaryEmergencyContactCommandHandlerTests
         result.IsSuccess.Should().BeFalse();
         result.Error.Type.Should().Be(ErrorType.Forbidden);
         result.Error.Code.Should().Be(ErrorCodes.Safety.EMERGENCY_CONTACT_FORBIDDEN);
+    }
+
+    [Fact]
+    public async Task Handle_WhenContactIsInactive_ShouldReturnValidationError()
+    {
+        // Arrange
+        var contact = EmergencyContact.Create(OwnerId, "Name", "val", ContactChannelType.Phone);
+        contact.Deactivate();
+
+        _repoMock.Setup(r => r.GetByIdAsync(contact.Id, default)).ReturnsAsync(contact);
+
+        // Act
+        var result = await _sut.Handle(
+            new SetPrimaryEmergencyContactCommand(OwnerId, contact.Id), CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeFalse();
+        result.Error.Type.Should().Be(ErrorType.Validation);
+        result.Error.Code.Should().Be(ErrorCodes.Safety.EMERGENCY_CONTACT_INACTIVE);
+        _repoMock.Verify(r => r.SaveChangesAsync(default), Times.Never);
     }
 
     [Fact]
