@@ -21,4 +21,20 @@ public sealed class AdminAuthMapper
             AccessTokenExpiresAt = accessTokenExpiresAt,
             Permissions = permissions
         };
+
+    public AdminProfileDto ToProfileDto(
+        Admin admin,
+        IEnumerable<string> roles,
+        IEnumerable<string> permissions)
+        => new()
+        {
+            AdminId = admin.Id,
+            Username = admin.Username,
+            FullName = admin.FullName,
+            IsActive = admin.IsActive,
+            LastLoginAtUtc = admin.LastLoginAtUtc,
+            CreatedAtUtc = admin.CreatedAtUtc,
+            Roles = roles,
+            Permissions = permissions
+        };
 }

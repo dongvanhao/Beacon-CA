@@ -16,6 +16,13 @@ namespace Beacon.Domain.Entities.Identity
         public static Role Create(string name, string? description = null)
             => new() { Name = name, Description = description };
 
+        public void Update(string name, string? description, bool isActive)
+        {
+            Name = name;
+            Description = description;
+            IsActive = isActive;
+        }
+
         public void Deactivate() => IsActive = false;
         public void Activate() => IsActive = true;
     }

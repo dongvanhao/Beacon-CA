@@ -46,6 +46,8 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserDeviceRepository, UserDeviceRepository>();
         services.AddScoped<IUserDeviceTokenRepository, UserDeviceTokenRepository>();
         services.AddScoped<IAdminRepository, AdminRepository>();
+        services.AddScoped<IPermissionRepository, PermissionRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IMediaObjectRepository, MediaObjectRepository>();
         services.AddScoped<ISafetySettingRepository, SafetySettingRepository>();
         services.AddScoped<ICheckinRepository, CheckinRepository>();

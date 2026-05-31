@@ -59,6 +59,7 @@ public static class AuthExtensions
         services.AddAuthorization(options =>
         {
             options.AddPolicy("AdminOnly", p => p.RequireClaim("actor", "admin"));
+            options.AddPolicy("SuperAdminOnly", p => p.RequireClaim("actor", "admin").RequireRole("SuperAdmin"));
         });
 
         services.AddCors(options =>

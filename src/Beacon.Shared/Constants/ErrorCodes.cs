@@ -34,6 +34,21 @@ namespace Beacon.Shared.Constants
             public const string NEW_PASSWORD_SAME_AS_OLD = "NEW_PASSWORD_SAME_AS_OLD";
         }
 
+        public static class Authorization
+        {
+            public const string PERMISSION_NOT_FOUND = "PERMISSION_NOT_FOUND";
+            public const string PERMISSION_ALREADY_EXISTS = "PERMISSION_ALREADY_EXISTS";
+            public const string PERMISSION_IN_USE = "PERMISSION_IN_USE";
+
+            public const string ROLE_NOT_FOUND = "ROLE_NOT_FOUND";
+            public const string ROLE_ALREADY_EXISTS = "ROLE_ALREADY_EXISTS";
+            public const string ROLE_IN_USE = "ROLE_IN_USE";
+            public const string ROLE_INACTIVE = "ROLE_INACTIVE";
+
+            public const string ROLE_PERMISSION_ALREADY_EXISTS = "ROLE_PERMISSION_ALREADY_EXISTS";
+            public const string ADMIN_ROLE_ALREADY_EXISTS = "ADMIN_ROLE_ALREADY_EXISTS";
+        }
+
         public static class Settings
         {
             public const string SAFETY_SETTING_NOT_FOUND = "SAFETY_SETTING_NOT_FOUND";

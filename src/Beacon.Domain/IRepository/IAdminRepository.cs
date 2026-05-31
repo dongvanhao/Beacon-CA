@@ -5,6 +5,7 @@ namespace Beacon.Domain.IRepository;
 public interface IAdminRepository
 {
     Task<Admin?> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<Admin?> GetByIdWithRolesAsync(Guid id, CancellationToken ct = default);
     Task<Admin?> GetByUsernameAsync(string username, CancellationToken ct = default);
     Task<Admin?> GetByUsernameWithRolesAsync(string username, CancellationToken ct = default);
     Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default);

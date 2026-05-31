@@ -1,10 +1,13 @@
 using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Messaging.Commands.DeleteGroup;
+using Beacon.Application.Features.Messaging.Commands.SendMessage;
+using Beacon.Application.Features.Messaging.Dtos;
 using Beacon.Domain.Entities.Messaging;
 using Beacon.Domain.Enums.Messaging;
 using Beacon.Domain.IRepository.Messaging;
 using Beacon.Shared.Results;
 using FluentAssertions;
+using MediatR;
 using Moq;
 
 namespace Beacon.UnitTests.Messaging;
@@ -13,6 +16,7 @@ public class DeleteGroupCommandHandlerTests
 {
     private readonly Mock<IMessageGroupRepository> _groupRepoMock = new();
     private readonly Mock<ICurrentUserService> _currentUserMock = new();
+    private readonly Mock<ISender> _senderMock = new();
 
     [Fact]
     public async Task Handle_WhenCallerIsOwner_DeletesGroup()
@@ -24,6 +28,8 @@ public class DeleteGroupCommandHandlerTests
         _currentUserMock.Setup(x => x.UserId).Returns(ownerId);
         _groupRepoMock.Setup(x => x.GetByIdWithMembersAsync(groupId, It.IsAny<CancellationToken>()))
             .ReturnsAsync(group);
+        _senderMock.Setup(x => x.Send(It.IsAny<SendMessageCommand>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Result<MessageDto>.Success(BuildMessageDto(groupId, ownerId)));
 
         var handler = CreateHandler();
 
@@ -54,11 +60,25 @@ public class DeleteGroupCommandHandlerTests
         result.IsFailure.Should().BeTrue();
         result.Error.Type.Should().Be(ErrorType.Forbidden);
         group.IsDeleted.Should().BeFalse();
+        _senderMock.Verify(x => x.Send(It.IsAny<SendMessageCommand>(), It.IsAny<CancellationToken>()), Times.Never);
         _groupRepoMock.Verify(x => x.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     private DeleteGroupCommandHandler CreateHandler()
-        => new(_groupRepoMock.Object, _currentUserMock.Object);
+        => new(_groupRepoMock.Object, _currentUserMock.Object, _senderMock.Object);
+
+    private static MessageDto BuildMessageDto(Guid groupId, Guid senderId)
+        => new(
+            Guid.NewGuid(),
+            groupId,
+            senderId,
+            "Owner",
+            "Group deleted",
+            MessageType.GroupDeleted,
+            null,
+            DateTime.UtcNow,
+            null,
+            null);
 
     private static MessageGroup BuildGroup(Guid groupId, Guid userId, GroupMemberRole role)
     {

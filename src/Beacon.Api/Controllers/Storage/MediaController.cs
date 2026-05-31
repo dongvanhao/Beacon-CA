@@ -6,6 +6,7 @@ using Beacon.Application.Features.Storage.Commands.Upload;
 using Beacon.Application.Features.Storage.Dtos;
 using Beacon.Application.Features.Storage.Queries.GetMediaById;
 using Beacon.Application.Features.Storage.Queries.ListMedia;
+using Beacon.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -169,7 +170,7 @@ public class MediaController(IMediator mediator, ICurrentUserService currentUser
     #endregion
     [HttpDelete("{id:guid}/hard")]
     [AdminOnly]
-    [HasPermission("media:hard-delete")]
+    [HasPermission(PermissionCodes.Media.HardDelete)]
     public async Task<IActionResult> HardDelete(Guid id, CancellationToken ct)
         => HandleResult(await mediator.Send(new HardDeleteMediaCommand(id), ct));
 }

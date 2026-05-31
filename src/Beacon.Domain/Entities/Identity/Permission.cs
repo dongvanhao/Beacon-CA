@@ -14,5 +14,12 @@ namespace Beacon.Domain.Entities.Identity
 
         public static Permission Create(string name, string? description = null, string? group = null)
             => new() { Name = name, Description = description, Group = group };
+
+        public void Update(string name, string? description = null, string? group = null)
+        {
+            Name = name;
+            Description = description;
+            Group = group;
+        }
     }
 }

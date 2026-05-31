@@ -10,6 +10,14 @@ public class AdminRepository(AppDbContext context) : IAdminRepository
     public async Task<Admin?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await context.Admins.FirstOrDefaultAsync(a => a.Id == id, ct);
 
+    public async Task<Admin?> GetByIdWithRolesAsync(Guid id, CancellationToken ct = default)
+        => await context.Admins
+            .Include(a => a.AdminRoles)
+                .ThenInclude(ar => ar.Role)
+                    .ThenInclude(r => r.RolePermissions)
+                        .ThenInclude(rp => rp.Permission)
+            .FirstOrDefaultAsync(a => a.Id == id, ct);
+
     public async Task<Admin?> GetByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Admins
             .FirstOrDefaultAsync(a => a.Username == username.ToLowerInvariant(), ct);

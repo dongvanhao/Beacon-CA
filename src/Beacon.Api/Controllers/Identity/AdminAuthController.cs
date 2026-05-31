@@ -1,7 +1,8 @@
 using Beacon.Api.Authorization;
+using Beacon.Application.Common.Interfaces.IService;
 using Beacon.Application.Features.Identity.Commands;
 using Beacon.Application.Features.Identity.Dtos;
-using Beacon.Shared.Common.Responses;
+using Beacon.Application.Features.Identity.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -9,15 +10,45 @@ using Microsoft.AspNetCore.Mvc;
 namespace Beacon.Api.Controllers;
 
 [Route("api/v1/admin/auth")]
-[Authorize]
-public class AdminAuthController(IMediator mediator) : BaseController
+public class AdminAuthController(IMediator mediator, ICurrentUserService currentUser) : BaseController
 {
     #region
     /// <summary>
     /// Đăng nhập dành cho Admin, trả về cặp Access Token + Refresh Token kèm danh sách permissions.
     /// </summary>
     /// <remarks>
-    /// Access token của Admin chứa claim <c>roles</c> và <c>permissions</c> để phân quyền RBAC.
+    /// <b>Endpoint:</b> <c>POST /api/v1/admin/auth/login</c>
+    ///
+    /// <b>Auth:</b> Không yêu cầu token.
+    ///
+    /// <b>Request body:</b>
+    /// <code>
+    /// {
+    ///   "username": "string",
+    ///   "password": "string"
+    /// }
+    /// </code>
+    ///
+    /// <b>Response 200:</b>
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "Success",
+    ///   "code": null,
+    ///   "data": {
+    ///     "adminId": "guid",
+    ///     "username": "string",
+    ///     "fullName": "string",
+    ///     "accessToken": "string",
+    ///     "refreshToken": "string",
+    ///     "accessTokenExpiresAt": "datetime (UTC)",
+    ///     "permissions": ["string"]
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// Access token của Admin chứa claim <c>role</c>, <c>permission</c> và <c>actor=admin</c> để phân quyền RBAC.
     ///
     /// Các giá trị <c>code</c> có thể xuất hiện trong response:
     ///
@@ -26,27 +57,11 @@ public class AdminAuthController(IMediator mediator) : BaseController
     /// - <c>INVALID_CREDENTIALS</c>: Sai username hoặc password.
     /// - <c>ADMIN_INACTIVE</c>: Tài khoản admin đã bị vô hiệu hóa.
     ///
-    /// Cấu trúc <c>data</c> khi thành công:
-    /// <code>
-    /// {
-    ///   "adminId":            "guid",
-    ///   "username":           "string",
-    ///   "fullName":           "string",
-    ///   "accessToken":        "string  (JWT, hết hạn sau 15 phút)",
-    ///   "refreshToken":       "string  (hết hạn sau 7 ngày)",
-    ///   "accessTokenExpiresAt": "datetime (UTC)",
-    ///   "permissions":        ["string"]  (ví dụ: ["users:read", "users:write"])
-    /// }
-    /// </code>
-    ///
-    /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
+    /// Format response lỗi: <c>{ success, message, code, data, errors }</c>.
     /// </remarks>
     #endregion
     [HttpPost("login")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(ApiResponse<AdminAuthResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] AdminLoginRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new LoginAdminCommand(request), ct));
 
@@ -55,8 +70,32 @@ public class AdminAuthController(IMediator mediator) : BaseController
     /// Đăng xuất Admin và thu hồi Refresh Token hiện tại.
     /// </summary>
     /// <remarks>
-    /// Yêu cầu <c>Authorization: Bearer &lt;adminAccessToken&gt;</c> trong header.
-    /// Endpoint này được bảo vệ bởi <c>[AdminOnly]</c> — chỉ admin token hợp lệ mới được phép gọi.
+    /// <b>Endpoint:</b> <c>POST /api/v1/admin/auth/logout</c>
+    ///
+    /// <b>Auth:</b> Yêu cầu Admin access token.
+    ///
+    /// <b>Headers:</b>
+    /// <code>
+    /// Authorization: Bearer {adminAccessToken}
+    /// </code>
+    ///
+    /// <b>Request body:</b>
+    /// <code>
+    /// {
+    ///   "refreshToken": "string"
+    /// }
+    /// </code>
+    ///
+    /// <b>Response 200:</b>
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "Success",
+    ///   "code": null,
+    ///   "data": null,
+    ///   "errors": null
+    /// }
+    /// </code>
     ///
     /// Các giá trị <c>code</c> có thể xuất hiện trong response:
     ///
@@ -65,15 +104,117 @@ public class AdminAuthController(IMediator mediator) : BaseController
     /// - <c>UNAUTHORIZED</c>: Access token không hợp lệ hoặc đã hết hạn.
     /// - <c>ADMIN_TOKEN_INVALID</c>: Refresh token không tồn tại hoặc đã bị thu hồi.
     ///
-    /// Format response chuẩn: <c>{ success, message, code, data, errors }</c>
+    /// Format response lỗi: <c>{ success, message, code, data, errors }</c>.
     /// </remarks>
     #endregion
     [HttpPost("logout")]
     [AdminOnly]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Logout([FromBody] AdminLogoutRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new LogoutAdminCommand(request.RefreshToken), ct));
+
+    #region
+    /// <summary>
+    /// Lấy thông tin Admin đang đăng nhập từ Access Token.
+    /// </summary>
+    /// <remarks>
+    /// <b>Endpoint:</b> <c>GET /api/v1/admin/auth/me</c>
+    ///
+    /// <b>Auth:</b> Yêu cầu Admin access token.
+    ///
+    /// <b>Headers:</b>
+    /// <code>
+    /// Authorization: Bearer {adminAccessToken}
+    /// </code>
+    ///
+    /// <b>Request body:</b> Không có.
+    ///
+    /// <b>Response 200:</b>
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "Success",
+    ///   "code": null,
+    ///   "data": {
+    ///     "adminId": "guid",
+    ///     "username": "string",
+    ///     "fullName": "string",
+    ///     "isActive": true,
+    ///     "lastLoginAtUtc": "datetime | null",
+    ///     "createdAtUtc": "datetime (UTC)",
+    ///     "roles": ["string"],
+    ///     "permissions": ["string"]
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// Các giá trị <c>code</c> có thể xuất hiện trong response:
+    ///
+    /// - <c>null</c>: Lấy thông tin admin thành công (success = true).
+    /// - <c>UNAUTHORIZED</c>: Access token không hợp lệ hoặc đã hết hạn.
+    /// - <c>FORBIDDEN</c>: Token hợp lệ nhưng không phải admin token.
+    /// - <c>ADMIN_NOT_FOUND</c>: Không tìm thấy admin trong hệ thống.
+    /// - <c>ADMIN_INACTIVE</c>: Tài khoản admin đã bị vô hiệu hóa.
+    ///
+    /// Format response lỗi: <c>{ success, message, code, data, errors }</c>.
+    /// </remarks>
+    #endregion
+    [HttpGet("me")]
+    [AdminOnly]
+    public async Task<IActionResult> Me(CancellationToken ct)
+        => HandleResult(await mediator.Send(new GetCurrentAdminQuery(currentUser.UserId), ct));
+
+    #region
+    /// <summary>
+    /// Làm mới Access Token Admin bằng Refresh Token.
+    /// </summary>
+    /// <remarks>
+    /// <b>Endpoint:</b> <c>POST /api/v1/admin/auth/refresh-token</c>
+    ///
+    /// <b>Auth:</b> Không yêu cầu access token. Client chỉ cần gửi refresh token còn hiệu lực.
+    ///
+    /// <b>Request body:</b>
+    /// <code>
+    /// {
+    ///   "refreshToken": "string"
+    /// }
+    /// </code>
+    ///
+    /// <b>Response 200:</b>
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "Success",
+    ///   "code": null,
+    ///   "data": {
+    ///     "adminId": "guid",
+    ///     "username": "string",
+    ///     "fullName": "string",
+    ///     "accessToken": "string",
+    ///     "refreshToken": "string",
+    ///     "accessTokenExpiresAt": "datetime (UTC)",
+    ///     "permissions": ["string"]
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// Refresh token cũ sẽ bị thu hồi và thay bằng cặp token mới. Client phải lưu lại cả
+    /// <c>accessToken</c> và <c>refreshToken</c> mới từ response.
+    ///
+    /// Các giá trị <c>code</c> có thể xuất hiện trong response:
+    ///
+    /// - <c>null</c>: Làm mới token thành công (success = true).
+    /// - <c>VALIDATION_ERROR</c>: Thiếu trường <c>refreshToken</c> trong body.
+    /// - <c>ADMIN_TOKEN_INVALID</c>: Refresh token không tồn tại, đã hết hạn hoặc đã bị thu hồi.
+    /// - <c>ADMIN_NOT_FOUND</c>: Không tìm thấy admin liên kết với token.
+    /// - <c>ADMIN_INACTIVE</c>: Tài khoản admin đã bị vô hiệu hóa.
+    ///
+    /// Format response lỗi: <c>{ success, message, code, data, errors }</c>.
+    /// </remarks>
+    #endregion
+    [HttpPost("refresh-token")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
+        => HandleResult(await mediator.Send(new RefreshAdminTokenCommand(request.RefreshToken), ct));
 }

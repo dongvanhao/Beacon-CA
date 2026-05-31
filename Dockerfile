@@ -1,6 +1,8 @@
 # ── Stage 1: Build ──────────────────────────────────────────────────────────
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0.408 AS build
 WORKDIR /src
+
+COPY src/global.json ./
 
 # Layer A — chỉ copy .csproj (cached cho đến khi dependencies thay đổi)
 # Không copy test projects vì không cần trong production image
@@ -25,7 +27,7 @@ RUN dotnet publish "Beacon.Api/Beacon.Api.csproj" \
     --no-restore
 
 # ── Stage 2: Runtime (image nhỏ gọn, không có SDK) ──────────────────────────
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:8.0.15 AS final
 WORKDIR /app
 EXPOSE 8080
 
