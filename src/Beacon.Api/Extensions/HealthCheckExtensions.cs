@@ -1,4 +1,5 @@
 using Beacon.Api.HealthChecks;
+using Beacon.Infrashtructure.Configuration;
 using Beacon.Shared.Constants;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -22,17 +23,34 @@ public static class HealthCheckExtensions
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-
         services.AddHttpClient();
-        services.AddHealthChecks()
+        var checks = services.AddHealthChecks()
             .AddCheck("backend", () => HealthCheckResult.Healthy("API is running"),
-                tags: ["live"])
-            .AddSqlServer(connectionString!,
+                tags: ["live"]);
+
+        if (DatabaseProviderOptions.IsInMemory(configuration))
+        {
+            checks.AddCheck("inmemory", () => HealthCheckResult.Healthy("In-memory database is configured"),
+                tags: ["db", "ready"]);
+        }
+        else
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            checks.AddSqlServer(connectionString!,
                 name: "sqlserver",
-                tags: ["db", "ready"])
-            .AddCheck<MinioHealthCheck>("minio",
+                tags: ["db", "ready"]);
+        }
+
+        if (IsEnabled(configuration, "ExternalServices:UseNoOpStorage"))
+        {
+            checks.AddCheck("storage", () => HealthCheckResult.Healthy("No-op storage is configured"),
+                tags: ["storage", "ready"]);
+        }
+        else
+        {
+            checks.AddCheck<MinioHealthCheck>("minio",
                 tags: ["minio", "storage", "ready"]);
+        }
 
         return services;
     }
@@ -200,4 +218,7 @@ public static class HealthCheckExtensions
 
         return (message, topCode);
     }
+
+    private static bool IsEnabled(IConfiguration configuration, string key)
+        => bool.TryParse(configuration[key], out var enabled) && enabled;
 }

@@ -51,19 +51,48 @@ namespace Beacon.Domain.Entities.Identity
             string passwordHash,
             string familyName,
             string givenName,
-            string? phoneNumber = null)
+            string? phoneNumber = null,
+            string? timeZone = null,
+            bool isEmailVerified = false)
         {
             var user = new User
             {
-                Username = username.ToLowerInvariant(),
-                Email = email.ToLowerInvariant(),
+                Username = username.Trim().ToLowerInvariant(),
+                Email = email.Trim().ToLowerInvariant(),
                 PasswordHash = passwordHash,
-                FamilyName = familyName,
-                GivenName = givenName,
-                PhoneNumber = phoneNumber?.Trim()
+                FamilyName = familyName.Trim(),
+                GivenName = givenName.Trim(),
+                PhoneNumber = phoneNumber?.Trim(),
+                TimeZone = string.IsNullOrWhiteSpace(timeZone) ? "Asia/Ha_Noi" : timeZone.Trim(),
+                IsEmailVerified = isEmailVerified
             };
             user.UpdateSearchIndex();
             return user;
+        }
+
+        public void UpdateManagedProfile(
+            string username,
+            string email,
+            string familyName,
+            string givenName,
+            string? phoneNumber,
+            string timeZone,
+            bool isEmailVerified)
+        {
+            if (string.IsNullOrWhiteSpace(username)) throw new ArgumentException("Username khong duoc rong.");
+            if (string.IsNullOrWhiteSpace(familyName)) throw new ArgumentException("FamilyName khong duoc rong.");
+            if (string.IsNullOrWhiteSpace(givenName)) throw new ArgumentException("GivenName khong duoc rong.");
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email khong duoc rong.");
+            if (string.IsNullOrWhiteSpace(timeZone)) throw new ArgumentException("TimeZone khong duoc rong.");
+
+            Username = username.Trim().ToLowerInvariant();
+            Email = email.Trim().ToLowerInvariant();
+            FamilyName = familyName.Trim();
+            GivenName = givenName.Trim();
+            PhoneNumber = string.IsNullOrWhiteSpace(phoneNumber) ? null : phoneNumber.Trim();
+            TimeZone = timeZone.Trim();
+            IsEmailVerified = isEmailVerified;
+            UpdateSearchIndex();
         }
 
         public void UpdateProfile(string familyName, string givenName, string? phoneNumber, string email)

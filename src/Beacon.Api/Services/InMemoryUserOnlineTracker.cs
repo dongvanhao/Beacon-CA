@@ -8,6 +8,8 @@ public sealed class InMemoryUserOnlineTracker : IUserOnlineTracker
     private readonly ConcurrentDictionary<Guid, ConcurrentDictionary<string, byte>> _userConnections = new();
     private readonly ConcurrentDictionary<string, Guid> _connectionUsers = new();
 
+    public int OnlineUserCount => _userConnections.Count;
+
     public bool IsOnline(Guid userId)
     {
         return _userConnections.TryGetValue(userId, out var connections)

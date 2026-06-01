@@ -1,6 +1,7 @@
 using Beacon.Domain.Entities.Identity;
 using Beacon.Domain.IRepository;
 using Beacon.Infrashtructure.Presistence;
+using Beacon.Shared.Common.Pagination;
 using Beacon.Shared.Helpers;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,6 +9,41 @@ namespace Beacon.Infrashtructure.Repository.Identity;
 
 public class UserRepository(AppDbContext context) : IUserRepository
 {
+    public Task<PaginatedList<User>> ListAsync(string? search, int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.Users
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var keyword = search.Trim();
+            var lowerKeyword = keyword.ToLowerInvariant();
+            var normalizedKeyword = StringNormalizer.RemoveDiacritics(keyword);
+            var normalizedNoSpace = normalizedKeyword.Replace(" ", "");
+
+            query = query.Where(u =>
+                u.SearchIndex.Contains(normalizedKeyword) ||
+                u.SearchIndex.Replace(" ", "").Contains(normalizedNoSpace) ||
+                u.Username.ToLower().Contains(lowerKeyword) ||
+                u.Email.ToLower().Contains(lowerKeyword) ||
+                (u.PhoneNumber != null && u.PhoneNumber.Contains(keyword)));
+        }
+
+        query = query
+            .OrderByDescending(u => u.CreatedAtUtc)
+            .ThenBy(u => u.Username);
+
+        return PaginatedList<User>.CreateAsync(query, page, pageSize, ct);
+    }
+
+    public async Task<(int Total, int Active, int Inactive)> CountStatusAsync(CancellationToken ct = default)
+    {
+        var total = await context.Users.CountAsync(ct);
+        var active = await context.Users.CountAsync(u => u.IsActive, ct);
+        return (total, active, total - active);
+    }
+
     public async Task<User?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await context.Users.FirstOrDefaultAsync(u => u.Id == id, ct);
 
@@ -19,6 +55,12 @@ public class UserRepository(AppDbContext context) : IUserRepository
 
     public async Task<bool> ExistsByUsernameAsync(string username, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.Username == username.ToLowerInvariant(), ct);
+
+    public async Task<bool> ExistsByUsernameAsync(string username, Guid excludeId, CancellationToken ct = default)
+        => await context.Users.AnyAsync(
+            u => u.Username == username.ToLowerInvariant()
+                && u.Id != excludeId,
+            ct);
 
     public async Task<bool> ExistsByEmailAsync(string email, CancellationToken ct = default)
         => await context.Users.AnyAsync(u => u.Email == email.ToLowerInvariant(), ct);

@@ -34,6 +34,10 @@ public class PostConfiguration : IEntityTypeConfiguration<Post>
 
         builder.Property(p => p.DeletedAtUtc).IsRequired(false);
 
+        builder.Property(p => p.DeletedReason)
+            .HasMaxLength(500)
+            .IsRequired(false);
+
         builder.HasOne<User>()
             .WithMany()
             .HasForeignKey(p => p.OwnerUserId)

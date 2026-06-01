@@ -121,10 +121,22 @@ namespace Beacon.Shared.Constants
             public const string POST_UPDATE_DENIED     = "POST_UPDATE_DENIED";
             public const string POST_DELETE_DENIED     = "POST_DELETE_DENIED";
             public const string INVALID_VISIBILITY     = "INVALID_VISIBILITY";
+            public const string INVALID_STATUS         = "INVALID_STATUS";
             public const string MEDIA_NOT_READY        = "MEDIA_NOT_READY";
             public const string MEDIA_ACCESS_DENIED    = "MEDIA_ACCESS_DENIED";
             public const string UNSUPPORTED_MEDIA_TYPE = "UNSUPPORTED_MEDIA_TYPE";
             public const string INVALID_VIDEO_DURATION = "INVALID_VIDEO_DURATION";
+        }
+
+        public static class PostReport
+        {
+            public const string REPORT_NOT_FOUND = "POST_REPORT_NOT_FOUND";
+            public const string INVALID_REPORT_STATUS = "INVALID_POST_REPORT_STATUS";
+        }
+
+        public static class AdminAuditLog
+        {
+            public const string LOG_NOT_FOUND = "ADMIN_AUDIT_LOG_NOT_FOUND";
         }
 
         public static class Reaction

@@ -271,6 +271,96 @@ namespace Beacon.Infrashtructure.Migrations
                     b.ToTable("Admins", (string)null);
                 });
 
+            modelBuilder.Entity("Beacon.Domain.Entities.Identity.AdminAuditLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<Guid?>("AdminId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AdminUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("CanRollback")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Controller")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("EntityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EntityName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("HttpMethod")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
+
+                    b.Property<string>("IpAddress")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<bool>("IsSuccess")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NewDataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldDataJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QueryString")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("RequestJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ResponseJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("StatusCode")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("EntityName", "EntityId");
+
+                    b.ToTable("AdminAuditLogs", (string)null);
+                });
+
             modelBuilder.Entity("Beacon.Domain.Entities.Identity.AdminRole", b =>
                 {
                     b.Property<Guid>("AdminId")
@@ -922,6 +1012,10 @@ namespace Beacon.Infrashtructure.Migrations
                     b.Property<DateTime?>("DeletedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("DeletedReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<decimal?>("Latitude")
                         .HasPrecision(9, 6)
                         .HasColumnType("decimal(9,6)");
@@ -997,6 +1091,62 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasDatabaseName("UX_PostReactions_PostId_UserId");
 
                     b.ToTable("PostReactions", (string)null);
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Posts.PostReport", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("PostId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<Guid>("ReporterUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ResolutionNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReviewedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("ReviewedByAdminId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId")
+                        .HasDatabaseName("IX_PostReports_PostId");
+
+                    b.HasIndex("ReporterUserId")
+                        .HasDatabaseName("IX_PostReports_ReporterUserId");
+
+                    b.HasIndex("ReviewedByAdminId");
+
+                    b.HasIndex("Status", "CreatedAtUtc")
+                        .HasDatabaseName("IX_PostReports_Status_CreatedAtUtc");
+
+                    b.ToTable("PostReports", (string)null);
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>
@@ -1622,6 +1772,32 @@ namespace Beacon.Infrashtructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Beacon.Domain.Entities.Posts.PostReport", b =>
+                {
+                    b.HasOne("Beacon.Domain.Entities.Posts.Post", "Post")
+                        .WithMany()
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Identity.User", "ReporterUser")
+                        .WithMany()
+                        .HasForeignKey("ReporterUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Beacon.Domain.Entities.Identity.Admin", "ReviewedByAdmin")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByAdminId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Post");
+
+                    b.Navigation("ReporterUser");
+
+                    b.Navigation("ReviewedByAdmin");
                 });
 
             modelBuilder.Entity("Beacon.Domain.Entities.Safety.AlertIncident", b =>

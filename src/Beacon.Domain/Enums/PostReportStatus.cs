@@ -1,0 +1,9 @@
+namespace Beacon.Domain.Enums;
+
+public enum PostReportStatus
+{
+    Pending = 1,
+    Reviewed = 2,
+    Resolved = 3,
+    Rejected = 4
+}

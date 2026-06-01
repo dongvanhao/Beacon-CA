@@ -36,6 +36,13 @@ public class RoleRepository(AppDbContext db) : IRoleRepository
     public Task<Role?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => db.Roles.FirstOrDefaultAsync(r => r.Id == id, ct);
 
+    public async Task<IReadOnlyList<Role>> GetByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+        => await db.Roles
+            .AsNoTracking()
+            .Where(r => ids.Contains(r.Id))
+            .OrderBy(r => r.Name)
+            .ToListAsync(ct);
+
     public Task<Role?> GetByIdWithPermissionsAsync(Guid id, CancellationToken ct = default)
         => db.Roles
             .Include(r => r.RolePermissions)
@@ -68,6 +75,11 @@ public class RoleRepository(AppDbContext db) : IRoleRepository
     public Task<bool> HasAdminRoleAsync(Guid adminId, Guid roleId, CancellationToken ct = default)
         => db.AdminRoles.AnyAsync(ar => ar.AdminId == adminId && ar.RoleId == roleId, ct);
 
+    public async Task<IReadOnlyList<AdminRole>> ListAdminRolesByAdminIdAsync(Guid adminId, CancellationToken ct = default)
+        => await db.AdminRoles
+            .Where(ar => ar.AdminId == adminId)
+            .ToListAsync(ct);
+
     public async Task AddAsync(Role role, CancellationToken ct = default)
         => await db.Roles.AddAsync(role, ct);
 
@@ -76,6 +88,9 @@ public class RoleRepository(AppDbContext db) : IRoleRepository
 
     public async Task AddAdminRoleAsync(AdminRole adminRole, CancellationToken ct = default)
         => await db.AdminRoles.AddAsync(adminRole, ct);
+
+    public void RemoveAdminRole(AdminRole adminRole)
+        => db.AdminRoles.Remove(adminRole);
 
     public void RemoveRolePermission(RolePermission rolePermission)
         => db.RolePermissions.Remove(rolePermission);

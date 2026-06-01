@@ -25,6 +25,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<UserDeviceToken> UserDeviceTokens => Set<UserDeviceToken>();
 
         public DbSet<Admin> Admins => Set<Admin>();
+        public DbSet<AdminAuditLog> AdminAuditLogs => Set<AdminAuditLog>();
         public DbSet<AdminRole> AdminRoles => Set<AdminRole>();
         public DbSet<Role> Roles => Set<Role>();
         public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
@@ -43,6 +44,7 @@ namespace Beacon.Infrashtructure.Presistence
         public DbSet<MediaObject> MediaObjects => Set<MediaObject>();
         public DbSet<Post> Posts => Set<Post>();
         public DbSet<PostReaction> PostReactions => Set<PostReaction>();
+        public DbSet<PostReport> PostReports => Set<PostReport>();
 
         public DbSet<Checkin> Checkins => Set<Checkin>();
         public DbSet<CheckinMedia> CheckinMedias => Set<CheckinMedia>();

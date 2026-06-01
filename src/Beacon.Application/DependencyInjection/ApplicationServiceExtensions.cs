@@ -1,5 +1,6 @@
 using Beacon.Application.Common.Behaviors;
 using Beacon.Application.Mappings.Authorization;
+using Beacon.Application.Mappings.AccountManagement;
 using Beacon.Application.Mappings.Checkins;
 using Beacon.Application.Mappings.Group;
 using Beacon.Application.Mappings.Identity;
@@ -29,6 +30,7 @@ public static class ApplicationServiceExtensions
         services.AddSingleton<UserAuthMapper>();
         services.AddSingleton<UserProfileMapper>();
         services.AddSingleton<AdminAuthMapper>();
+        services.AddSingleton<AccountManagementMapper>();
         services.AddSingleton<PermissionMapper>();
         services.AddSingleton<RoleMapper>();
         services.AddSingleton<MediaDtoMapper>();

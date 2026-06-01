@@ -15,6 +15,12 @@ public class MediaObjectRepository(AppDbContext context) : IMediaObjectRepositor
             .IgnoreQueryFilters()
             .FirstOrDefaultAsync(m => m.Id == id, ct);
 
+    public async Task<List<MediaObject>> ListByIdsIncludeDeletedAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+        => await context.MediaObjects
+            .IgnoreQueryFilters()
+            .Where(m => ids.Contains(m.Id))
+            .ToListAsync(ct);
+
     public async Task AddAsync(MediaObject media, CancellationToken ct = default)
         => await context.MediaObjects.AddAsync(media, ct);
 

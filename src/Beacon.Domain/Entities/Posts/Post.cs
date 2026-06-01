@@ -15,6 +15,7 @@ public class Post : AuditableEntity
     public PostVisibility Visibility { get; private set; }
     public PostStatus Status { get; private set; }
     public DateTime? DeletedAtUtc { get; private set; }
+    public string? DeletedReason { get; private set; }
 
     public DailySafetyRecord? DailySafetyRecord { get; private set; }
 
@@ -50,6 +51,12 @@ public class Post : AuditableEntity
         Longitude = longitude;
     }
 
-    public void SoftDelete()
-        => DeletedAtUtc = DateTime.UtcNow;
+    public void UpdateStatus(PostStatus status)
+        => Status = status;
+
+    public void SoftDelete(string? reason = null)
+    {
+        DeletedAtUtc = DateTime.UtcNow;
+        DeletedReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+    }
 }

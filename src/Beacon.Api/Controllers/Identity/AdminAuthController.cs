@@ -168,6 +168,66 @@ public class AdminAuthController(IMediator mediator, ICurrentUserService current
 
     #region
     /// <summary>
+    /// Cap nhat thong tin Admin dang dang nhap.
+    /// </summary>
+    /// <remarks>
+    /// <b>Endpoint:</b> <c>PATCH /api/v1/admin/auth/me</c>
+    ///
+    /// <b>Auth:</b> Yeu cau Admin access token.
+    /// <b>Headers:</b>
+    /// <code>
+    /// Authorization: Bearer {adminAccessToken}
+    /// </code>
+    ///
+    /// <b>Request body:</b>
+    /// <code>
+    /// {
+    ///   "username": "string | null",
+    ///   "fullName": "string | null"
+    /// }
+    /// </code>
+    ///
+    /// Bo qua field hoac truyen <c>null</c> de giu nguyen gia tri hien tai.
+    ///
+    /// <b>Response 200:</b>
+    /// <code>
+    /// {
+    ///   "success": true,
+    ///   "message": "Success",
+    ///   "code": null,
+    ///   "data": {
+    ///     "adminId": "guid",
+    ///     "username": "string",
+    ///     "fullName": "string",
+    ///     "isActive": true,
+    ///     "lastLoginAtUtc": "datetime | null",
+    ///     "createdAtUtc": "datetime (UTC)",
+    ///     "roles": ["string"],
+    ///     "permissions": ["string"]
+    ///   },
+    ///   "errors": null
+    /// }
+    /// </code>
+    ///
+    /// Cac gia tri <c>code</c> co the xuat hien trong response:
+    /// - <c>null</c>: Cap nhat thanh cong.
+    /// - <c>VALIDATION_ERROR</c>: Body khong hop le hoac khong truyen field nao.
+    /// - <c>USERNAME_ALREADY_EXISTS</c>: Username da duoc su dung boi admin khac.
+    /// - <c>ADMIN_NOT_FOUND</c>: Khong tim thay admin trong he thong.
+    /// - <c>ADMIN_INACTIVE</c>: Tai khoan admin da bi vo hieu hoa.
+    /// - <c>UNAUTHORIZED</c>: Access token khong hop le hoac da het han.
+    /// - <c>FORBIDDEN</c>: Token hop le nhung khong phai admin token.
+    ///
+    /// Format response loi: <c>{ success, message, code, data, errors }</c>.
+    /// </remarks>
+    #endregion
+    [HttpPatch("me")]
+    [AdminOnly]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateCurrentAdminRequest request, CancellationToken ct)
+        => HandleResult(await mediator.Send(new UpdateCurrentAdminCommand(currentUser.UserId, request), ct));
+
+    #region
+    /// <summary>
     /// Làm mới Access Token Admin bằng Refresh Token.
     /// </summary>
     /// <remarks>

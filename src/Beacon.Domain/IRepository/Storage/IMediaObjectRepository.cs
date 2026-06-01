@@ -8,6 +8,8 @@ public interface IMediaObjectRepository
 
     Task<MediaObject?> GetByIdIncludeDeletedAsync(Guid id, CancellationToken ct = default);
 
+    Task<List<MediaObject>> ListByIdsIncludeDeletedAsync(IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
     Task AddAsync(MediaObject media, CancellationToken ct = default);
 
     Task<List<MediaObject>> ListByUserCursorAsync(

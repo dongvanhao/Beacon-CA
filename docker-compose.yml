@@ -53,6 +53,11 @@ services:
     container_name: beacon-api
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      Database__Provider: "${DATABASE_PROVIDER:-SqlServer}"
+      DevSeed__Enabled: "${DEV_SEED_ENABLED:-false}"
+      DevSeed__ResetOnStartup: "${DEV_SEED_RESET_ON_STARTUP:-false}"
+      DevSeed__ResetToken: "${DEV_SEED_RESET_TOKEN:-}"
+      ExternalServices__UseNoOpStorage: "${EXTERNAL_SERVICES_USE_NOOP_STORAGE:-false}"
       # Override connection string — ASP.NET Core tự đọc biến dạng này
       ConnectionStrings__DefaultConnection: "Server=sqlserver,1433;Database=BeaconDb;User Id=sa;Password=${DB_PASSWORD};TrustServerCertificate=True"
       # JWT — dùng env var thay vì appsettings (user-secrets không chạy trong Docker)
