@@ -6,6 +6,7 @@ using Beacon.Application.Features.Identity.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Beacon.Api.Controllers;
 
@@ -62,6 +63,7 @@ public class AdminAuthController(IMediator mediator, ICurrentUserService current
     #endregion
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-admin-login")]
     public async Task<IActionResult> Login([FromBody] AdminLoginRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new LoginAdminCommand(request), ct));
 

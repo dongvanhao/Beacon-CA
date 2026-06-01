@@ -5,6 +5,7 @@ using Beacon.Application.Features.Identity.Queries;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Beacon.Api.Controllers;
 
@@ -43,6 +44,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     #endregion
     [HttpPost("register")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
         var userAgent = Request.Headers["User-Agent"].ToString();
@@ -83,6 +85,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     #endregion
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
     {
         var userAgent = Request.Headers["User-Agent"].ToString();
@@ -187,6 +190,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     #endregion
     [HttpPost("refresh-token")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-refresh-token")]
     public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request, CancellationToken ct)
         => HandleResult(await mediator.Send(new RefreshTokenCommand(request.RefreshToken), ct));
 
@@ -214,6 +218,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     #endregion
     [HttpGet("check-email")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-check")]
     public async Task<IActionResult> CheckEmail([FromQuery] string email, CancellationToken ct)
         => HandleResult(await mediator.Send(new CheckEmailAvailabilityQuery(email), ct));
 
@@ -242,6 +247,7 @@ public class AuthController(IMediator mediator, ICurrentUserService currentUser)
     #endregion
     [HttpGet("check-phone")]
     [AllowAnonymous]
+    [EnableRateLimiting("auth-check")]
     public async Task<IActionResult> CheckPhone([FromQuery] string phoneNumber, CancellationToken ct)
         => HandleResult(await mediator.Send(new CheckPhoneAvailabilityQuery(phoneNumber), ct));
 }

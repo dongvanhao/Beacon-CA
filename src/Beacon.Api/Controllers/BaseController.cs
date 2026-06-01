@@ -2,12 +2,14 @@ using Beacon.Shared.Common.Responses;
 using Beacon.Shared.Results;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Beacon.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public abstract class BaseController : ControllerBase //BaseController giúp tránh lặp logic convert Result<T> -> ApiResponse<T> ở mọi controller.
+    [EnableRateLimiting("api-general")]
+    public abstract class BaseController : ControllerBase
     {
         protected IActionResult HandleResult<T>(Result<T> result, string successMessage = "Success")
         {

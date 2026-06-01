@@ -15,6 +15,7 @@ if (!builder.Environment.IsEnvironment("Testing"))
     builder.Services.AddHangfireJobs(builder.Configuration);
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
+builder.Services.AddRateLimiting(builder.Configuration);
 builder.Services.AddControllers();
 
 var app = builder.Build();
@@ -86,6 +87,7 @@ app.UseSwaggerDocs();
 app.UseHttpsRedirection();
 app.UseCors(app.Environment.IsDevelopment() ? "AllowAll" : "AllowSpecificOrigins");
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHealthCheckEndpoints();

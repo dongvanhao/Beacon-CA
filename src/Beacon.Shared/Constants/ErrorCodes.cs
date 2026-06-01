@@ -133,6 +133,12 @@ namespace Beacon.Shared.Constants
             public const string REACTION_CONFLICT     = "REACTION_CONFLICT";
         }
 
+        public static class RateLimit
+        {
+            public const string RATE_LIMIT_EXCEEDED = "RATE_LIMIT_EXCEEDED";
+            public const string SERVER_BUSY         = "SERVER_BUSY";
+        }
+
         public static class HealthCheck
         {
             /// <summary>Có từ 2 services trở lên bị fail trong cùng một lần check.</summary>
