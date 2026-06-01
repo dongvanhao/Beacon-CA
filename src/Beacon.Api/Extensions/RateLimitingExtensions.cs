@@ -10,6 +10,9 @@ namespace Beacon.Api.Extensions;
 
 public static class RateLimitingExtensions
 {
+    private static readonly JsonSerializerOptions _jsonOptions =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     public static IServiceCollection AddRateLimiting(
         this IServiceCollection services,
         IConfiguration configuration)
@@ -90,36 +93,46 @@ public static class RateLimitingExtensions
                         });
                 });
 
-                // Global concurrency limiter
-                limiterOpts.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(ctx =>
-                    RateLimitPartition.GetConcurrencyLimiter(
-                        partitionKey: "global",
-                        factory: _ => new ConcurrencyLimiterOptions
-                        {
-                            PermitLimit = opts.Global.ConcurrencyLimit,
-                            QueueLimit  = opts.Global.QueueLimit,
-                        }));
+                // Global concurrency limiter — uses TaggingConcurrencyLimiter to mark rejections
+                // so OnRejected can distinguish 503 (concurrency) from 429 (rate limit)
+                limiterOpts.GlobalLimiter = new TaggingConcurrencyLimiter(
+                    opts.Global.ConcurrencyLimit,
+                    opts.Global.QueueLimit);
 
-                // Always 429 for named-policy rejections.
-                // SlidingWindowLimiter with QueueLimit=0 returns no RetryAfter metadata — use 60s fallback.
                 limiterOpts.OnRejected = async (context, ct) =>
                 {
-                    context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter);
-                    var retrySeconds = retryAfter > TimeSpan.Zero ? (int)retryAfter.TotalSeconds : 60;
+                    bool isConcurrency = context.HttpContext.Items.ContainsKey("_globalConcurrencyRejected");
 
-                    context.HttpContext.Response.StatusCode  = StatusCodes.Status429TooManyRequests;
                     context.HttpContext.Response.ContentType = "application/json";
-                    context.HttpContext.Response.Headers.RetryAfter = retrySeconds.ToString();
 
-                    var body = ApiResponse<object>.FailureResponse(
-                        "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
-                        ErrorCodes.RateLimit.RATE_LIMIT_EXCEEDED,
-                        [$"Retry after {retrySeconds} seconds"]);
+                    if (isConcurrency)
+                    {
+                        context.HttpContext.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
 
-                    await context.HttpContext.Response.WriteAsync(
-                        JsonSerializer.Serialize(body,
-                            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase }),
-                        ct);
+                        var body = ApiResponse<object>.FailureResponse(
+                            "Máy chủ đang bận. Vui lòng thử lại sau.",
+                            ErrorCodes.RateLimit.SERVER_BUSY);
+
+                        await context.HttpContext.Response.WriteAsync(
+                            JsonSerializer.Serialize(body, _jsonOptions), ct);
+                    }
+                    else
+                    {
+                        // SlidingWindowLimiter with QueueLimit=0 returns no RetryAfter metadata — use 60s fallback
+                        context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter);
+                        var retrySeconds = retryAfter > TimeSpan.Zero ? (int)retryAfter.TotalSeconds : 60;
+
+                        context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                        context.HttpContext.Response.Headers.RetryAfter = retrySeconds.ToString();
+
+                        var body = ApiResponse<object>.FailureResponse(
+                            "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
+                            ErrorCodes.RateLimit.RATE_LIMIT_EXCEEDED,
+                            [$"Retry after {retrySeconds} seconds"]);
+
+                        await context.HttpContext.Response.WriteAsync(
+                            JsonSerializer.Serialize(body, _jsonOptions), ct);
+                    }
                 };
             });
 
@@ -139,5 +152,52 @@ public static class RateLimitingExtensions
                 SegmentsPerWindow = 3,
                 QueueLimit        = 0,
             });
+    }
+}
+
+/// <summary>
+/// Wraps a ConcurrencyLimiter and tags HttpContext.Items when a request is rejected,
+/// so OnRejected can distinguish concurrency rejection (503) from rate-limit rejection (429).
+/// </summary>
+internal sealed class TaggingConcurrencyLimiter : PartitionedRateLimiter<HttpContext>
+{
+    private readonly PartitionedRateLimiter<HttpContext> _inner;
+
+    internal TaggingConcurrencyLimiter(int permitLimit, int queueLimit)
+    {
+        _inner = PartitionedRateLimiter.Create<HttpContext, string>(_ =>
+            RateLimitPartition.GetConcurrencyLimiter(
+                partitionKey: "global",
+                factory: _ => new ConcurrencyLimiterOptions
+                {
+                    PermitLimit = permitLimit,
+                    QueueLimit  = queueLimit,
+                }));
+    }
+
+    protected override RateLimitLease AttemptAcquireCore(HttpContext resource, int permitCount)
+    {
+        var lease = _inner.AttemptAcquire(resource, permitCount);
+        if (!lease.IsAcquired)
+            resource.Items["_globalConcurrencyRejected"] = true;
+        return lease;
+    }
+
+    protected override async ValueTask<RateLimitLease> AcquireAsyncCore(
+        HttpContext resource, int permitCount, CancellationToken cancellationToken)
+    {
+        var lease = await _inner.AcquireAsync(resource, permitCount, cancellationToken);
+        if (!lease.IsAcquired)
+            resource.Items["_globalConcurrencyRejected"] = true;
+        return lease;
+    }
+
+    public override RateLimiterStatistics? GetStatistics(HttpContext resource)
+        => _inner.GetStatistics(resource);
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) _inner.Dispose();
+        base.Dispose(disposing);
     }
 }

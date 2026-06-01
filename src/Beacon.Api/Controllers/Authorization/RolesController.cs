@@ -391,7 +391,7 @@ public class RolesController(IMediator mediator) : BaseController
     [HttpPost("{roleId:guid}/permissions")]
     [AdminOnly]
     [HasPermission(PermissionCodes.RoleManagement.AssignPermission)]
-    public async Task<IActionResult> TogglePermission(
+    public async Task<IActionResult> AssignPermission(
         Guid roleId,
         [FromBody] AssignPermissionToRoleRequest request,
         CancellationToken ct)

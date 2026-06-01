@@ -35,6 +35,7 @@ public class AddGroupMemberCommandHandlerTests
         var group = new MessageGroup
         {
             Type = MessageGroupType.Group,
+            RequireApprovalToAddMembers = true,
             CreatedAtUtc = DateTime.UtcNow
         };
         group.GetType().GetProperty("Id")!.SetValue(group, groupId);

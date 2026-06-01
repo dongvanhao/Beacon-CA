@@ -3,6 +3,7 @@ using Beacon.Api.Middleware;
 using Beacon.Application.DependencyInjection;
 using Beacon.Infrashtructure.Dependencyinjection;
 using Beacon.Infrashtructure.Presistence;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,6 +20,18 @@ builder.Services.AddRateLimiting(builder.Configuration);
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+var forwardedHeadersOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    ForwardLimit = 1,
+};
+
+if (app.Environment.IsEnvironment("Testing"))
+{
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+}
 
 // Auto-apply pending EF Core migrations on startup (retry cho Docker — SQL Server khởi động chậm hơn API)
 // Skip khi environment = "Testing" (integration tests dùng InMemory DB)
@@ -82,6 +95,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
+app.UseForwardedHeaders(forwardedHeadersOptions);
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSwaggerDocs();
 app.UseHttpsRedirection();

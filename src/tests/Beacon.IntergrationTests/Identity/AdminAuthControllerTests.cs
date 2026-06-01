@@ -64,6 +64,20 @@ public class AdminAuthControllerTests : IClassFixture<BeaconWebApplicationFactor
     }
 
     [Fact]
+    public async Task Me_WithStaleAdminToken_Returns401()
+    {
+        var (adminId, _) = await SeedAdminAsync();
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue(
+                "Bearer",
+                TokenHelper.GenerateAdminToken(adminId, "admin", roles: ["SuperAdmin"]));
+
+        var response = await _client.GetAsync(MeEndpoint);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact]
     public async Task RefreshToken_WithInvalidToken_Returns401()
     {
         var response = await _client.PostAsJsonAsync(RefreshTokenEndpoint, new

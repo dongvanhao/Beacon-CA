@@ -32,12 +32,16 @@ public static class TokenHelper
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public static string GenerateAdminToken(Guid adminId, string username)
+    public static string GenerateAdminToken(
+        Guid adminId,
+        string username,
+        IEnumerable<string>? roles = null,
+        IEnumerable<string>? permissions = null)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestJwtSettings.SecretKey));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, adminId.ToString()),
             new Claim(ClaimTypes.NameIdentifier, adminId.ToString()),
@@ -45,6 +49,8 @@ public static class TokenHelper
             new Claim("actor", "admin"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+        claims.AddRange((roles ?? []).Select(role => new Claim(ClaimTypes.Role, role)));
+        claims.AddRange((permissions ?? []).Select(permission => new Claim("permission", permission)));
 
         var token = new JwtSecurityToken(
             issuer: TestJwtSettings.Issuer,

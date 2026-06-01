@@ -1,9 +1,11 @@
 using Beacon.Api.Authorization;
 using Beacon.Api.Services;
 using Beacon.Application.Common.Interfaces.IService;
+using Beacon.Domain.IRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 namespace Beacon.Api.Extensions;
@@ -50,6 +52,52 @@ public static class AuthExtensions
                             context.Token = accessToken;
                         }
                         return Task.CompletedTask;
+                    },
+                    OnTokenValidated = async context =>
+                    {
+                        if (context.Principal?.FindFirst("actor")?.Value != "admin")
+                            return;
+
+                        var adminIdClaim = context.Principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                        if (!Guid.TryParse(adminIdClaim, out var adminId))
+                        {
+                            context.Fail("Invalid admin token.");
+                            return;
+                        }
+
+                        var adminRepository = context.HttpContext.RequestServices
+                            .GetRequiredService<IAdminRepository>();
+                        var admin = await adminRepository.GetByIdWithRolesAsync(
+                            adminId,
+                            context.HttpContext.RequestAborted);
+                        if (admin is null || !admin.IsActive)
+                        {
+                            context.Fail("Invalid admin token.");
+                            return;
+                        }
+
+                        var activeRoles = admin.AdminRoles
+                            .Where(ar => ar.Role.IsActive)
+                            .Select(ar => ar.Role.Name)
+                            .ToHashSet(StringComparer.Ordinal);
+                        var currentPermissions = admin.AdminRoles
+                            .Where(ar => ar.Role.IsActive)
+                            .SelectMany(ar => ar.Role.RolePermissions)
+                            .Select(rp => rp.Permission.Name)
+                            .ToHashSet(StringComparer.Ordinal);
+
+                        var tokenRoles = context.Principal.FindAll(ClaimTypes.Role)
+                            .Select(c => c.Value)
+                            .ToHashSet(StringComparer.Ordinal);
+                        var tokenPermissions = context.Principal.FindAll("permission")
+                            .Select(c => c.Value)
+                            .ToHashSet(StringComparer.Ordinal);
+
+                        if (!activeRoles.SetEquals(tokenRoles) ||
+                            !currentPermissions.SetEquals(tokenPermissions))
+                        {
+                            context.Fail("Admin token permissions are stale.");
+                        }
                     }
                 };
             });

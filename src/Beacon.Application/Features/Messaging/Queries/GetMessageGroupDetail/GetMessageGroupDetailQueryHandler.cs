@@ -50,7 +50,9 @@ public class GetMessageGroupDetailQueryHandler(
                 .ToDictionary(x => x.Media.Id, x => x.Url)
             : new Dictionary<Guid, string>();
 
-        var settingsByUserId = (await settingRepo.ListByGroupAsync(group.Id, ct))
+        var settings = await settingRepo.ListByGroupAsync(group.Id, ct)
+            ?? [];
+        var settingsByUserId = settings
             .ToDictionary(s => s.UserId, s => s.CustomName);
 
         var memberDtos = visibleMembers.Select(m =>

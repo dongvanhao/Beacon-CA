@@ -30,14 +30,13 @@ public class AssignPermissionToRoleCommandHandler(
                 Error.NotFound(ErrorCodes.Authorization.PERMISSION_NOT_FOUND, "Khong tim thay permission."));
 
         var rolePermission = await roleRepository.GetRolePermissionAsync(role.Id, permission.Id, ct);
-        if (rolePermission is null)
-        {
-            await roleRepository.AddRolePermissionAsync(RolePermission.Create(role.Id, permission.Id), ct);
-        }
-        else
-        {
-            roleRepository.RemoveRolePermission(rolePermission);
-        }
+        if (rolePermission is not null)
+            return Result<RoleDto>.Failure(
+                Error.Conflict(
+                    ErrorCodes.Authorization.ROLE_PERMISSION_ALREADY_EXISTS,
+                    "Role da co permission nay."));
+
+        await roleRepository.AddRolePermissionAsync(RolePermission.Create(role.Id, permission.Id), ct);
 
         await roleRepository.SaveChangesAsync(ct);
 

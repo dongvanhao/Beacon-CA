@@ -243,3 +243,79 @@ public class DisabledRateLimitingWebApplicationFactory : RateLimitingWebApplicat
         });
     }
 }
+
+/// <summary>Factory với ConcurrencyLimit=1 để test UC3-T1 (503 khi server bận).</summary>
+public class ConcurrencyLimitedWebApplicationFactory : RateLimitingWebApplicationFactory
+{
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
+    {
+        base.ConfigureWebHost(builder);
+        builder.ConfigureServices(services =>
+        {
+            services.PostConfigure<RateLimitingOptions>(opts =>
+            {
+                opts.Global.ConcurrencyLimit = 1;
+                opts.Global.QueueLimit       = 0;
+            });
+        });
+    }
+}
+
+public class RateLimitingSlice3Tests
+{
+    // UC3-T1: Global concurrency exceeded → 503 SERVER_BUSY (không phải 429)
+    [Fact]
+    public async Task GlobalConcurrency_WhenExceeded_Returns503()
+    {
+        await using var factory = new ConcurrencyLimitedWebApplicationFactory();
+        var client = factory.CreateClient();
+
+        // Gửi 10 request song song — với ConcurrencyLimit=1, các request trùng nhau sẽ nhận 503
+        var tasks = Enumerable.Range(0, 10)
+            .Select(_ => client.PostAsJsonAsync("/api/v1/auth/login",
+                new { username = "u", password = "p" }))
+            .ToArray();
+        var responses = await Task.WhenAll(tasks);
+
+        var busyResponses = responses
+            .Where(r => r.StatusCode == HttpStatusCode.ServiceUnavailable)
+            .ToList();
+
+        busyResponses.Should().NotBeEmpty("ConcurrencyLimit=1 với 10 concurrent request phải reject ít nhất một");
+
+        var body = await busyResponses.First().Content.ReadFromJsonAsync<ApiResponse<object>>();
+        body!.Success.Should().BeFalse();
+        body.Code.Should().Be(ErrorCodes.RateLimit.SERVER_BUSY);
+        busyResponses.First().Headers.Contains("Retry-After").Should().BeFalse("503 không có Retry-After");
+    }
+
+    // UC3-T2 đã có trong RateLimitingTests — Enabled=false pass through (duplicate guard)
+}
+
+public class RateLimitingSlice4Tests
+{
+    // UC5-T1: X-Forwarded-For tạo partition key độc lập cho mỗi IP
+    [Fact]
+    public async Task Login_DifferentXForwardedForIPs_HaveIndependentQuota()
+    {
+        await using var factory = new RateLimitingWebApplicationFactory();
+
+        var clientA = factory.CreateClient();
+        clientA.DefaultRequestHeaders.Add("X-Forwarded-For", "10.0.0.1");
+
+        var clientB = factory.CreateClient();
+        clientB.DefaultRequestHeaders.Add("X-Forwarded-For", "10.0.0.2");
+
+        // Exhaust clientA quota (3 = LoginPermitLimit trong test factory)
+        for (var i = 0; i < 3; i++)
+            await clientA.PostAsJsonAsync("/api/v1/auth/login", new { username = "u", password = "p" });
+
+        var limitedA = await clientA.PostAsJsonAsync("/api/v1/auth/login", new { username = "u", password = "p" });
+        limitedA.StatusCode.Should().Be(HttpStatusCode.TooManyRequests, "clientA đã vượt quota");
+
+        // clientB dùng IP khác — quota hoàn toàn độc lập
+        var okB = await clientB.PostAsJsonAsync("/api/v1/auth/login", new { username = "u", password = "p" });
+        okB.StatusCode.Should().NotBe(HttpStatusCode.TooManyRequests,
+            "clientB có partition key khác (10.0.0.2 vs 10.0.0.1)");
+    }
+}
