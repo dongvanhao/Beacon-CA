@@ -41,7 +41,7 @@ if (!isTesting && !useInMemoryDatabase)
 builder.Services.AddSwagger();
 builder.Services.AddHealthChecking(builder.Configuration);
 builder.Services.AddRateLimiting(builder.Configuration);
-builder.Services.AddControllers();
+builder.Services.AddApiControllers();
 
 var app = builder.Build();
 

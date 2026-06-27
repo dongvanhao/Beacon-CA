@@ -2,6 +2,7 @@ using Beacon.Api.Backgroundjobs;
 using Hangfire;
 using Hangfire.Dashboard;
 using Hangfire.SqlServer;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace Beacon.Api.Extensions;
 
@@ -28,11 +29,13 @@ public static class HangfireExtensions
 
     public static void MapHangfireDashboard(this WebApplication app)
     {
-        if (app.Environment.IsDevelopment())
-            app.MapHangfireDashboard("/hangfire", new DashboardOptions
-            {
-                Authorization = new[] { new DevelopmentHangfireDashboardAuthorizationFilter() }
-            });
+        app.MapHangfireDashboard("/hangfire", new DashboardOptions
+        {
+            Authorization = app.Environment.IsDevelopment()
+                ? [new DevelopmentHangfireDashboardAuthorizationFilter()]
+                : [new AdminJwtHangfireDashboardAuthorizationFilter()],
+            DashboardTitle = "Beacon — Background Jobs"
+        });
     }
 
     public static void RegisterRecurringJobs(this IApplicationBuilder app)
@@ -57,5 +60,38 @@ public static class HangfireExtensions
     private sealed class DevelopmentHangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter
     {
         public bool Authorize(DashboardContext context) => true;
+    }
+
+    private sealed class AdminJwtHangfireDashboardAuthorizationFilter : IDashboardAuthorizationFilter
+    {
+        private const string CookieName = "beacon_hf_auth";
+        private const string Purpose = "Beacon.Hangfire.Dashboard";
+
+        public bool Authorize(DashboardContext context)
+        {
+            var http = context.GetHttpContext();
+            var cookie = http.Request.Cookies[CookieName];
+            if (string.IsNullOrEmpty(cookie))
+                return false;
+
+            try
+            {
+                var protector = http.RequestServices
+                    .GetRequiredService<IDataProtectionProvider>()
+                    .CreateProtector(Purpose);
+
+                var payload = protector.Unprotect(cookie);
+                var separator = payload.IndexOf('|');
+                if (separator < 0) return false;
+                var expiryStr = payload[(separator + 1)..];
+
+                return DateTimeOffset.TryParse(expiryStr, out var expiry)
+                    && expiry > DateTimeOffset.UtcNow;
+            }
+            catch
+            {
+                return false;
+            }
+        }
     }
 }

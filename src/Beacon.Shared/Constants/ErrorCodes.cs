@@ -139,6 +139,11 @@ namespace Beacon.Shared.Constants
             public const string LOG_NOT_FOUND = "ADMIN_AUDIT_LOG_NOT_FOUND";
         }
 
+        public static class Hangfire
+        {
+            public const string HANGFIRE_FORBIDDEN = "HANGFIRE_FORBIDDEN";
+        }
+
         public static class Reaction
         {
             public const string INVALID_REACTION_ICON = "INVALID_REACTION_ICON";
