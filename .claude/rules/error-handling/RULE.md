@@ -72,3 +72,19 @@ throw new ValidationException(errors);           // → 400
 | `return null` khi entity không tìm thấy | `Result.Failure(Error.NotFound(...))` |
 | Log password/token/email trong error | Chỉ log error code + userId |
 | Tạo error code mới tùy tiện | Thêm vào `ErrorCodes.cs` trước |
+
+---
+
+## Logging (Serilog)
+
+Logging chạy qua **Serilog** (structured). Spec/plan: `docs/specs|plans/serilog-request-response-logging*`.
+
+| Việc | Quy tắc |
+|---|---|
+| **Request summary** | Tự động qua `UseSerilogRequestLogging()` — **không** tự viết middleware log request song song (gây double-log) |
+| **Exception chi tiết** | `ExceptionHandlingMiddleware` log `LogError(ex, ...)` kèm stack; request logging chỉ log dòng summary (method/path/status/elapsed) |
+| **Identity trong log** | Chỉ `UserId` (GUID, từ `ClaimTypes.NameIdentifier`) — **không** username/email/phone |
+| **PII / Secrets** | Không log `Authorization`/`Cookie` header, token, password, body. Query param nhạy cảm → mask `***` |
+| **EF Core** | Giữ `EnableSensitiveDataLogging=false`; level `Warning` ở Production (tránh rò PII trong SQL log) |
+| **Sink** | Console-only (stdout). File/Seq/Loki/OTel → cần ADR riêng |
+| **Correlation** | Dùng `TraceId` từ `Activity` (OTel-ready), **không** `HttpContext.TraceIdentifier` |

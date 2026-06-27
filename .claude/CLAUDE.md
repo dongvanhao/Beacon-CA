@@ -176,4 +176,5 @@ Mapping: `NotFoundException → 404 · ConflictException → 409 · Unauthorized
 1. Namespace typos (`Infrashtructure`, `Dependencyinjection`, `Presistence`, `Setting`, `Intergration`) — chờ rename sprint
 2. Mapping library: manual vs **Mapperly** — cần ADR trước khi có 100+ mapper
 3. **MediatR v13 commercial** — đang pin v12; xem xét migrate sang `Mediator` (Martin Othamar)
-4. Production concerns ⏳ TODO: Serilog/OTel, Rate Limiting, Redis cache, Background Jobs (Hangfire/Channels), Idempotency-Key, CI/CD
+4. Production concerns ⏳ TODO: OTel, Redis cache, Idempotency-Key, CI/CD
+   - Serilog ✅ implemented (`Api/Logging/SerilogConfiguration.cs` + `RequestLoggingHelper.cs`) — Console-only, `UseSerilogRequestLogging`, Dev human-readable / Prod CompactJson; Seq/Loki/OTel để ADR riêng

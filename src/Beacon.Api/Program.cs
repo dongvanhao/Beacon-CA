@@ -1,5 +1,6 @@
 using Beacon.Api.Extensions;
 using Beacon.Api.Filters;
+using Beacon.Api.Logging;
 using Beacon.Api.Middleware;
 using Beacon.Application.DependencyInjection;
 using Beacon.Infrashtructure.Configuration;
@@ -8,9 +9,15 @@ using Beacon.Infrashtructure.DevSeed;
 using Beacon.Infrashtructure.Presistence;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Serilog;
 using System.Net;
 
+SerilogConfiguration.CreateBootstrapLogger();
+
+try
+{
 var builder = WebApplication.CreateBuilder(args);
+builder.AddSerilogLogging();
 var isTesting = builder.Environment.IsEnvironment("Testing");
 var useInMemoryDatabase = DatabaseProviderOptions.IsInMemory(builder.Configuration);
 
@@ -121,6 +128,7 @@ if (!isTesting)
 }
 
 app.UseForwardedHeaders(forwardedHeadersOptions);
+app.UseRequestLogging(maskIp: builder.Configuration.GetValue<bool>("RequestLogging:MaskClientIp"));
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseSwaggerDocs();
 app.UseHttpsRedirection();
@@ -141,5 +149,14 @@ static bool IsEnabled(IConfiguration configuration, string key)
     => bool.TryParse(configuration[key], out var enabled) && enabled;
 
 app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Beacon.Api terminated unexpectedly");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 public partial class Program { }
